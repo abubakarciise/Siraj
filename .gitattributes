@@ -1,0 +1,6 @@
+* text=auto eol=lf
+*.db binary
+*.wav binary
+*.ttf binary
+*.png binary
+*.jar binary

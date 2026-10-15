@@ -237,14 +237,32 @@ class PrayerService {
     return today.nextAfter(now) ?? day(now.add(const Duration(days: 1)))!.nextAfter(DateTime(now.year, now.month, now.day));
   }
 
-  double? qiblaBearing() {
-    final s = settings;
-    if (!s.hasLocation) return null;
-    return adhan.Qibla(adhan.Coordinates(s.lat!, s.lng!)).direction;
+  /// Where the phone is, for the Qibla (prayer times stay on Makkah).
+  City? get qiblaPlace {
+    final raw = _prefs.getString('qibla_location');
+    if (raw == null) return null;
+    final j = jsonDecode(raw) as Map<String, dynamic>;
+    return City(j['place'] as String, (j['lat'] as num).toDouble(), (j['lng'] as num).toDouble());
   }
 
-  /// One GPS fix (coarse accuracy is enough for prayer times).
-  Future<PrayerSettings> locate() async {
+  Future<void> setQiblaPlace(City c) =>
+      _prefs.setString('qibla_location', jsonEncode({'place': c.name, 'lat': c.lat, 'lng': c.lng}));
+
+  double? qiblaBearing() {
+    final c = qiblaPlace;
+    return c == null ? null : adhan.Qibla(adhan.Coordinates(c.lat, c.lng)).direction;
+  }
+
+  /// GPS fix for the Qibla, saved as the Qibla location.
+  Future<City> locateQibla() async {
+    final pos = await _position();
+    final near = nearestCity(pos.latitude, pos.longitude);
+    final c = City(near.$2 < 60 ? near.$1.name : 'Current location', pos.latitude, pos.longitude);
+    await setQiblaPlace(c);
+    return c;
+  }
+
+  Future<Position> _position() async {
     if (!await Geolocator.isLocationServiceEnabled()) throw const LocationException('Turn on location services');
     var perm = await Geolocator.checkPermission();
     if (perm == LocationPermission.denied) perm = await Geolocator.requestPermission();
@@ -260,6 +278,12 @@ class PrayerService {
       pos = await Geolocator.getLastKnownPosition();
     }
     if (pos == null) throw const LocationException('Could not get your location');
+    return pos;
+  }
+
+  /// One GPS fix (coarse accuracy is enough for prayer times).
+  Future<PrayerSettings> locate() async {
+    final pos = await _position();
     final near = nearestCity(pos.latitude, pos.longitude);
     final s = settings.copyWith(
       lat: pos.latitude,
@@ -310,7 +334,7 @@ class PrayerService {
         id: NotificationService.adhkarIds.$1,
         time: s.morning,
         title: 'أذكار الصباح · Morning adhkar',
-        body: 'Begin your day with the remembrance of Allah',
+        body: 'Time to read the morning adhkar. Begin your day with the remembrance of Allah',
         payload: 'adhkar:morning',
       );
       await _notifications.scheduleDaily(
@@ -318,7 +342,7 @@ class PrayerService {
         id: NotificationService.adhkarIds.$1 + 1,
         time: s.evening,
         title: 'أذكار المساء · Evening adhkar',
-        body: 'Time for your evening remembrance',
+        body: 'Time to read the evening adhkar',
         payload: 'adhkar:evening',
       );
     }

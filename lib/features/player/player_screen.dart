@@ -90,7 +90,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       final page = np.ayah != null ? await db.pageOf(np.ayah!) : surah.pageStart;
                       if (context.mounted) {
                         context.pop();
-                        context.openReader(page, ayah: np.ayah?.toString(), surah: surah.id);
+                        // No selection: the live recitation highlight already marks the ayah.
+                        context.openReader(page, surah: surah.id);
                       }
                     },
                   ),
@@ -138,31 +139,35 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     _SleepButton(np: np),
                   ]),
                   const SizedBox(height: Space.xs),
-                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    TextButton.icon(
-                      onPressed: () => _speedSheet(context, pc, np.speed),
-                      icon: const Icon(Icons.speed_rounded, size: 20),
-                      label: Text('${np.speed}×'),
-                    ),
-                    TextButton.icon(
-                      onPressed: np.hasPrevious ? pc.previous : null,
-                      icon: const Icon(Icons.first_page_rounded, size: 20),
-                      label: const Text('Surah'),
-                    ),
-                    TextButton.icon(
-                      onPressed: np.hasNext ? pc.next : null,
-                      icon: const Icon(Icons.last_page_rounded, size: 20),
-                      label: const Text('Surah'),
-                    ),
-                    IconButton(
-                      tooltip: 'Stop',
-                      onPressed: () async {
-                        await pc.stop();
-                        if (context.mounted && context.canPop()) context.pop();
-                      },
-                      icon: Icon(Icons.stop_circle_outlined, color: c.inkMuted),
-                    ),
-                  ]),
+                  // Shrinks on narrow screens / large fonts instead of overflowing.
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      TextButton.icon(
+                        onPressed: () => _speedSheet(context, pc, np.speed),
+                        icon: const Icon(Icons.speed_rounded, size: 20),
+                        label: Text('${np.speed}×'),
+                      ),
+                      TextButton.icon(
+                        onPressed: np.hasPrevious ? pc.previous : null,
+                        icon: const Icon(Icons.first_page_rounded, size: 20),
+                        label: const Text('Surah'),
+                      ),
+                      TextButton.icon(
+                        onPressed: np.hasNext ? pc.next : null,
+                        icon: const Icon(Icons.last_page_rounded, size: 20),
+                        label: const Text('Surah'),
+                      ),
+                      IconButton(
+                        tooltip: 'Stop',
+                        onPressed: () async {
+                          await pc.stop();
+                          if (context.mounted && context.canPop()) context.pop();
+                        },
+                        icon: Icon(Icons.stop_circle_outlined, color: c.inkMuted),
+                      ),
+                    ]),
+                  ),
                   const SizedBox(height: Space.sm),
                 ]),
               ),
@@ -232,7 +237,7 @@ class _SurahFollowAlongState extends ConsumerState<SurahFollowAlong> {
     if (jump) {
       _items.jumpTo(index: index, alignment: 0.1);
     } else {
-      _items.scrollTo(index: index, alignment: 0.1, duration: Motion.gentle, curve: Motion.curve);
+      _items.scrollTo(index: index, alignment: 0.1, duration: Motion.standard, curve: Motion.curve);
     }
   }
 
@@ -376,7 +381,7 @@ class _FollowRow extends StatelessWidget {
           borderRadius: BorderRadius.circular(Radii.lg),
           onTap: onTap,
           child: AnimatedContainer(
-            duration: Motion.standard,
+            duration: Motion.quick,
             curve: Motion.curve,
             padding: const EdgeInsets.symmetric(horizontal: Space.md, vertical: Space.md),
             decoration: BoxDecoration(

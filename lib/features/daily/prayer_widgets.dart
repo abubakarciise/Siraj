@@ -80,26 +80,38 @@ class PrayerCard extends ConsumerWidget {
         Row(children: [
           for (final s in Salah.values.where((s) => s.isPrayer))
             Expanded(
-              child: Column(children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: s == next?.$1
-                        ? c.primary
-                        : today.times[s]!.isBefore(now)
-                            ? c.inkFaint
-                            : c.divider,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: Column(children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: s == next?.$1
+                          ? c.primary
+                          : today.times[s]!.isBefore(now)
+                              ? c.inkFaint
+                              : c.divider,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(s.en,
-                    style: context.text.labelSmall?.copyWith(
-                        color: s == current || s == next?.$1 ? c.ink : c.inkMuted,
-                        fontWeight: s == next?.$1 ? FontWeight.w700 : null)),
-                Text(formatTime(context, today.times[s]!), style: context.text.bodySmall?.copyWith(fontSize: 11)),
-              ]),
+                  const SizedBox(height: 6),
+                  // Never wrap mid-word on narrow screens or with large system fonts.
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(s.en,
+                        maxLines: 1,
+                        style: context.text.labelSmall?.copyWith(
+                            color: s == current || s == next?.$1 ? c.ink : c.inkMuted,
+                            fontWeight: s == next?.$1 ? FontWeight.w700 : null)),
+                  ),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(formatTime(context, today.times[s]!),
+                        maxLines: 1, style: context.text.bodySmall?.copyWith(fontSize: 11)),
+                  ),
+                ]),
+              ),
             ),
         ]),
       ]),
@@ -131,15 +143,23 @@ class _Shell extends StatelessWidget {
   }
 }
 
-/// Location picker: one-tap GPS, or choose a city (fully offline).
-Future<void> showLocationSheet(BuildContext context) => showAppSheet(
+/// Location picker. Defaults to the prayer-times location; the Qibla passes
+/// its own [onGps] / [onCity].
+Future<void> showLocationSheet(
+  BuildContext context, {
+  Future<void> Function()? onGps,
+  Future<void> Function(City city)? onCity,
+}) =>
+    showAppSheet(
       context,
       title: 'Your location',
-      builder: (_) => const _LocationSheet(),
+      builder: (_) => _LocationSheet(onGps: onGps, onCity: onCity),
     );
 
 class _LocationSheet extends ConsumerStatefulWidget {
-  const _LocationSheet();
+  const _LocationSheet({this.onGps, this.onCity});
+  final Future<void> Function()? onGps;
+  final Future<void> Function(City city)? onCity;
 
   @override
   ConsumerState<_LocationSheet> createState() => _LocationSheetState();
@@ -152,8 +172,12 @@ class _LocationSheetState extends ConsumerState<_LocationSheet> {
   Future<void> _gps() async {
     setState(() => _busy = true);
     try {
-      await ref.read(prayerSettingsProvider.notifier).locate();
-      await ref.read(notificationsProvider).requestPermission();
+      if (widget.onGps != null) {
+        await widget.onGps!();
+      } else {
+        await ref.read(prayerSettingsProvider.notifier).locate();
+        await ref.read(notificationsProvider).requestPermission();
+      }
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) showToast(context, '$e. You can pick your city instead.');
@@ -189,8 +213,12 @@ class _LocationSheetState extends ConsumerState<_LocationSheet> {
           leading: Icon(Icons.location_city_outlined, color: c.inkMuted),
           title: Text(city.name),
           onTap: () async {
-            await ref.read(prayerSettingsProvider.notifier).chooseCity(city);
-            await ref.read(notificationsProvider).requestPermission();
+            if (widget.onCity != null) {
+              await widget.onCity!(city);
+            } else {
+              await ref.read(prayerSettingsProvider.notifier).chooseCity(city);
+              await ref.read(notificationsProvider).requestPermission();
+            }
             if (context.mounted) Navigator.pop(context);
           },
         ),

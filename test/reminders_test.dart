@@ -108,7 +108,7 @@ void main() {
   group('NotificationSound', () {
     test('round-trips through its stored form', () {
       for (final s in [
-        const NotificationSound.builtin('oud'),
+        const NotificationSound.builtin('birds'),
         NotificationSound.systemDefault,
         NotificationSound.silent,
         const NotificationSound.device('content://media/internal/audio/media/31', 'Pixie Dust'),
@@ -117,6 +117,11 @@ void main() {
         expect(back, s);
         expect(back.label, s.label);
       }
+    });
+
+    test('sounds removed in 2.1 fall back to the default', () {
+      expect(NotificationSound.decode('builtin:oud', const NotificationSound.builtin('tone')),
+          const NotificationSound.builtin('tone'));
     });
 
     test('channel keys are stable and id-safe', () {

@@ -47,24 +47,46 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen> {
     super.dispose();
   }
 
+  Future<void> _chooseLocation() => showLocationSheet(
+        context,
+        onGps: () async {
+          await ref.read(prayerServiceProvider).locateQibla();
+          if (mounted) setState(() {});
+        },
+        onCity: (city) async {
+          await ref.read(prayerServiceProvider).setQiblaPlace(city);
+          if (mounted) setState(() {});
+        },
+      );
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    ref.watch(prayerSettingsProvider);
-    final qibla = ref.read(prayerServiceProvider).qiblaBearing();
-    final place = ref.read(prayerSettingsProvider).place;
+    final service = ref.read(prayerServiceProvider);
+    final qibla = service.qiblaBearing();
+    final place = service.qiblaPlace?.name;
 
     if (qibla == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Qibla')),
+        appBar: AppBar(title: const Text('Qibla · القبلة')),
         body: Center(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.explore_outlined, size: 56, color: c.primary),
-            const SizedBox(height: Space.lg),
-            Text('Set your location to find the Qibla', style: context.text.titleMedium),
-            const SizedBox(height: Space.lg),
-            FilledButton(onPressed: () => showLocationSheet(context), child: const Text('Choose location')),
-          ]),
+          child: Padding(
+            padding: const EdgeInsets.all(Space.gutter),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.explore_outlined, size: 56, color: c.primary),
+              const SizedBox(height: Space.lg),
+              Text('Where are you?', style: context.text.titleMedium),
+              const SizedBox(height: Space.sm),
+              Text('The Qibla direction depends on where you are. Your location stays on your phone.',
+                  textAlign: TextAlign.center, style: context.text.bodySmall),
+              const SizedBox(height: Space.lg),
+              FilledButton.icon(
+                onPressed: _chooseLocation,
+                icon: const Icon(Icons.my_location_rounded),
+                label: const Text('Set my location'),
+              ),
+            ]),
+          ),
         ),
       );
     }
@@ -76,12 +98,18 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen> {
     _aligned = aligned;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Qibla · القبلة')),
+      appBar: AppBar(title: const Text('Qibla · القبلة'), actions: [
+        IconButton(tooltip: 'Change location', icon: const Icon(Icons.edit_location_alt_outlined), onPressed: _chooseLocation),
+      ]),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(Space.gutter),
           child: Column(children: [
-            Text(place ?? 'My location', style: context.text.bodySmall),
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(Icons.place_outlined, size: 16, color: c.inkMuted),
+              const SizedBox(width: 4),
+              Flexible(child: Text(place ?? 'My location', style: context.text.bodySmall, overflow: TextOverflow.ellipsis)),
+            ]),
             const SizedBox(height: Space.sm),
             AnimatedSwitcher(
               duration: Motion.quick,

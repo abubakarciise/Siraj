@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 
 import '../catalog/catalog.dart';
@@ -59,7 +61,10 @@ class PlayerController {
     final p = _handler.player;
     p.playerStateStream.listen((_) => _emit());
     p.currentIndexStream.listen((_) => _onItemChanged());
-    p.positionStream.listen(_onPosition);
+    // 20 updates a second, so the ayah highlight switches within a frame or
+    // two of the reciter (the default stream ticks only every 200 ms).
+    p.createPositionStream(minPeriod: const Duration(milliseconds: 50), maxPeriod: const Duration(milliseconds: 50))
+        .listen(_onPosition);
     p.speedStream.listen((_) => _emit());
     p.loopModeStream.listen((_) => _emit());
   }
@@ -84,6 +89,7 @@ class PlayerController {
   DateTime? _sleepAt;
   bool _sleepEndOfSurah = false;
   DateTime _lastSave = DateTime.fromMillisecondsSinceEpoch(0);
+  Set<String>? _vbr;
 
   /// Fires only when the playing ayah changes (drives highlight + page follow).
   final currentAyah = ValueNotifier<AyahRef?>(null);
@@ -121,6 +127,10 @@ class PlayerController {
       if (ms > 5000) start = Duration(milliseconds: ms - 2000);
     }
 
+    // Variable-bitrate files without a seek table: Android would assume a
+    // constant bitrate and land seconds off on every seek, so index them instead.
+    _vbr ??= await _loadVbr();
+    final options = recitation.hasTiming && _vbr!.contains(recitation.server) ? _accurateSeeking : null;
     final items = <MediaItem>[];
     final sources = <AudioSource>[];
     for (final s in surahs) {
@@ -134,13 +144,39 @@ class PlayerController {
       );
       final local = _downloads.localFile(recitation.key, s);
       items.add(item);
-      sources.add(local != null
-          ? AudioSource.file(local.path, tag: item)
-          : AudioSource.uri(Uri.parse(recitation.urlFor(s)), tag: item));
+      sources.add(ProgressiveAudioSource(
+        local != null ? Uri.file(local.path) : Uri.parse(recitation.urlFor(s)),
+        tag: item,
+        options: options,
+      ));
     }
     await _handler.load(items, sources, position: start);
     await _onItemChanged();
     unawaited(_handler.play());
+  }
+
+  static const _accurateSeeking = ProgressiveAudioSourceOptions(
+    androidExtractorOptions: AndroidExtractorOptions(
+      constantBitrateSeekingEnabled: false,
+      mp3Flags: AndroidExtractorOptions.flagMp3EnableIndexSeeking,
+    ),
+  );
+
+  static Future<Set<String>> _loadVbr() async {
+    try {
+      return {...(jsonDecode(await rootBundle.loadString('assets/catalog/vbr.json')) as List).cast<String>()};
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  /// Player duration, or the end of the last ayah while an indexed VBR stream
+  /// has not reported one yet.
+  Duration get _duration {
+    final d = player.duration;
+    if (d != null && d > Duration.zero) return d;
+    final t = _surahTiming;
+    return t == null || t.ends.isEmpty ? Duration.zero : Duration(milliseconds: t.ends.last + 1500);
   }
 
   Future<void> toggle() => player.playing ? _handler.pause() : _handler.play();
@@ -291,7 +327,7 @@ class PlayerController {
       playing: ps.playing && ps.processingState != ProcessingState.completed,
       buffering: ps.processingState == ProcessingState.loading || ps.processingState == ProcessingState.buffering,
       position: player.position,
-      duration: player.duration ?? Duration.zero,
+      duration: _duration,
       speed: player.speed,
       repeat: _repeat,
       repeatTimes: _repeatTimes,

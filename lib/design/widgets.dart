@@ -6,6 +6,12 @@ import '../core/downloads/download_manager.dart';
 import 'theme.dart';
 import 'tokens.dart';
 
+extension TextScaled on BuildContext {
+  /// [size] scaled by the system font size, for boxes that hold text
+  /// (horizontal carousels need a fixed height).
+  double ts(double size) => MediaQuery.textScalerOf(this).scale(size);
+}
+
 /// Eight-pointed star (Rub el Hizb) path, used for medallions and ornaments.
 Path starPath(Offset center, double r) {
   final path = Path();
@@ -288,4 +294,18 @@ void showToast(BuildContext context, String message) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(message), duration: const Duration(seconds: 3)));
+}
+
+/// Title of a collapsing tab header: one line, shrinks instead of wrapping
+/// (narrow screens, large system fonts).
+class TabTitle extends StatelessWidget {
+  const TabTitle(this.text, {super.key});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: AlignmentDirectional.centerStart,
+        child: Text(text, maxLines: 1, style: Theme.of(context).textTheme.headlineSmall),
+      );
 }

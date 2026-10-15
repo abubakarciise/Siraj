@@ -72,7 +72,7 @@ class _RecitersScreenState extends ConsumerState<RecitersScreen> {
                 expandedHeight: 104,
                 flexibleSpace: FlexibleSpaceBar(
                   titlePadding: const EdgeInsetsDirectional.only(start: Space.gutter, bottom: 14),
-                  title: Text('Listen', style: context.text.headlineSmall),
+                  title: TabTitle('Listen'),
                 ),
               ),
               SliverToBoxAdapter(
@@ -112,7 +112,7 @@ class _RecitersScreenState extends ConsumerState<RecitersScreen> {
                 const SliverToBoxAdapter(child: SectionTitle('Featured')),
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: 150,
+                    height: 92 + context.ts(58),
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: Space.gutter),

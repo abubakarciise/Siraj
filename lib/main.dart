@@ -25,6 +25,12 @@ import 'core/user/user_store.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  // Phones stay in portrait (landscape leaves too little height for the
+  // reader and player); tablets rotate freely.
+  final view = WidgetsBinding.instance.platformDispatcher.views.first;
+  if (view.physicalSize.shortestSide / view.devicePixelRatio < 600) {
+    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  }
 
   // Everything is on-device: no backend, no account.
   final (db, user, prefs, hadith) =

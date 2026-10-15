@@ -12,18 +12,15 @@ class BuiltinSound {
   final String id, name, description;
 }
 
+/// Three calm, natural sounds with no music (tool/make_sounds.py).
 const kBuiltinSounds = [
-  BuiltinSound('chime', 'Soft chime', 'Two gentle bell notes'),
-  BuiltinSound('call', 'Gentle call', 'A calm five-note bell melody'),
-  BuiltinSound('bell', 'Crystal bell', 'One clear, ringing bell'),
-  BuiltinSound('oud', 'Oud', 'A short phrase in maqam Hijaz'),
-  BuiltinSound('harp', 'Harp', 'A rising arpeggio'),
-  BuiltinSound('dawn', 'Dawn', 'A warm, slowly rising chord'),
-  BuiltinSound('drop', 'Water drop', 'Short and discreet'),
+  BuiltinSound('tone', 'Soft tone', 'A plain, gentle tone'),
+  BuiltinSound('birds', 'Birdsong', 'A robin singing at dawn'),
+  BuiltinSound('stream', 'Flowing water', 'A quiet stream'),
 ];
 
 /// What a reminder sounds like. Stored as a short string:
-/// `builtin:<id>`, `default`, `silent`, or `uri:<content uri>|<title>` (Android).
+/// `builtin:<id>`, `default`, `silent` (vibration only), or `uri:<content uri>|<title>` (Android).
 @immutable
 class NotificationSound {
   const NotificationSound._(this.kind, [this.value = '', this.title = '']);
@@ -44,7 +41,7 @@ class NotificationSound {
         SoundKind.builtin => kBuiltinSounds.firstWhere((s) => s.id == value, orElse: () => kBuiltinSounds.first).name,
         SoundKind.device => title.isEmpty ? 'Phone sound' : title,
         SoundKind.systemDefault => 'Phone default',
-        SoundKind.silent => 'Silent',
+        SoundKind.silent => 'Vibration only',
       };
 
   /// Stable, channel-id-safe key (an Android channel's sound can never change).
@@ -52,7 +49,7 @@ class NotificationSound {
         SoundKind.builtin => value,
         SoundKind.device => 'u${_fnv(value)}',
         SoundKind.systemDefault => 'default',
-        SoundKind.silent => 'silent',
+        SoundKind.silent => 'vibrate',
       };
 
   String encode() => switch (kind) {

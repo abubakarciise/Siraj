@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/notifications/notifications.dart';
 import '../../core/notifications/sounds.dart';
+import '../../core/prayer/prayer.dart';
 import '../../core/providers.dart';
 import '../../core/reminders/reminders.dart';
 import '../../design/dialogs.dart';
@@ -117,9 +118,9 @@ class RemindersScreen extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 0),
                     child: Text(
-                      'Reminders follow the day: Surah Al-Kahf and salawat on Friday, fasting on Sunday and '
-                      'Wednesday evenings, the White Days, Ramadan and its last ten nights, Dhul Hijjah, Arafah '
-                      'and Ashura, and adhkar in the morning, evening and before sleep.',
+                      'Reminders follow the day: Surah Al-Kahf and salawat on Friday, a reminder the evening '
+                      'before the Monday and Thursday fasts, the White Days, Ramadan and its last ten nights, '
+                      'Dhul Hijjah, Arafah and Ashura, and adhkar in the morning, evening and before sleep.',
                       style: context.text.bodySmall,
                     ),
                   ),
@@ -134,6 +135,8 @@ class RemindersScreen extends ConsumerWidget {
                   ),
                 ]),
         ),
+        const _Label('Morning & evening adhkar'),
+        AdhkarReminderTiles(settings: ref.watch(prayerSettingsProvider)),
         const _Label('Hijri date'),
         ListTile(
           leading: Icon(Icons.calendar_month_outlined, color: c.primary),
@@ -172,8 +175,8 @@ class RemindersScreen extends ConsumerWidget {
           ),
         ListTile(
           leading: Icon(Icons.access_time_rounded, color: c.primary),
-          title: const Text('Prayer & adhkar times'),
-          subtitle: const Text('Choose which prayers alert you, and the adhkar times'),
+          title: const Text('Prayer time alerts'),
+          subtitle: const Text('Choose which prayers alert you'),
           trailing: const Icon(Icons.chevron_right_rounded),
           onTap: () => context.push('/prayer'),
         ),
@@ -343,10 +346,14 @@ class _SoundPickerState extends ConsumerState<_SoundPicker> {
 
     return Column(mainAxisSize: MainAxisSize.min, children: [
       for (final b in kBuiltinSounds)
-        tile(NotificationSound.builtin(b.id), b.name, b.description, Icons.music_note_rounded),
+        tile(NotificationSound.builtin(b.id), b.name, b.description, switch (b.id) {
+          'birds' => Icons.park_outlined,
+          'stream' => Icons.water_drop_outlined,
+          _ => Icons.notifications_none_rounded,
+        }),
       tile(NotificationSound.systemDefault, 'Phone default', 'Your phone\'s notification sound', Icons.phone_android_rounded),
       if (_device != null) tile(_device!, _device!.label, 'From your phone', Icons.library_music_outlined),
-      tile(NotificationSound.silent, 'Silent', 'Vibrate only', Icons.notifications_off_outlined),
+      tile(NotificationSound.silent, 'Vibration only', 'No sound, the phone vibrates', Icons.vibration_rounded),
       if (SoundService.canPickDeviceSound)
         ListTile(
           contentPadding: EdgeInsets.zero,
@@ -375,6 +382,68 @@ class _SoundPickerState extends ConsumerState<_SoundPicker> {
           label: const Text('Send a test notification'),
         ),
       ),
+    ]);
+  }
+}
+
+/// The morning and evening adhkar reminder: on/off and the two times.
+class AdhkarReminderTiles extends ConsumerWidget {
+  const AdhkarReminderTiles({super.key, required this.settings, this.padding});
+  final PrayerSettings settings;
+  final EdgeInsetsGeometry? padding;
+
+  Future<void> _pick(BuildContext context, WidgetRef ref, bool morning) async {
+    final t = await showTimePicker(context: context, initialTime: morning ? settings.morning : settings.evening);
+    if (t == null) return;
+    await ref
+        .read(prayerSettingsProvider.notifier)
+        .update(morning ? settings.copyWith(morning: t) : settings.copyWith(evening: t));
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
+    final s = settings;
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      SwitchListTile(
+        contentPadding: padding,
+        title: const Text('Morning & evening adhkar'),
+        subtitle: const Text('A reminder to read the morning adhkar and the evening adhkar, at the times you set'),
+        value: s.adhkarReminders,
+        onChanged: (v) async {
+          if (v) {
+            final ok = await ref.read(notificationsProvider).requestPermission();
+            if (!ok && context.mounted) {
+              await showAppDialog(
+                context,
+                icon: Icons.notifications_off_outlined,
+                title: 'Notifications are off',
+                message: 'Allow notifications for Siraj in your phone settings to receive reminders.',
+                cancelLabel: null,
+              );
+            }
+          }
+          await ref.read(prayerSettingsProvider.notifier).update(s.copyWith(adhkarReminders: v));
+        },
+      ),
+      if (s.adhkarReminders) ...[
+        ListTile(
+          contentPadding: padding,
+          leading: Icon(Icons.wb_twilight_rounded, color: c.primary),
+          title: const Text('Morning adhkar reminder'),
+          subtitle: const Text('Time to read the morning adhkar'),
+          trailing: Text(s.morning.format(context), style: context.text.titleMedium?.copyWith(color: c.primary)),
+          onTap: () => _pick(context, ref, true),
+        ),
+        ListTile(
+          contentPadding: padding,
+          leading: Icon(Icons.nights_stay_outlined, color: c.primary),
+          title: const Text('Evening adhkar reminder'),
+          subtitle: const Text('Time to read the evening adhkar'),
+          trailing: Text(s.evening.format(context), style: context.text.titleMedium?.copyWith(color: c.primary)),
+          onTap: () => _pick(context, ref, false),
+        ),
+      ],
     ]);
   }
 }

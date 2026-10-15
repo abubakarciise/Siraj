@@ -23,14 +23,14 @@ extension ReminderKindX on ReminderKind {
 
   String get description => switch (this) {
         ReminderKind.prayer => 'A reminder when each prayer time begins',
-        ReminderKind.adhkar => 'Morning and evening remembrance',
+        ReminderKind.adhkar => 'A reminder to read the morning and evening adhkar',
         ReminderKind.daily => 'An ayah, hadith, sunnah or dua through the day',
       };
 
   NotificationSound get defaultSound => switch (this) {
-        ReminderKind.prayer => const NotificationSound.builtin('call'),
-        ReminderKind.adhkar => const NotificationSound.builtin('chime'),
-        ReminderKind.daily => const NotificationSound.builtin('harp'),
+        ReminderKind.prayer => const NotificationSound.builtin('tone'),
+        ReminderKind.adhkar => const NotificationSound.builtin('birds'),
+        ReminderKind.daily => const NotificationSound.builtin('stream'),
       };
 }
 
@@ -112,6 +112,7 @@ class NotificationService {
         _ => null,
       },
       enableVibration: true,
+      vibrationPattern: _vibration,
     ));
     // Remove channels for sounds no longer used (and the v1 channels, which
     // could have been created silent and can never be changed afterwards).
@@ -121,6 +122,9 @@ class NotificationService {
       if (stale) await android.deleteNotificationChannel(channelId: ch.id);
     }
   }
+
+  /// Two soft pulses; the only signal when a reminder is set to vibration only.
+  static final _vibration = Int64List.fromList([0, 250, 180, 250]);
 
   NotificationDetails _details(ReminderKind kind, {String? body}) {
     final sound = soundFor(kind);
@@ -137,6 +141,8 @@ class NotificationService {
           SoundKind.device => UriAndroidNotificationSound(sound.value),
           _ => null,
         },
+        enableVibration: true,
+        vibrationPattern: _vibration,
         category: kind == ReminderKind.prayer ? AndroidNotificationCategory.alarm : AndroidNotificationCategory.reminder,
         styleInformation: body == null ? null : BigTextStyleInformation(body),
       ),

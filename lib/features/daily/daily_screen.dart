@@ -4,10 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/prayer/prayer.dart';
 import '../../core/providers.dart';
-import '../../design/dialogs.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
 import 'adhkar_screen.dart';
+import '../settings/reminders_screen.dart';
 import 'prayer_widgets.dart';
 
 /// "Daily" tab: prayer times, adhkar, tasbih, qibla and reminders.
@@ -33,7 +33,7 @@ class DailyScreen extends ConsumerWidget {
           expandedHeight: 104,
           flexibleSpace: FlexibleSpaceBar(
             titlePadding: const EdgeInsetsDirectional.only(start: Space.gutter, bottom: 14),
-            title: Text('Daily', style: context.text.headlineSmall),
+            title: TabTitle('Daily'),
           ),
         ),
         const SliverPadding(
@@ -81,18 +81,22 @@ class DailyScreen extends ConsumerWidget {
         const SliverToBoxAdapter(child: SectionTitle('Essentials')),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-          sliver: SliverGrid.count(
-            crossAxisCount: 2,
-            mainAxisSpacing: Space.md,
-            crossAxisSpacing: Space.md,
-            childAspectRatio: 1.35,
-            children: [
+          sliver: SliverGrid(
+            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+              // 2 columns on phones, 3–4 on tablets; height follows the font size.
+              maxCrossAxisExtent: 240,
+              mainAxisSpacing: Space.md,
+              crossAxisSpacing: Space.md,
+              mainAxisExtent: 82 + context.ts(46),
+            ),
+            delegate: SliverChildListDelegate([
               _Tile(Icons.auto_stories_outlined, 'Adhkar', 'الأذكار', () => context.push('/adhkar')),
               _Tile(Icons.blur_circular_rounded, 'Tasbih', 'التسبيح', () => context.push('/tasbih')),
               _Tile(Icons.access_time_rounded, 'Prayer times', 'مواقيت الصلاة', () => context.push('/prayer')),
+              _Tile(Icons.explore_outlined, 'Qibla', 'القبلة', () => context.push('/qibla')),
               _Tile(Icons.bedtime_outlined, 'Before sleep', 'أذكار النوم', () => context.push('/adhkar/sleep')),
               _Tile(Icons.mosque_outlined, 'After prayer', 'بعد الصلاة', () => context.push('/adhkar/after_salah')),
-            ],
+            ]),
           ),
         ),
         const SliverToBoxAdapter(child: SectionTitle('Reminders')),
@@ -129,7 +133,7 @@ class _Tile extends StatelessWidget {
             ),
             const Spacer(),
             Text(title, style: context.text.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
-            Text(arabic, style: context.text.bodySmall, maxLines: 1),
+            Text(arabic, style: context.text.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
           ]),
         ),
       ),
@@ -141,56 +145,12 @@ class _Reminders extends ConsumerWidget {
   const _Reminders({required this.settings});
   final PrayerSettings settings;
 
-  Future<void> _pick(BuildContext context, WidgetRef ref, bool morning) async {
-    final t = await showTimePicker(context: context, initialTime: morning ? settings.morning : settings.evening);
-    if (t == null) return;
-    await ref
-        .read(prayerSettingsProvider.notifier)
-        .update(morning ? settings.copyWith(morning: t) : settings.copyWith(evening: t));
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
     final s = settings;
     return Column(children: [
-      SwitchListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-        title: const Text('Morning & evening adhkar'),
-        subtitle: const Text('A gentle daily reminder'),
-        value: s.adhkarReminders,
-        onChanged: (v) async {
-          if (v) {
-            final ok = await ref.read(notificationsProvider).requestPermission();
-            if (!ok && context.mounted) {
-              await showAppDialog(
-                context,
-                icon: Icons.notifications_off_outlined,
-                title: 'Notifications are off',
-                message: 'Allow notifications for Siraj in your phone settings to receive reminders.',
-                cancelLabel: null,
-              );
-            }
-          }
-          await ref.read(prayerSettingsProvider.notifier).update(s.copyWith(adhkarReminders: v));
-        },
-      ),
-      if (s.adhkarReminders) ...[
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-          leading: Icon(Icons.wb_twilight_rounded, color: c.primary),
-          title: const Text('Morning reminder'),
-          trailing: Text(s.morning.format(context), style: context.text.titleMedium?.copyWith(color: c.primary)),
-          onTap: () => _pick(context, ref, true),
-        ),
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-          leading: Icon(Icons.nights_stay_outlined, color: c.primary),
-          title: const Text('Evening reminder'),
-          trailing: Text(s.evening.format(context), style: context.text.titleMedium?.copyWith(color: c.primary)),
-          onTap: () => _pick(context, ref, false),
-        ),
-      ],
+      AdhkarReminderTiles(settings: s, padding: const EdgeInsets.symmetric(horizontal: Space.gutter)),
       ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: Space.gutter),
         leading: Icon(Icons.auto_awesome_outlined, color: c.primary),

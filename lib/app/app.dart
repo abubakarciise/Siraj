@@ -19,6 +19,22 @@ class QuranApp extends ConsumerWidget {
       theme: buildTheme(kind),
       themeAnimationDuration: const Duration(milliseconds: 320),
       routerConfig: appRouter,
+      // Large tablets and landscape: keep a readable column instead of
+      // stretching lines across the whole screen.
+      builder: (context, child) {
+        final media = MediaQuery.of(context);
+        const maxWidth = 760.0;
+        if (media.size.width <= maxWidth + 120 || child == null) return child ?? const SizedBox();
+        return ColoredBox(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: maxWidth),
+              child: MediaQuery(data: media.copyWith(size: Size(maxWidth, media.size.height)), child: child),
+            ),
+          ),
+        );
+      },
     );
   }
 }

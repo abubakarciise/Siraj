@@ -9,6 +9,10 @@ const kQuranFont = 'Hafs';
 /// Classical Naskh for non-Quran Arabic (adhkar, duas); the Hafs font is Quran-only.
 const kNaskhFont = 'Amiri';
 
+/// Plex has no Latin transliteration letters (ḥ ṣ ṭ ḍ ẓ ʿ in "Muḥammad", "Ṣalāh"):
+/// fall back to the system sans, then to Amiri, which ships with the app.
+const kUiFallback = ['Roboto', 'sans-serif', kNaskhFont];
+
 ThemeData buildTheme(AppThemeKind kind) => buildThemeFrom(AppColors.of(kind));
 
 ThemeData buildThemeFrom(AppColors c) {
@@ -30,6 +34,7 @@ ThemeData buildThemeFrom(AppColors c) {
 
   TextStyle s(double size, double height, FontWeight w, Color color, [double ls = 0]) => TextStyle(
         fontFamily: kUiFont,
+        fontFamilyFallback: kUiFallback,
         fontSize: size,
         height: height / size,
         fontWeight: w,
@@ -55,6 +60,7 @@ ThemeData buildThemeFrom(AppColors c) {
     colorScheme: scheme,
     scaffoldBackgroundColor: c.bg,
     fontFamily: kUiFont,
+    fontFamilyFallback: kUiFallback,
     textTheme: textTheme,
     extensions: [c],
     splashFactory: InkSparkle.splashFactory,

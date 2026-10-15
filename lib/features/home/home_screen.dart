@@ -58,7 +58,11 @@ class HomeScreen extends ConsumerWidget {
                     Text('${hijri.day} ${hijri.monthName} ${hijri.year} AH',
                         style: context.text.labelSmall?.copyWith(color: c.gold)),
                     const SizedBox(height: Space.xs),
-                    Text(_greeting(), style: context.text.displaySmall),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Text(_greeting(), maxLines: 1, style: context.text.displaySmall),
+                    ),
                     const SizedBox(height: 2),
                     Text('السلام عليكم ورحمة الله',
                         style: TextStyle(fontFamily: kNaskhFont, fontSize: 16, color: c.inkMuted, height: 1.5)),
@@ -191,7 +195,7 @@ class HomeScreen extends ConsumerWidget {
           SliverToBoxAdapter(child: SectionTitle(isFriday ? "Jumu'ah · Quick access" : 'Quick access')),
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 92,
+              height: 24 + context.ts(68),
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
@@ -212,8 +216,8 @@ class HomeScreen extends ConsumerWidget {
                           Text(s.nameAr,
                               style: TextStyle(fontFamily: kQuranFont, fontSize: 20, color: c.ink, height: 1.3)),
                           const Spacer(),
-                          Text(s.nameEn, style: context.text.titleMedium),
-                          Text('${s.ayahCount} ayahs', style: context.text.bodySmall),
+                          Text(s.nameEn, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleMedium),
+                          Text('${s.ayahCount} ayahs', maxLines: 1, style: context.text.bodySmall),
                         ]),
                       ),
                     ),
@@ -429,16 +433,17 @@ class _SmallCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(Radii.lg),
         onTap: onTap,
         child: Container(
-          height: 132,
+          // Grows with large system fonts instead of overflowing.
+          constraints: const BoxConstraints(minHeight: 132),
           padding: const EdgeInsets.all(Space.lg),
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(Radii.lg), border: Border.all(color: c.divider)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(color: c.primarySoft, borderRadius: BorderRadius.circular(Radii.sm)),
               child: Icon(icon, size: 18, color: c.primary),
             ),
-            const Spacer(),
+            const SizedBox(height: Space.lg),
             Text(overline, style: context.text.labelSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
             Text(title, style: context.text.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
             Text(subtitle, style: context.text.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),

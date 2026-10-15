@@ -15,8 +15,6 @@
   <img alt="License" src="https://img.shields.io/badge/license-MIT-D5B26C">
 </p>
 
-> *Siraj* means "lamp". In the Quran (33:46) the Prophet ﷺ is called *sirājan munīrā*, "a light-giving lamp".
-
 ## Screenshots
 
 | Home | Mushaf | Follow the recitation |
@@ -41,9 +39,11 @@
 - **Daily reminders.** An ayah, a surah, a hadith, a sunnah or a dhikr every 1, 2, 3, 4, 6 or 8 hours, only during
   the hours you choose. Reminders follow the day: al-Kahf and salawat on Friday, fasting on Mondays and Thursdays, the
   White Days, Ramadan and its last ten nights, Dhul Hijjah, Arafah, Ashura, and morning, evening and bedtime adhkar.
-- **Prayer times & Qibla.** Calculated on the phone, with 11 methods, Hanafi/Standard Asr, and prayer alerts.
-- **Your sounds.** Choose the sound for each kind of reminder: original built-in sounds, your phone's default, silent,
-  or any sound on your phone.
+  A separate reminder at the times you choose to read the morning and evening adhkar.
+- **Prayer times & Qibla.** Calculated on the phone, with 11 methods, Hanafi/Standard Asr, prayer alerts and a Qibla
+  compass.
+- **Your sounds.** Choose the sound for each kind of reminder: a soft tone, birdsong or flowing water (calm, with no
+  music), your phone's default, vibration only, or any sound on your phone.
 - **Adhkar & tasbih.** Hisn al-Muslim in 8 categories, with tap-to-count cards and a tasbih counter.
 - **Appearance.** Light, Dark and true-black Midnight themes, with the Mushaf page colour set separately (Ivory, White,
   Sepia, Dark, Black).
@@ -58,14 +58,15 @@ flutter test                # unit tests, Mushaf page goldens, renderer benchmar
 flutter build apk --release --split-per-abi
 ```
 
-Bundled content can be rebuilt with the scripts in `tool/` (Python 3 with Pillow, NumPy and SciPy):
+Bundled content can be rebuilt with the scripts in `tool/` (Python 3 with Pillow, NumPy, SciPy and resvg-py; ffmpeg for the sounds):
 
 ```bash
 python tool/build_quran_db.py   # Quran text, Mushaf layout, translations -> assets/db/quran.db
 python tool/build_hadith.py     # hadith catalog, 40-hadith books, Sunnah reminders -> assets/db/hadith.db
 python tool/build_catalog.py    # reciters -> assets/catalog/reciters.json
-python tool/make_sounds.py      # reminder sounds -> assets/sounds, res/raw
-python tool/make_icons.py       # app icon, splash and logo
+python tool/scan_vbr.py         # variable-bitrate recitations (accurate seeking) -> assets/catalog/vbr.json
+python tool/make_sounds.py      # reminder sounds -> assets/sounds, res/raw (needs ffmpeg)
+python tool/make_icons.py       # app icon, splash and logo from one SVG (needs resvg-py)
 ```
 
 ## Project structure
@@ -94,5 +95,6 @@ shown comes from the source collections with its reference and grade.
 - Hadith: [fawazahmed0/hadith-api](https://github.com/fawazahmed0/hadith-api) (public domain).
 - Adhkar: Hisn al-Muslim. Prayer times: the open-source Adhan library. Hijri dates: Umm al-Qura.
 - Fonts: IBM Plex Sans Arabic and Amiri (SIL Open Font License).
+- Reminder sounds: "Robin's song ZS V78-0033" and "363120 fractalstudios water-trickle" from Wikimedia Commons (CC0).
 
 The app code is released under the [MIT License](LICENSE). Bundled content keeps its own terms.

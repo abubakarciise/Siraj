@@ -121,7 +121,7 @@ class HadithRepository {
   final _downloads = StreamController<HadithDownload>.broadcast();
   final _active = <String, HadithDownload>{};
 
-  static const _assetVersion = 1;
+  static const _assetVersion = 2;
   static const _cdn = 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions';
 
   Stream<HadithDownload> get downloads => _downloads.stream;
@@ -189,6 +189,13 @@ class HadithRepository {
         for (final r in hadiths) {
           b.insert('hadiths', {...r, 'ar_search': normalizeArabic(r['arabic'] as String? ?? '')},
               conflictAlgorithm: ConflictAlgorithm.replace);
+        }
+        // Collections no longer in the catalog are removed with their bookmarks.
+        final ids = [for (final r in books) r['id']];
+        final keep = 'NOT IN (${List.filled(ids.length, '?').join(',')})';
+        b.delete('books', where: 'id $keep', whereArgs: ids);
+        for (final t in ['sections', 'hadiths', 'bookmarks']) {
+          b.delete(t, where: 'book $keep', whereArgs: ids);
         }
         b.execute('PRAGMA user_version = ${100 + _assetVersion}');
         await b.commit(noResult: true);
@@ -269,7 +276,7 @@ class HadithRepository {
   Future<Hadith?> ofTheDay(DateTime day) async {
     // Hadith that need a teacher's context are left out of the context-free daily card.
     final rows = await _db.query('hadiths',
-        where: "book IN ('nawawi','qudsi') AND NOT (book = 'nawawi' AND number IN (8, 14)) AND length(english) < 900",
+        where: "book IN ('nawawi','qudsi') AND NOT (book = 'nawawi' AND number IN (8, 14)) AND length(english) < 900 AND length(arabic) < 800",
         orderBy: 'book, number');
     if (rows.isEmpty) return null;
     final index = (day.year * 372 + day.month * 31 + day.day) % rows.length;

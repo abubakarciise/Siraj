@@ -10,6 +10,7 @@ import '../features/daily/tasbih_screen.dart';
 import '../features/hadith/hadith_screens.dart';
 import '../features/home/home_screen.dart';
 import '../features/library/library_screen.dart';
+import '../features/memorize/memorize_screens.dart';
 import '../features/player/player_screen.dart';
 import '../features/quran_index/quran_index_screen.dart';
 import '../features/reader/reader_screen.dart';
@@ -131,13 +132,17 @@ final appRouter = GoRouter(
         GoRoute(
           path: ':id',
           parentNavigatorKey: _rootKey,
-          builder: (_, s) => AdhkarScreen(categoryId: s.pathParameters['id']!),
+          builder: (_, s) => AdhkarScreen(
+            categoryId: s.pathParameters['id']!,
+            autoListen: s.uri.queryParameters['listen'] == '1',
+          ),
         ),
       ],
     ),
     GoRoute(path: '/settings', parentNavigatorKey: _rootKey, builder: (_, _) => const SettingsScreen()),
     GoRoute(path: '/reminders', parentNavigatorKey: _rootKey, builder: (_, _) => const RemindersScreen()),
     GoRoute(path: '/library', parentNavigatorKey: _rootKey, builder: (_, _) => const LibraryScreen()),
+    GoRoute(path: '/memorize', parentNavigatorKey: _rootKey, builder: (_, _) => const MemorizeScreen()),
     GoRoute(path: '/hadith-search', parentNavigatorKey: _rootKey, builder: (_, _) => const HadithSearchScreen()),
     GoRoute(path: '/hadith-saved', parentNavigatorKey: _rootKey, builder: (_, _) => const SavedHadithScreen()),
     GoRoute(

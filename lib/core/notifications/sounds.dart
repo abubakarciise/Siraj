@@ -12,11 +12,12 @@ class BuiltinSound {
   final String id, name, description;
 }
 
-/// Three calm, natural sounds with no music (tool/make_sounds.py).
+/// Short nature sounds with no music (tool/make_sounds.py).
 const kBuiltinSounds = [
-  BuiltinSound('tone', 'Soft tone', 'A plain, gentle tone'),
+  BuiltinSound('ocean', 'Ocean waves', 'One slow wave on the shore'),
   BuiltinSound('birds', 'Birdsong', 'A robin singing at dawn'),
   BuiltinSound('stream', 'Flowing water', 'A quiet stream'),
+  BuiltinSound('rain', 'Gentle rain', 'Light rain falling'),
 ];
 
 /// What a reminder sounds like. Stored as a short string:

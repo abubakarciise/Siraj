@@ -108,6 +108,9 @@ class QuranDb {
   Future<List<Ayah>> ayahsOfSurah(int surah) async =>
       (await _db.query('ayahs', where: 'surah = ?', whereArgs: [surah], orderBy: 'ayah')).map(_ayahFromRow).toList();
 
+  Future<List<Ayah>> ayahsOfJuz(int juz) async =>
+      (await _db.query('ayahs', where: 'juz = ?', whereArgs: [juz], orderBy: 'id')).map(_ayahFromRow).toList();
+
   Future<int> pageOf(AyahRef ref) async => (await ayah(ref)).page;
 
   /// All translations of one surah, keyed by ayah number.

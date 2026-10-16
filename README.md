@@ -22,8 +22,10 @@
 | <img src="docs/screenshots/01_home.png" width="260"> | <img src="docs/screenshots/02_reader.png" width="260"> | <img src="docs/screenshots/03_player.png" width="260"> |
 | **Hadith & Sunnah** | **Hadith** | **Daily reminders** |
 | <img src="docs/screenshots/04_hadith.png" width="260"> | <img src="docs/screenshots/05_hadith_detail.png" width="260"> | <img src="docs/screenshots/06_reminders.png" width="260"> |
-| **Reminder sounds** | **Appearance** | **Dark** |
+| **Reminder sounds** | **Settings** | **Dark** |
 | <img src="docs/screenshots/07_sounds.png" width="260"> | <img src="docs/screenshots/08_appearance.png" width="260"> | <img src="docs/screenshots/09_home_dark.png" width="260"> |
+| **Listen to adhkar** | **Listen to hadith** | **Memorization test** |
+| <img src="docs/screenshots/10_adhkar_listen.png" width="260"> | <img src="docs/screenshots/11_hadith_listen.png" width="260"> | <img src="docs/screenshots/12_memorize.png" width="260"> |
 
 ## Features
 
@@ -35,18 +37,23 @@
   reciters with timing data and estimated for the rest. Tap any ayah to jump to it.
 - **Hadith & Sunnah.** Sahih al-Bukhari, Sahih Muslim, Abu Dawud, at-Tirmidhi, an-Nasa'i, Ibn Majah, Muwatta Malik,
   40 Nawawi, 40 Qudsi: Arabic, English and grades, searchable and offline. Includes a hadith of the day and 41 Sunnah
-  practices with their sources.
+  practices with their sources. Listen to any chapter, one hadith after another, in Arabic or English (phone voice).
+- **Memorization test.** Test a surah, part of a surah or a juz: next ayah, previous ayah, complete the ayah, missing
+  word, arrange the words, which surah, and recite from memory. Mistakes are listed for revision and can be practised
+  again.
 - **Daily reminders.** An ayah, a surah, a hadith, a sunnah or a dhikr every 1, 2, 3, 4, 6 or 8 hours, only during
   the hours you choose. Reminders follow the day: al-Kahf and salawat on Friday, fasting on Mondays and Thursdays, the
   White Days, Ramadan and its last ten nights, Dhul Hijjah, Arafah, Ashura, and morning, evening and bedtime adhkar.
   A separate reminder at the times you choose to read the morning and evening adhkar.
 - **Prayer times & Qibla.** Calculated on the phone, with 11 methods, Hanafi/Standard Asr, prayer alerts and a Qibla
   compass.
-- **Your sounds.** Choose the sound for each kind of reminder: a soft tone, birdsong or flowing water (calm, with no
-  music), your phone's default, vibration only, or any sound on your phone.
-- **Adhkar & tasbih.** Hisn al-Muslim in 8 categories, with tap-to-count cards and a tasbih counter.
-- **Appearance.** Light, Dark and true-black Midnight themes, with the Mushaf page colour set separately (Ivory, White,
-  Sepia, Dark, Black).
+- **Your sounds.** Choose the sound for each kind of reminder: ocean waves, birdsong, flowing water or gentle rain
+  (nature sounds, no music), your phone's default, vibration only, or any sound on your phone.
+- **Adhkar & tasbih.** Hisn al-Muslim in 8 categories, with tap-to-count cards and a tasbih counter. Listen to a whole
+  category: each dhikr is recited by a human voice, repeated as many times as prescribed while the counter counts
+  down, then the next one begins. Quranic adhkar are recited by Mishary Alafasy.
+- **Appearance.** Light, Dark and true-black Midnight themes. The Mushaf page colour (Ivory, White, Sepia, Dark, Black)
+  can differ, and everything on the reading screen takes the page colour.
 - **Private.** No account, no ads, no analytics. Bookmarks, history and downloads stay on the device.
 
 ## Build
@@ -65,6 +72,8 @@ python tool/build_quran_db.py   # Quran text, Mushaf layout, translations -> ass
 python tool/build_hadith.py     # hadith catalog, 40-hadith books, Sunnah reminders -> assets/db/hadith.db
 python tool/build_catalog.py    # reciters -> assets/catalog/reciters.json
 python tool/scan_vbr.py         # variable-bitrate recitations (accurate seeking) -> assets/catalog/vbr.json
+python tool/build_adhkar.py     # Hisn al-Muslim adhkar -> assets/adhkar/adhkar.json
+python tool/build_adhkar_audio.py  # a verified recording cut for each dhikr -> assets/adhkar/audio.json (faster-whisper)
 python tool/make_sounds.py      # reminder sounds -> assets/sounds, res/raw (needs ffmpeg)
 python tool/make_icons.py       # app icon, splash and logo from one SVG (needs resvg-py)
 ```
@@ -93,8 +102,10 @@ shown comes from the source collections with its reference and grade.
 - Translations: Saheeh International; Mahmud Muhammad Abduh (Somali).
 - Recitations and ayah timings: [mp3quran.net](https://mp3quran.net), streamed from their servers.
 - Hadith: [fawazahmed0/hadith-api](https://github.com/fawazahmed0/hadith-api) (public domain).
-- Adhkar: Hisn al-Muslim. Prayer times: the open-source Adhan library. Hijri dates: Umm al-Qura.
+- Adhkar: Hisn al-Muslim. Adhkar recordings: [hisnmuslim.com](https://www.hisnmuslim.com) and, for Quranic adhkar,
+  Mishary Alafasy via [everyayah.com](https://everyayah.com); streamed, never re-hosted. Prayer times: the open-source Adhan library. Hijri dates: Umm al-Qura.
 - Fonts: IBM Plex Sans Arabic and Amiri (SIL Open Font License).
-- Reminder sounds: "Robin's song ZS V78-0033" and "363120 fractalstudios water-trickle" from Wikimedia Commons (CC0).
+- Reminder sounds from Wikimedia Commons (CC0): "Ocean Waves on a Tropical Beach", "Robin's song ZS V78-0033",
+  "363120 fractalstudios water-trickle" and "Light Rain Distant Thunder July 5th 2016".
 
 The app code is released under the [MIT License](LICENSE). Bundled content keeps its own terms.

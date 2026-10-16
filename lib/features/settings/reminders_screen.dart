@@ -347,8 +347,10 @@ class _SoundPickerState extends ConsumerState<_SoundPicker> {
     return Column(mainAxisSize: MainAxisSize.min, children: [
       for (final b in kBuiltinSounds)
         tile(NotificationSound.builtin(b.id), b.name, b.description, switch (b.id) {
+          'ocean' => Icons.waves_rounded,
           'birds' => Icons.park_outlined,
           'stream' => Icons.water_drop_outlined,
+          'rain' => Icons.grain_rounded,
           _ => Icons.notifications_none_rounded,
         }),
       tile(NotificationSound.systemDefault, 'Phone default', 'Your phone\'s notification sound', Icons.phone_android_rounded),

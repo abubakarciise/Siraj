@@ -2,18 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../app/payload.dart';
 import '../../app/shell.dart';
+import '../../core/prayer/prayer.dart';
 import '../../core/providers.dart';
 import '../../core/quran/models.dart';
 import '../../design/theme.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../daily/adhkar_screen.dart' show adhkarDoneToday;
 import '../daily/prayer_widgets.dart';
 import '../player/play_actions.dart';
 
+/// Home is the same every day, top to bottom: the next prayer, where you
+/// left off, the adhkar for this time of day, one ayah, and practice.
+/// Nothing on it is random.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
+
+  static const _weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
   String _greeting() {
     final h = DateTime.now().hour;
@@ -32,9 +38,8 @@ class HomeScreen extends ConsumerWidget {
     final catalog = ref.watch(catalogProvider).value;
     final aotd = ref.watch(ayahOfDayProvider).value;
     final hijri = ref.watch(hijriTodayProvider);
-    final remindersOn = ref.watch(dailyRemindersProvider.select((s) => s.enabled));
-    final isFriday = DateTime.now().weekday == DateTime.friday;
-    final quick = isFriday ? [18, 36, 67, 55, 56] : [36, 18, 67, 55, 56];
+    final now = DateTime.now();
+    final isFriday = now.weekday == DateTime.friday;
 
     final lastSurah = last == null ? null : db.surah(last.ref.surah);
     final progress = last == null || lastSurah == null
@@ -45,36 +50,31 @@ class HomeScreen extends ConsumerWidget {
     final listenReciter = listenRec == null ? null : catalog?.reciter(listenRec.reciterId);
 
     return Scaffold(
-      // Keep scrolled content out from under the status bar.
       body: SafeArea(
         bottom: false,
         child: CustomScrollView(slivers: [
+          // ---- Header ----
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.xs, 0),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              child: Row(children: [
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('${hijri.day} ${hijri.monthName} ${hijri.year} AH',
-                        style: context.text.labelSmall?.copyWith(color: c.gold)),
-                    const SizedBox(height: Space.xs),
+                    Text(
+                      '${_weekdays[now.weekday - 1]} · ${hijri.day} ${hijri.monthName} ${hijri.year}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.bodySmall?.copyWith(color: c.gold),
+                    ),
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       alignment: AlignmentDirectional.centerStart,
-                      child: Text(_greeting(), maxLines: 1, style: context.text.displaySmall),
+                      child: Text(_greeting(), maxLines: 1, style: context.text.headlineSmall),
                     ),
-                    const SizedBox(height: 2),
-                    Text('السلام عليكم ورحمة الله',
-                        style: TextStyle(fontFamily: kNaskhFont, fontSize: 16, color: c.inkMuted, height: 1.5)),
                   ]),
                 ),
                 IconButton(
                     tooltip: 'Search', icon: const Icon(Icons.search_rounded), onPressed: () => context.push('/search')),
-                IconButton(
-                  tooltip: 'Bookmarks & downloads',
-                  icon: const Icon(Icons.bookmarks_outlined),
-                  onPressed: () => context.push('/library'),
-                ),
                 IconButton(
                   tooltip: 'Settings',
                   icon: const Icon(Icons.settings_outlined),
@@ -84,12 +84,13 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
 
+          // ---- Next prayer, one line ----
           const SliverPadding(
-            padding: EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, 0),
-            sliver: SliverToBoxAdapter(child: PrayerCard()),
+            padding: EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, 0),
+            sliver: SliverToBoxAdapter(child: _NextPrayerStrip()),
           ),
 
-          // ---- Continue reading (hero card) ----
+          // ---- Continue reading ----
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 0),
@@ -104,54 +105,40 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
 
-          // ---- Continue listening + hadith ----
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 0),
-              child: Row(children: [
-                Expanded(
-                  child: _SmallCard(
-                    icon: Icons.headphones_rounded,
-                    overline: listenReciter == null ? 'LISTEN' : 'CONTINUE LISTENING',
-                    title: listening == null ? 'Choose a reciter' : db.surah(listening.surah).nameEn,
-                    subtitle: listenReciter?.name ?? '240+ reciters',
-                    onTap: () {
-                      if (listenRec != null && listenReciter != null && listening != null) {
-                        playRecitation(context, ref, listenReciter, listenRec, listening.surah, resume: true);
-                      } else {
-                        context.go('/listen');
-                      }
-                    },
-                  ),
+          // ---- Continue listening (only once there is something to continue) ----
+          if (listening != null && listenRec != null && listenReciter != null)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 0),
+                child: _Row(
+                  icon: Icons.headphones_rounded,
+                  title: db.surah(listening.surah).nameEn,
+                  subtitle: listenReciter.name,
+                  trailing: Icon(Icons.play_circle_fill_rounded, color: c.primary, size: 36),
+                  onTap: () => playRecitation(context, ref, listenReciter, listenRec, listening.surah, resume: true),
                 ),
-                const SizedBox(width: Space.md),
-                Expanded(
-                  child: _SmallCard(
-                    icon: Icons.auto_stories_rounded,
-                    overline: 'HADITH & SUNNAH',
-                    title: 'Collections',
-                    subtitle: 'Bukhari, Muslim, 40 Nawawi…',
-                    onTap: () => context.go('/hadith'),
-                  ),
-                ),
-              ]),
+              ),
             ),
-          ),
 
-          // ---- For you today: follows the day, the Hijri date and the hour ----
-          const SliverToBoxAdapter(child: SectionTitle('For you today')),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-              child: Column(children: [
-                const _ForYouCard(),
-                if (!remindersOn) ...[
-                  const SizedBox(height: Space.md),
-                  _RemindersPrompt(onTap: () => context.push('/reminders')),
-                ],
-              ]),
-            ),
+          // ---- Adhkar for this time of day ----
+          const SliverToBoxAdapter(child: SectionTitle('Today')),
+          const SliverPadding(
+            padding: EdgeInsets.symmetric(horizontal: Space.gutter),
+            sliver: SliverToBoxAdapter(child: _AdhkarNow()),
           ),
+          if (isFriday)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 0),
+                child: _Row(
+                  icon: Icons.menu_book_rounded,
+                  title: "Surah Al-Kahf · Jumu'ah",
+                  subtitle: 'The Sunnah of Friday',
+                  trailing: Icon(Icons.chevron_right_rounded, color: c.inkMuted),
+                  onTap: () => context.openReader(db.surah(18).pageStart, surah: 18),
+                ),
+              ),
+            ),
 
           // ---- Ayah of the day ----
           if (aotd != null) ...[
@@ -161,16 +148,15 @@ class HomeScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
                 child: Material(
                   color: c.surface,
-                  borderRadius: BorderRadius.circular(Radii.lg),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(Radii.lg),
+                    side: BorderSide(color: c.divider),
+                  ),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(Radii.lg),
                     onTap: () => context.openReader(aotd.page, ayah: aotd.ref.toString()),
-                    child: Container(
+                    child: Padding(
                       padding: const EdgeInsets.all(Space.xl),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(Radii.lg),
-                        border: Border.all(color: c.divider),
-                      ),
                       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                         Text(
                           aotd.text,
@@ -182,7 +168,7 @@ class HomeScreen extends ConsumerWidget {
                         _AyahTranslation(surah: aotd.ref.surah, ayah: aotd.ref.ayah),
                         const SizedBox(height: Space.md),
                         Text('${db.surah(aotd.ref.surah).nameEn} ${aotd.ref}',
-                            style: context.text.labelSmall?.copyWith(color: c.gold)),
+                            textAlign: TextAlign.center, style: context.text.labelSmall?.copyWith(color: c.gold)),
                       ]),
                     ),
                   ),
@@ -191,96 +177,66 @@ class HomeScreen extends ConsumerWidget {
             ),
           ],
 
-          // ---- Quick access ----
-          SliverToBoxAdapter(child: SectionTitle(isFriday ? "Jumu'ah · Quick access" : 'Quick access')),
+          // ---- Practice ----
+          const SliverToBoxAdapter(child: SectionTitle('Practice')),
           SliverToBoxAdapter(
-            child: SizedBox(
-              height: 24 + context.ts(68),
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-                itemCount: quick.length,
-                separatorBuilder: (_, _) => const SizedBox(width: Space.md),
-                itemBuilder: (_, i) {
-                  final s = db.surah(quick[i]);
-                  return Material(
-                    color: i == 0 && isFriday ? c.primarySoft : c.surfaceAlt,
-                    borderRadius: BorderRadius.circular(Radii.lg),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(Radii.lg),
-                      onTap: () => context.openReader(s.pageStart, surah: s.id),
-                      child: Container(
-                        width: 128,
-                        padding: const EdgeInsets.all(Space.md),
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(s.nameAr,
-                              style: TextStyle(fontFamily: kQuranFont, fontSize: 20, color: c.ink, height: 1.3)),
-                          const Spacer(),
-                          Text(s.nameEn, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleMedium),
-                          Text('${s.ayahCount} ayahs', maxLines: 1, style: context.text.bodySmall),
-                        ]),
-                      ),
-                    ),
-                  );
-                },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+              child: _Row(
+                icon: Icons.fact_check_outlined,
+                title: 'Memorization test',
+                subtitle: 'Next ayah, missing word, word order and more',
+                trailing: Icon(Icons.chevron_right_rounded, color: c.inkMuted),
+                onTap: () => context.push('/memorize'),
               ),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 32)),
+          const SliverToBoxAdapter(child: SizedBox(height: 40)),
         ]),
       ),
     );
   }
 }
 
-/// A reminder chosen for this moment, with the same logic as notifications.
-class _ForYouCard extends ConsumerWidget {
-  const _ForYouCard();
+/// "Asr · 3:27 PM · in 2h 10m", tap for all prayer times.
+class _NextPrayerStrip extends ConsumerWidget {
+  const _NextPrayerStrip();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
-    final r = ref.watch(reminderNowProvider).value;
-    if (r == null) return const SizedBox(height: 120);
-    final arabicFirst = RegExp(r'^[؀-ۿ]').hasMatch(r.body);
+    final settings = ref.watch(prayerSettingsProvider);
+    final now = ref.watch(clockProvider).value ?? DateTime.now();
+    final next = settings.hasLocation ? ref.read(prayerServiceProvider).next(now) : null;
     return Material(
-      color: c.surface,
+      color: c.surfaceAlt,
       borderRadius: BorderRadius.circular(Radii.lg),
       child: InkWell(
         borderRadius: BorderRadius.circular(Radii.lg),
-        onTap: () => openPayload(GoRouter.of(context), ref.read(quranDbProvider), r.payload),
-        child: Container(
-          padding: const EdgeInsets.all(Space.xl),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(Radii.lg),
-            border: Border.all(color: c.divider),
-          ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Icon(Icons.auto_awesome_rounded, size: 18, color: c.gold),
-              const SizedBox(width: Space.sm),
+        onTap: () => context.push('/prayer'),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.md),
+          child: Row(children: [
+            Icon(Icons.mosque_outlined, size: 20, color: c.primary),
+            const SizedBox(width: Space.md),
+            if (next == null)
+              Expanded(child: Text('Prayer times', style: context.text.titleMedium))
+            else ...[
               Expanded(
-                child: Text((r.label ?? 'Reminder').toUpperCase(),
-                    style: context.text.labelSmall?.copyWith(color: c.gold)),
+                child: Text.rich(
+                  TextSpan(children: [
+                    TextSpan(text: next.$1.en, style: context.text.titleMedium),
+                    TextSpan(text: '  ${next.$1.ar}', style: context.text.bodyMedium?.copyWith(color: c.inkMuted)),
+                  ]),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                tooltip: 'Another one',
-                icon: Icon(Icons.refresh_rounded, size: 20, color: c.inkMuted),
-                onPressed: () => ref.invalidate(reminderNowProvider),
-              ),
-            ]),
-            Text(r.title.replaceFirst(RegExp(r'^(Sunnah|Reflect|Hadith) · '), ''), style: context.text.titleMedium),
-            const SizedBox(height: Space.sm),
-            Text(
-              r.body,
-              maxLines: 5,
-              overflow: TextOverflow.ellipsis,
-              textDirection: arabicFirst ? TextDirection.rtl : null,
-              style: arabicFirst
-                  ? TextStyle(fontFamily: kNaskhFont, fontSize: 18, height: 1.8, color: c.ink)
-                  : context.text.bodyMedium?.copyWith(color: c.inkMuted, height: 1.55),
-            ),
+              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                Text(formatTime(context, next.$2), style: context.text.titleMedium?.copyWith(color: c.primary)),
+                Text('in ${formatCountdown(next.$2.difference(now))}', style: context.text.bodySmall),
+              ]),
+            ],
           ]),
         ),
       ),
@@ -288,31 +244,118 @@ class _ForYouCard extends ConsumerWidget {
   }
 }
 
-class _RemindersPrompt extends StatelessWidget {
-  const _RemindersPrompt({required this.onTap});
+/// The adhkar for now: morning until Asr, evening until Isha, then before sleep.
+class _AdhkarNow extends ConsumerWidget {
+  const _AdhkarNow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
+    final settings = ref.watch(prayerSettingsProvider);
+    final now = DateTime.now();
+    final day = ref.read(prayerServiceProvider).day(now, settings);
+    final asr = day?.times[Salah.asr] ?? DateTime(now.year, now.month, now.day, 15);
+    final isha = day?.times[Salah.isha] ?? DateTime(now.year, now.month, now.day, 20);
+    final (id, title, arabic, icon) = now.hour >= 3 && now.isBefore(asr)
+        ? ('morning', 'Morning adhkar', 'أذكار الصباح', Icons.wb_twilight_rounded)
+        : now.isBefore(isha.add(const Duration(hours: 1))) && now.hour >= 3
+            ? ('evening', 'Evening adhkar', 'أذكار المساء', Icons.nights_stay_outlined)
+            : ('sleep', 'Before sleep', 'أذكار النوم', Icons.bedtime_outlined);
+    final done = adhkarDoneToday(ref, id);
+    final fg = c.onBrand;
+    return Material(
+      color: c.brand,
+      borderRadius: BorderRadius.circular(Radii.xl),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.push('/adhkar/$id'),
+        child: Stack(children: [
+          Positioned.fill(child: GirihPattern(color: fg, cell: 44, opacity: 0.07)),
+          Padding(
+            padding: const EdgeInsets.all(Space.xl),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Icon(icon, color: c.gold, size: 26),
+                const SizedBox(width: Space.md),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(title, style: context.text.titleLarge?.copyWith(color: fg)),
+                    Text(done ? 'Completed today · تقبّل الله' : arabic,
+                        style: context.text.bodyMedium?.copyWith(color: fg.withValues(alpha: 0.8))),
+                  ]),
+                ),
+                if (done) Icon(Icons.check_circle_rounded, color: c.gold),
+              ]),
+              const SizedBox(height: Space.lg),
+              Row(children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: c.gold,
+                      foregroundColor: c.brand,
+                      minimumSize: const Size.fromHeight(44),
+                    ),
+                    onPressed: () => context.push('/adhkar/$id?listen=1'),
+                    icon: const Icon(Icons.play_arrow_rounded),
+                    label: const Text('Listen'),
+                  ),
+                ),
+                const SizedBox(width: Space.md),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: fg,
+                      side: BorderSide(color: fg.withValues(alpha: 0.4)),
+                      minimumSize: const Size.fromHeight(44),
+                    ),
+                    onPressed: () => context.push('/adhkar/$id'),
+                    icon: const Icon(Icons.menu_book_outlined, size: 20),
+                    label: const Text('Read'),
+                  ),
+                ),
+              ]),
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+/// A calm list row in a bordered card.
+class _Row extends StatelessWidget {
+  const _Row({required this.icon, required this.title, required this.subtitle, required this.trailing, required this.onTap});
+  final IconData icon;
+  final String title, subtitle;
+  final Widget trailing;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     return Material(
-      color: c.primarySoft,
-      borderRadius: BorderRadius.circular(Radii.lg),
+      color: c.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.lg), side: BorderSide(color: c.divider)),
       child: InkWell(
         borderRadius: BorderRadius.circular(Radii.lg),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(Space.lg),
+          padding: const EdgeInsets.fromLTRB(Space.lg, Space.md, Space.md, Space.md),
           child: Row(children: [
-            Icon(Icons.notifications_active_outlined, color: c.primary),
-            const SizedBox(width: Space.md),
+            Container(
+              padding: const EdgeInsets.all(9),
+              decoration: BoxDecoration(color: c.primarySoft, borderRadius: BorderRadius.circular(Radii.md)),
+              child: Icon(icon, size: 20, color: c.primary),
+            ),
+            const SizedBox(width: Space.lg),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Get reminders through the day', style: context.text.titleMedium),
-                Text('Every 1–8 hours, only in the hours you choose', style: context.text.bodySmall),
+                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleMedium),
+                Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.bodySmall),
               ]),
             ),
-            Icon(Icons.chevron_right_rounded, color: c.primary),
+            const SizedBox(width: Space.sm),
+            trailing,
           ]),
         ),
       ),
@@ -356,97 +399,47 @@ class _HeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final fg = c.onBrand;
     return Material(
-      color: c.brand,
-      borderRadius: BorderRadius.circular(Radii.xl),
+      color: c.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.xl), side: BorderSide(color: c.divider)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        child: Stack(children: [
-          Positioned.fill(child: GirihPattern(color: fg, cell: 52, opacity: 0.09)),
-          Positioned(
-            right: -10,
-            top: 8,
-            child: Text(arabic,
-                style: TextStyle(fontFamily: kQuranFont, fontSize: 64, color: fg.withValues(alpha: 0.14), height: 1.2)),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(Space.xxl),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(overline, style: context.text.labelSmall?.copyWith(color: fg.withValues(alpha: 0.8))),
-              const SizedBox(height: Space.sm),
-              Text(title, style: context.text.headlineSmall?.copyWith(color: fg)),
-              Text(subtitle, style: context.text.bodyMedium?.copyWith(color: fg.withValues(alpha: 0.85))),
-              const SizedBox(height: Space.xl),
-              Row(children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 5,
-                      color: c.gold,
-                      backgroundColor: fg.withValues(alpha: 0.2),
-                    ),
+        child: Padding(
+          padding: const EdgeInsets.all(Space.xl),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(overline, style: context.text.labelSmall?.copyWith(color: c.primary)),
+                  const SizedBox(height: Space.xs),
+                  Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.headlineSmall),
+                  Text(subtitle, style: context.text.bodyMedium?.copyWith(color: c.inkMuted)),
+                ]),
+              ),
+              const SizedBox(width: Space.md),
+              Text(arabic, style: TextStyle(fontFamily: kQuranFont, fontSize: 30, color: c.ink, height: 1.4)),
+            ]),
+            const SizedBox(height: Space.lg),
+            Row(children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 5,
+                    color: c.primary,
+                    backgroundColor: c.divider,
                   ),
                 ),
-                const SizedBox(width: Space.lg),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(color: c.gold, borderRadius: BorderRadius.circular(99)),
-                  child: Row(children: [
-                    Text('Open', style: context.text.labelLarge?.copyWith(color: c.brand)),
-                    const SizedBox(width: 4),
-                    Icon(Icons.arrow_forward_rounded, size: 18, color: c.brand),
-                  ]),
-                ),
-              ]),
+              ),
+              const SizedBox(width: Space.lg),
+              FilledButton(
+                style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
+                onPressed: onTap,
+                child: const Text('Open'),
+              ),
             ]),
-          ),
-        ]),
-      ),
-    );
-  }
-}
-
-class _SmallCard extends StatelessWidget {
-  const _SmallCard({
-    required this.icon,
-    required this.overline,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String overline, title, subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Material(
-      color: c.surface,
-      borderRadius: BorderRadius.circular(Radii.lg),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(Radii.lg),
-        onTap: onTap,
-        child: Container(
-          // Grows with large system fonts instead of overflowing.
-          constraints: const BoxConstraints(minHeight: 132),
-          padding: const EdgeInsets.all(Space.lg),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(Radii.lg), border: Border.all(color: c.divider)),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: c.primarySoft, borderRadius: BorderRadius.circular(Radii.sm)),
-              child: Icon(icon, size: 18, color: c.primary),
-            ),
-            const SizedBox(height: Space.lg),
-            Text(overline, style: context.text.labelSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
-            Text(title, style: context.text.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
-            Text(subtitle, style: context.text.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
           ]),
         ),
       ),

@@ -28,7 +28,7 @@ extension ReminderKindX on ReminderKind {
       };
 
   NotificationSound get defaultSound => switch (this) {
-        ReminderKind.prayer => const NotificationSound.builtin('tone'),
+        ReminderKind.prayer => const NotificationSound.builtin('ocean'),
         ReminderKind.adhkar => const NotificationSound.builtin('birds'),
         ReminderKind.daily => const NotificationSound.builtin('stream'),
       };

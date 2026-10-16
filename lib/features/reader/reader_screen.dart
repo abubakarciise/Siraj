@@ -12,7 +12,6 @@ import '../../core/quran/models.dart';
 import '../../design/dialogs.dart';
 import '../../design/theme.dart';
 import '../../design/tokens.dart';
-import '../player/mini_player.dart';
 import '../player/play_actions.dart';
 import 'ayah_sheet.dart';
 import 'mushaf_page.dart';
@@ -187,88 +186,52 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
               ),
             ),
 
-            // ---- Top bar ----
+            // ---- Top bar: in the page colour, so it reads as part of the page ----
             AnimatedPositioned(
               duration: Motion.standard,
               curve: Motion.emphasized,
-              top: _chrome ? 0 : -(top + 64),
+              top: _chrome ? 0 : -(top + 96),
               left: 0,
               right: 0,
-              child: _Glass(
-                child: Padding(
-                  padding: EdgeInsets.only(top: top),
-                  child: SizedBox(
-                    height: 56,
-                    child: Row(
-                      children: [
-                        IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => context.pop()),
-                        Expanded(
-                          child: pageData == null
-                              ? const SizedBox()
-                              : Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '${db.surah(_surah).nameEn} · ${db.surah(_surah).nameAr}',
-                                      style: context.text.titleMedium,
-                                    ),
-                                    Text('Juz ${pageData.juz} · Page $_page', style: context.text.bodySmall),
-                                  ],
-                                ),
-                        ),
-                        IconButton(
-                          tooltip: 'Page colour',
-                          icon: const Icon(Icons.palette_outlined),
-                          onPressed: () {
-                            _scheduleHide();
-                            showAppSheet(context, title: 'Page colour', builder: (_) => const PaperPicker());
-                          },
-                        ),
-                        IconButton(
-                          tooltip: 'Search',
-                          icon: const Icon(Icons.search_rounded),
-                          onPressed: () => context.push('/search'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+              child: _ReaderTopBar(
+                surah: db.surah(_surah),
+                juz: pageData?.juz,
+                page: _page,
+                onPaper: () {
+                  _scheduleHide();
+                  showAppSheet(context, title: 'Page colour', builder: (_) => const PaperPicker());
+                },
               ),
             ),
 
-            // ---- Bottom bar: page scrubber + play ----
+            // ---- Bottom dock: surah, page slider, play, now playing ----
             AnimatedPositioned(
               duration: Motion.standard,
               curve: Motion.emphasized,
-              bottom: _chrome ? 0 : -320,
+              bottom: _chrome ? 0 : -360,
               left: 0,
               right: 0,
-              child: _Glass(
-                child: SafeArea(
-                  top: false,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _SurahScrubber(
-                        surah: db.surah(_surah),
-                        page: _page,
-                        onPrevSurah: _surah > 1 ? () => _goToSurah(_surah - 1) : null,
-                        onNextSurah: _surah < 114 ? () => _goToSurah(_surah + 1) : null,
-                        onSeek: (p) {
-                          _scheduleHide();
-                          _jumpTo(p);
-                        },
-                        onPlay: pageData == null
-                            ? null
-                            : () {
-                                _scheduleHide();
-                                final a = pageData.firstAyah;
-                                playFromMushaf(context, ref, a.surah, ayah: a.ayah);
-                              },
-                      ),
-                      if (hasPlayer) const MiniPlayer(embedded: true),
-                    ],
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(Space.md, 0, Space.md, Space.sm),
+                  child: _ReaderDock(
+                    surah: db.surah(_surah),
+                    page: _page,
+                    showNowPlaying: hasPlayer,
+                    onPrevSurah: _surah > 1 ? () => _goToSurah(_surah - 1) : null,
+                    onNextSurah: _surah < 114 ? () => _goToSurah(_surah + 1) : null,
+                    onSeek: (p) {
+                      _scheduleHide();
+                      _jumpTo(p);
+                    },
+                    onPlayPage: pageData == null
+                        ? null
+                        : () {
+                            _scheduleHide();
+                            final a = pageData.firstAyah;
+                            playFromMushaf(context, ref, a.surah, ayah: a.ayah);
+                          },
                   ),
                 ),
               ),
@@ -359,106 +322,226 @@ class _PageFrame extends ConsumerWidget {
   }
 }
 
-class _Glass extends StatelessWidget {
-  const _Glass({required this.child});
-  final Widget child;
+class _ReaderTopBar extends StatelessWidget {
+  const _ReaderTopBar({required this.surah, required this.juz, required this.page, required this.onPaper});
+  final Surah surah;
+  final int? juz;
+  final int page;
+  final VoidCallback onPaper;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    // A live blur re-renders the page behind it on every frame of a swipe;
-    // a near-opaque surface looks the same and costs nothing.
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: c.surface.withValues(alpha: 0.97),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: c.isDark ? 0.35 : 0.06), blurRadius: 12)],
+      decoration: BoxDecoration(color: c.pageBg, border: Border(bottom: BorderSide(color: c.divider))),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(4, 4, 4, 6),
+          child: Row(
+            children: [
+              IconButton(tooltip: 'Back', icon: const Icon(Icons.arrow_back_rounded), onPressed: () => context.pop()),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(surah.nameEn, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleMedium),
+                    Text(juz == null ? 'Page $page' : 'Juz $juz · Page $page', maxLines: 1, style: context.text.bodySmall),
+                  ],
+                ),
+              ),
+              IconButton(tooltip: 'Page colour', icon: const Icon(Icons.palette_outlined), onPressed: onPaper),
+              IconButton(
+                tooltip: 'Search',
+                icon: const Icon(Icons.search_rounded),
+                onPressed: () => context.push('/search'),
+              ),
+            ],
+          ),
+        ),
       ),
-      child: child,
     );
   }
 }
 
-/// Page scrubber limited to the current surah, with previous/next surah buttons.
-class _SurahScrubber extends StatelessWidget {
-  const _SurahScrubber({
+/// One calm card in the page colour: surah navigation, a page slider scoped
+/// to the surah, play / pause, and what is playing.
+class _ReaderDock extends StatelessWidget {
+  const _ReaderDock({
     required this.surah,
     required this.page,
+    required this.showNowPlaying,
     required this.onSeek,
-    required this.onPlay,
+    required this.onPlayPage,
     this.onPrevSurah,
     this.onNextSurah,
   });
 
   final Surah surah;
   final int page;
+  final bool showNowPlaying;
   final ValueChanged<int> onSeek;
-  final VoidCallback? onPlay, onPrevSurah, onNextSurah;
+  final VoidCallback? onPlayPage, onPrevSurah, onNextSurah;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final total = surah.pageEnd - surah.pageStart + 1;
     final index = (page - surah.pageStart + 1).clamp(1, total);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(Space.sm, Space.sm, Space.md, 0),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              IconButton(
-                tooltip: 'Previous surah',
-                onPressed: onPrevSurah,
-                icon: const Icon(Icons.chevron_left_rounded),
-              ),
-              Expanded(
-                child: Column(
-                  children: [
-                    Text(surah.nameEn, style: context.text.titleMedium),
-                    Text(
-                      total == 1 ? 'Page $page · 1 page' : 'Page $index of $total · p. $page',
-                      style: context.text.bodySmall,
+    return Material(
+      color: c.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Radii.xl),
+        side: BorderSide(color: c.divider),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(Space.xs, Space.sm, Space.sm, Space.sm),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                IconButton(
+                  tooltip: 'Previous surah',
+                  onPressed: onPrevSurah,
+                  icon: const Icon(Icons.chevron_left_rounded),
+                ),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(surah.nameEn, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleMedium),
+                      Text(total == 1 ? 'One page' : 'Page $index of $total', maxLines: 1, style: context.text.bodySmall),
+                    ],
+                  ),
+                ),
+                IconButton(tooltip: 'Next surah', onPressed: onNextSurah, icon: const Icon(Icons.chevron_right_rounded)),
+                const SizedBox(width: Space.xs),
+                _PlayButton(onPlayPage: onPlayPage),
+              ],
+            ),
+            if (total > 1)
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  trackHeight: 3,
+                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+                  inactiveTrackColor: c.divider,
+                ),
+                child: SizedBox(
+                  height: 28,
+                  child: Directionality(
+                    textDirection: TextDirection.rtl,
+                    child: Slider(
+                      value: page.clamp(surah.pageStart, surah.pageEnd).toDouble(),
+                      min: surah.pageStart.toDouble(),
+                      max: surah.pageEnd.toDouble(),
+                      divisions: total - 1,
+                      onChanged: (v) => onSeek(v.round()),
                     ),
-                  ],
+                  ),
                 ),
               ),
-              IconButton(tooltip: 'Next surah', onPressed: onNextSurah, icon: const Icon(Icons.chevron_right_rounded)),
-            ],
-          ),
-          Row(
-            children: [
-              Expanded(
-                child: total == 1
-                    ? Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: Space.lg),
-                        child: LinearProgressIndicator(
-                          value: 1,
-                          minHeight: 3,
-                          color: c.primary,
-                          backgroundColor: c.divider,
-                        ),
-                      )
-                    : Directionality(
-                        textDirection: TextDirection.rtl,
-                        child: Slider(
-                          value: page.clamp(surah.pageStart, surah.pageEnd).toDouble(),
-                          min: surah.pageStart.toDouble(),
-                          max: surah.pageEnd.toDouble(),
-                          divisions: total - 1,
-                          onChanged: (v) => onSeek(v.round()),
-                        ),
-                      ),
-              ),
-              FilledButton.icon(
-                style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
-                onPressed: onPlay,
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: const Text('Play page'),
-              ),
-            ],
-          ),
-        ],
+            if (showNowPlaying) const _NowPlayingLine(),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+/// Plays this page, or pauses / resumes what is already playing.
+class _PlayButton extends ConsumerWidget {
+  const _PlayButton({required this.onPlayPage});
+  final VoidCallback? onPlayPage;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
+    final state = ref.watch(
+      nowPlayingProvider.select((v) => v.value == null ? null : (v.value!.playing, v.value!.buffering)),
+    );
+    final playing = state?.$1 ?? false;
+    final buffering = (state?.$2 ?? false) && !playing;
+    return Semantics(
+      button: true,
+      label: state == null ? 'Play this page' : (playing ? 'Pause' : 'Resume'),
+      child: Material(
+        color: c.primary,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: state == null ? onPlayPage : ref.read(playerProvider).toggle,
+          child: SizedBox.square(
+            dimension: 48,
+            child: Center(
+              child: buffering
+                  ? SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: c.onPrimary))
+                  : Icon(playing ? Icons.pause_rounded : Icons.play_arrow_rounded, color: c.onPrimary, size: 28),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// What is playing, inside the dock: tap for the full player, x to stop.
+class _NowPlayingLine extends ConsumerWidget {
+  const _NowPlayingLine();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
+    final np = ref.watch(nowPlayingProvider).value;
+    if (np == null) return const SizedBox.shrink();
+    final db = ref.watch(quranDbProvider);
+    final progress = np.duration.inMilliseconds == 0
+        ? 0.0
+        : (np.position.inMilliseconds / np.duration.inMilliseconds).clamp(0.0, 1.0);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(Space.md, Space.xs, Space.xs, 0),
+          child: LinearProgressIndicator(
+            value: progress,
+            minHeight: 2,
+            color: c.primary,
+            backgroundColor: c.divider,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        InkWell(
+          borderRadius: BorderRadius.circular(Radii.md),
+          onTap: () => context.push('/player'),
+          child: Padding(
+            padding: const EdgeInsets.only(left: Space.md),
+            child: Row(
+              children: [
+                Icon(Icons.graphic_eq_rounded, size: 18, color: c.primary),
+                const SizedBox(width: Space.sm),
+                Expanded(
+                  child: Text(
+                    '${db.surah(np.surah).nameEn}${np.ayah != null ? ' · ${np.ayah!.ayah}' : ''} · ${np.reciter.name}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.bodySmall?.copyWith(color: c.ink),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Stop',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: ref.read(playerProvider).stop,
+                  icon: Icon(Icons.close_rounded, size: 20, color: c.inkMuted),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -7,7 +7,6 @@ import '../../core/providers.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
 import 'adhkar_screen.dart';
-import '../settings/reminders_screen.dart';
 import 'prayer_widgets.dart';
 
 /// "Daily" tab: prayer times, adhkar, tasbih, qibla and reminders.
@@ -100,7 +99,7 @@ class DailyScreen extends ConsumerWidget {
           ),
         ),
         const SliverToBoxAdapter(child: SectionTitle('Reminders')),
-        SliverToBoxAdapter(child: _Reminders(settings: s)),
+        const SliverToBoxAdapter(child: _Reminders()),
         const SliverToBoxAdapter(child: SizedBox(height: 32)),
       ]),
     );
@@ -141,32 +140,20 @@ class _Tile extends StatelessWidget {
   }
 }
 
-class _Reminders extends ConsumerWidget {
-  const _Reminders({required this.settings});
-  final PrayerSettings settings;
+class _Reminders extends StatelessWidget {
+  const _Reminders();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final c = context.colors;
-    final s = settings;
-    return Column(children: [
-      AdhkarReminderTiles(settings: s, padding: const EdgeInsets.symmetric(horizontal: Space.gutter)),
-      ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-        leading: Icon(Icons.auto_awesome_outlined, color: c.primary),
-        title: const Text('Daily reminders & sounds'),
-        subtitle: const Text('Ayah, hadith, sunnah and dhikr through the day · alert sounds'),
-        trailing: const Icon(Icons.chevron_right_rounded),
-        onTap: () => context.push('/reminders'),
-      ),
-      ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-        leading: Icon(Icons.notifications_active_outlined, color: c.primary),
-        title: const Text('Prayer time reminders'),
-        subtitle: Text(s.hasLocation ? '${s.notify.length} of 5 prayers · tap the bell on each prayer' : 'Set your location first'),
-        trailing: const Icon(Icons.chevron_right_rounded),
-        onTap: () => context.push('/prayer'),
-      ),
-    ]);
+    // Everything about reminders lives on one screen; this is the way in.
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+      leading: Icon(Icons.notifications_active_outlined, color: c.primary),
+      title: const Text('Reminders & sounds'),
+      subtitle: const Text('Morning and evening adhkar, prayer times, daily reminders'),
+      trailing: const Icon(Icons.chevron_right_rounded),
+      onTap: () => context.push('/reminders'),
+    );
   }
 }

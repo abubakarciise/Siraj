@@ -126,7 +126,7 @@ class AppColors extends ThemeExtension<AppColors> {
 
   /// The app colours with the Mushaf page re-tinted for [paper].
   AppColors withPaper(MushafPaper paper) => switch (paper) {
-        MushafPaper.auto => this,
+        MushafPaper.auto => _paper(this, pageBg, ink),
         MushafPaper.ivory => _paper(light, const Color(0xFFFBF7EE), const Color(0xFF1F1C17)),
         MushafPaper.white => _paper(light, const Color(0xFFFFFFFF), const Color(0xFF111111)),
         MushafPaper.sepia => _paper(light, const Color(0xFFF3E7CE), const Color(0xFF3A2D1C),
@@ -135,21 +135,23 @@ class AppColors extends ThemeExtension<AppColors> {
         MushafPaper.black => _paper(midnight, const Color(0xFF000000), midnight.ink),
       };
 
+  /// Colours for the reader: bars, sheets and chips take the page colour itself
+  /// (separated by hairlines), so nothing floats over the Mushaf in another tone.
   AppColors _paper(AppColors base, Color page, Color text, {Color? muted, Color? gold}) => AppColors(
         bg: page,
-        surface: base.surface,
-        surfaceAlt: base.surfaceAlt,
+        surface: page,
+        surfaceAlt: Color.lerp(page, text, base.isDark ? 0.10 : 0.06)!,
         pageBg: page,
         ink: text,
         inkMuted: muted ?? base.inkMuted,
         inkFaint: base.inkFaint,
         primary: base.primary,
-        primarySoft: base.primarySoft,
+        primarySoft: Color.lerp(page, base.primary, base.isDark ? 0.22 : 0.14)!,
         onPrimary: base.onPrimary,
         brand: base.brand,
         onBrand: base.onBrand,
         gold: gold ?? base.gold,
-        divider: base.divider,
+        divider: Color.lerp(page, text, base.isDark ? 0.16 : 0.12)!,
         danger: base.danger,
         isDark: base.isDark,
       );

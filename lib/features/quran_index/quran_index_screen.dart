@@ -27,6 +27,11 @@ class _QuranIndexScreenState extends ConsumerState<QuranIndexScreen> {
         title: Text('Quran', style: context.text.headlineSmall),
         actions: [
           IconButton(
+            tooltip: 'Memorization test',
+            icon: const Icon(Icons.fact_check_outlined),
+            onPressed: () => context.push('/memorize'),
+          ),
+          IconButton(
             tooltip: 'Bookmarks & downloads',
             icon: const Icon(Icons.bookmarks_outlined),
             onPressed: () => context.push('/library'),

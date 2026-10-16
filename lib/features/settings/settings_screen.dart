@@ -6,11 +6,11 @@ import '../../core/providers.dart';
 import '../../core/settings.dart';
 import '../../design/dialogs.dart';
 import '../../design/tokens.dart';
-import '../reader/reader_screen.dart' show PaperPicker;
+import '../reader/reader_screen.dart' show PaperPicker, MushafPaperX;
 
 const kAppName = 'Siraj';
-const kAppVersion = '2.0.0';
-const kRepoUrl = 'github.com/Abuubakar-Ciise/Quiz-App';
+const kAppVersion = '2.2.0';
+const kRepoUrl = 'github.com/Abuubakar-Ciise/Siraj';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -20,9 +20,6 @@ class SettingsScreen extends ConsumerWidget {
     final s = ref.watch(settingsProvider);
     final n = ref.read(settingsProvider.notifier);
     final c = context.colors;
-    final catalog = ref.watch(catalogProvider).value;
-    final rec = s.defaultRecitation == null ? null : catalog?.recitation(s.defaultRecitation!);
-    final reciter = rec == null ? null : catalog?.reciter(rec.reciterId);
     final daily = ref.watch(dailyRemindersProvider);
 
     return Scaffold(
@@ -46,15 +43,13 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ]),
           ),
-          const _Header('Mushaf page colour'),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: Space.gutter),
-            child: PaperPicker(),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, 0),
-            child: Text('"Theme" follows the app appearance. Also available from the palette button while reading.',
-                style: context.text.bodySmall),
+          const SizedBox(height: Space.sm),
+          ListTile(
+            leading: Icon(Icons.palette_outlined, color: c.primary),
+            title: const Text('Mushaf page colour'),
+            subtitle: Text(s.paper == MushafPaper.auto ? 'Same as the appearance' : s.paper.label),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => showAppSheet(context, title: 'Mushaf page colour', builder: (_) => const PaperPicker()),
           ),
           const _Header('Reminders'),
           ListTile(
@@ -62,23 +57,13 @@ class SettingsScreen extends ConsumerWidget {
             title: const Text('Reminders & sounds'),
             subtitle: Text(daily.enabled
                 ? 'Daily reminders every ${daily.everyHours == 1 ? 'hour' : '${daily.everyHours} hours'}'
-                : 'Daily reminders are off · choose alert sounds'),
+                : 'Adhkar, prayer and daily reminders'),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => context.push('/reminders'),
           ),
           const _Header('Reading'),
-          SwitchListTile(
-            title: const Text('Keep screen on while reading'),
-            value: s.keepScreenOn,
-            onChanged: (v) => n.update((x) => x.copyWith(keepScreenOn: v)),
-          ),
-          SwitchListTile(
-            title: const Text('Follow recitation'),
-            subtitle: const Text('Turn pages automatically with the audio'),
-            value: s.followAudio,
-            onChanged: (v) => n.update((x) => x.copyWith(followAudio: v)),
-          ),
           ListTile(
+            leading: Icon(Icons.translate_rounded, color: c.primary),
             title: const Text('Translation'),
             subtitle: Text(switch (s.translation) {
               'en_sahih' => 'English · Saheeh International',
@@ -107,50 +92,31 @@ class SettingsScreen extends ConsumerWidget {
               ]),
             ),
           ),
-          const _Header('Audio & downloads'),
-          ListTile(
-            title: const Text('Mushaf reciter'),
-            subtitle: Text(reciter == null ? 'Automatic (featured reciter)' : '${reciter.name} · ${rec!.shortName}'),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => showAppSheet(
-              context,
-              title: 'Mushaf reciter',
-              builder: (_) => const Text(
-                  'Open any reciter in the Listen tab and choose "Use for Mushaf playback" from the ⋮ menu.'),
-            ),
+          SwitchListTile(
+            secondary: Icon(Icons.auto_stories_outlined, color: c.primary),
+            title: const Text('Turn pages with the recitation'),
+            value: s.followAudio,
+            onChanged: (v) => n.update((x) => x.copyWith(followAudio: v)),
           ),
           SwitchListTile(
+            secondary: Icon(Icons.light_mode_outlined, color: c.primary),
+            title: const Text('Keep the screen on while reading'),
+            value: s.keepScreenOn,
+            onChanged: (v) => n.update((x) => x.copyWith(keepScreenOn: v)),
+          ),
+          SwitchListTile(
+            secondary: Icon(Icons.wifi_rounded, color: c.primary),
             title: const Text('Download on Wi-Fi only'),
-            subtitle: const Text('Saves mobile data. Downloads wait until Wi-Fi is available.'),
             value: s.wifiOnly,
             onChanged: (v) => n.update((x) => x.copyWith(wifiOnly: v)),
           ),
           const _Header('About'),
           ListTile(
-            title: const Text('Sources & licenses'),
+            leading: Icon(Icons.info_outline_rounded, color: c.primary),
+            title: const Text('About $kAppName'),
+            subtitle: const Text('Version $kAppVersion · free and open source'),
             trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => showAppSheet(context, title: 'Sources & licenses', builder: (_) => const _Sources()),
-          ),
-          ListTile(
-            title: const Text('Privacy'),
-            subtitle: Text(
-              'No account, no ads, no tracking. Your bookmarks, history and downloads stay on this device.',
-              style: context.text.bodySmall?.copyWith(color: c.inkMuted),
-            ),
-          ),
-          ListTile(
-            title: const Text('Open source'),
-            subtitle: const Text('Free forever. Code, issues and contributions: $kRepoUrl'),
-          ),
-          ListTile(
-            title: const Text('Open-source licenses'),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => showLicensePage(
-              context: context,
-              applicationName: kAppName,
-              applicationVersion: kAppVersion,
-              applicationLegalese: 'Quran · Hadith · Daily guide. Free and open source.',
-            ),
+            onTap: () => showAppSheet(context, title: kAppName, builder: (_) => const _About()),
           ),
         ],
       ),
@@ -260,7 +226,8 @@ class _Sources extends StatelessWidget {
       ('Adhkar', "Hisn al-Muslim by Sa'id bin Ali bin Wahf Al-Qahtani; Quran passages from the KFGQPC text."),
       ('Hadith', 'Arabic texts, English translations and grades from the hadith-api project by Fawaz Ahmed (public domain).'),
       ('Hijri calendar', 'Umm al-Qura calculation, adjustable for local moon sighting.'),
-      ('Reminder sounds', 'Original sounds made for this app (tool/make_sounds.py).'),
+      ('Adhkar recordings', 'hisnmuslim.com (Hisn al-Muslim) and, for Quranic adhkar, Mishary Alafasy via everyayah.com. Streamed, then kept on your phone.'),
+      ('Reminder sounds', 'Ocean, birdsong, stream and rain recordings from Wikimedia Commons (CC0).'),
       ('Prayer times & Qibla', 'Calculated on your phone with the open-source Adhan library.'),
       ('UI font', 'IBM Plex Sans Arabic (SIL Open Font License).'),
     ];
@@ -270,6 +237,38 @@ class _Sources extends StatelessWidget {
         Text(d, style: context.text.bodyMedium?.copyWith(color: context.colors.inkMuted)),
         const SizedBox(height: Space.md),
       ],
+    ]);
+  }
+}
+
+class _About extends StatelessWidget {
+  const _About();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Text('Quran, Hadith and a daily guide. Version $kAppVersion.', style: context.text.bodyLarge),
+      const SizedBox(height: Space.md),
+      Text('No account, no ads, no tracking. Your bookmarks, history and downloads stay on this phone.',
+          style: context.text.bodyMedium?.copyWith(color: c.inkMuted)),
+      const SizedBox(height: Space.md),
+      Text('Free and open source: $kRepoUrl', style: context.text.bodyMedium?.copyWith(color: c.inkMuted)),
+      const SizedBox(height: Space.lg),
+      OutlinedButton(
+        onPressed: () => showAppSheet(context, title: 'Sources', builder: (_) => const _Sources()),
+        child: const Text('Sources of the texts and audio'),
+      ),
+      const SizedBox(height: Space.sm),
+      OutlinedButton(
+        onPressed: () => showLicensePage(
+          context: context,
+          applicationName: kAppName,
+          applicationVersion: kAppVersion,
+          applicationLegalese: 'Quran · Hadith · Daily guide. Free and open source.',
+        ),
+        child: const Text('Open-source licenses'),
+      ),
     ]);
   }
 }

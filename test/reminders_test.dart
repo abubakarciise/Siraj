@@ -120,8 +120,8 @@ void main() {
     });
 
     test('sounds removed in 2.1 fall back to the default', () {
-      expect(NotificationSound.decode('builtin:oud', const NotificationSound.builtin('tone')),
-          const NotificationSound.builtin('tone'));
+      expect(NotificationSound.decode('builtin:tone', const NotificationSound.builtin('ocean')),
+          const NotificationSound.builtin('ocean'));
     });
 
     test('channel keys are stable and id-safe', () {

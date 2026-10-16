@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../core/hadith/hadith.dart';
+import '../../core/hadith/hadith_reader.dart';
 import '../../core/providers.dart';
 import '../../core/quran/arabic.dart';
 import '../../core/reminders/reminders.dart';
@@ -13,6 +15,7 @@ import '../../design/dialogs.dart';
 import '../../design/theme.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import 'hadith_listen.dart';
 
 /// Approximate download size (Arabic + English) per collection.
 const _sizeMb = {
@@ -394,16 +397,51 @@ class HadithBookScreen extends ConsumerWidget {
   }
 }
 
-class HadithListScreen extends ConsumerWidget {
+class HadithListScreen extends ConsumerStatefulWidget {
   const HadithListScreen({super.key, required this.bookId, this.section});
   final String bookId;
   final int? section;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final list = ref.watch(hadithListProvider((bookId, section))).value;
+  ConsumerState<HadithListScreen> createState() => _HadithListScreenState();
+}
+
+class _HadithListScreenState extends ConsumerState<HadithListScreen> {
+  final _items = ItemScrollController();
+  late final HadithReader _reader = ref.read(hadithReaderProvider);
+  int? _followed;
+
+  String get _key => 'list:${widget.bookId}:${widget.section}';
+  bool get _reading => _reader.isReading(_key);
+
+  @override
+  void initState() {
+    super.initState();
+    _reader.addListener(_onReader);
+  }
+
+  @override
+  void dispose() {
+    _reader.removeListener(_onReader);
+    if (_reading) _reader.stop();
+    super.dispose();
+  }
+
+  void _onReader() {
+    if (!mounted) return;
+    setState(() {});
+    if (_reading && _reader.index != _followed && _items.isAttached) {
+      _followed = _reader.index;
+      _items.scrollTo(index: _reader.index, alignment: 0.05, duration: Motion.gentle, curve: Motion.curve);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bookId = widget.bookId;
+    final list = ref.watch(hadithListProvider((bookId, widget.section))).value;
     final sections = ref.watch(hadithSectionsProvider(bookId)).value ?? const [];
-    final title = sections.where((s) => s.number == section).firstOrNull?.title;
+    final title = sections.where((s) => s.number == widget.section).firstOrNull?.title;
     final bookName = ref.bookName(bookId);
     return Scaffold(
       appBar: AppBar(
@@ -412,25 +450,51 @@ class HadithListScreen extends ConsumerWidget {
               maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleMedium),
           if (title != null && title != bookName) Text(bookName, style: context.text.bodySmall),
         ]),
+        actions: [
+          if (list != null && list.isNotEmpty && !_reading)
+            IconButton(
+              tooltip: 'Listen',
+              icon: const Icon(Icons.headphones_rounded),
+              onPressed: () {
+                _followed = null;
+                listenToHadith(context, ref, _key, list, 0);
+              },
+            ),
+        ],
       ),
       body: list == null
           ? const Center(child: CircularProgressIndicator())
-          : ListView.separated(
+          : ScrollablePositionedList.separated(
+              itemScrollController: _items,
               padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xxxl),
               itemCount: list.length,
               separatorBuilder: (_, _) => const SizedBox(height: Space.md),
-              itemBuilder: (_, i) => HadithCard(hadith: list[i]),
+              itemBuilder: (_, i) => HadithCard(
+                hadith: list[i],
+                active: _reading && _reader.index == i,
+                onListen: () {
+                  _followed = null;
+                  listenToHadith(context, ref, _key, list, i);
+                },
+              ),
             ),
+      bottomNavigationBar: _reading ? HadithListenBar(reader: _reader) : null,
     );
   }
 }
 
 class HadithCard extends StatelessWidget {
-  const HadithCard({super.key, required this.hadith, this.showBook});
+  const HadithCard({super.key, required this.hadith, this.showBook, this.active = false, this.onListen});
   final Hadith hadith;
 
   /// Shown in search results and saved lists.
   final String? showBook;
+
+  /// Being read aloud right now.
+  final bool active;
+
+  /// Listen from this hadith on (chapter lists).
+  final VoidCallback? onListen;
 
   @override
   Widget build(BuildContext context) {
@@ -445,12 +509,30 @@ class HadithCard extends StatelessWidget {
         onTap: () => context.push('/hadith/${hadith.book}/n/${hadith.numberLabel}'),
         child: Container(
           padding: const EdgeInsets.all(Space.lg),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(Radii.lg), border: Border.all(color: c.divider)),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(Radii.lg),
+            border: Border.all(color: active ? c.primary : c.divider, width: active ? 2 : 1),
+          ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             Row(children: [
               Pill('${showBook ?? 'Hadith'} ${hadith.numberLabel}', color: c.primary),
+              if (active) ...[
+                const SizedBox(width: Space.sm),
+                Icon(Icons.graphic_eq_rounded, size: 18, color: c.primary),
+              ],
               const Spacer(),
               if (grade != null) Pill(grade.grade, color: _gradeColor(c, grade.grade)),
+              if (onListen != null && !active)
+                SizedBox(
+                  height: 28,
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Listen from here',
+                    onPressed: onListen,
+                    icon: Icon(Icons.play_circle_outline_rounded, size: 22, color: c.inkMuted),
+                  ),
+                ),
             ]),
             if (hadith.arabic.isNotEmpty) ...[
               const SizedBox(height: Space.md),
@@ -495,6 +577,27 @@ class HadithDetailScreen extends ConsumerStatefulWidget {
 
 class _HadithDetailScreenState extends ConsumerState<HadithDetailScreen> {
   bool? _saved;
+  late final HadithReader _reader = ref.read(hadithReaderProvider);
+
+  String get _key => 'one:${widget.bookId}:${widget.number}';
+  bool get _reading => _reader.isReading(_key);
+
+  @override
+  void initState() {
+    super.initState();
+    _reader.addListener(_onReader);
+  }
+
+  @override
+  void dispose() {
+    _reader.removeListener(_onReader);
+    if (_reading) _reader.stop();
+    super.dispose();
+  }
+
+  void _onReader() {
+    if (mounted) setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -525,6 +628,12 @@ class _HadithDetailScreenState extends ConsumerState<HadithDetailScreen> {
             Text(section, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.bodySmall),
         ]),
         actions: [
+          if (!_reading)
+            IconButton(
+              tooltip: 'Listen',
+              icon: const Icon(Icons.headphones_rounded),
+              onPressed: () => listenToHadith(context, ref, _key, [h], 0),
+            ),
           IconButton(
             tooltip: _saved == true ? 'Remove from saved' : 'Save',
             icon: Icon(_saved == true ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
@@ -548,6 +657,7 @@ class _HadithDetailScreenState extends ConsumerState<HadithDetailScreen> {
         ],
       ),
       body: HadithBody(hadith: h, bookName: bookName),
+      bottomNavigationBar: _reading ? HadithListenBar(reader: _reader) : null,
     );
   }
 }

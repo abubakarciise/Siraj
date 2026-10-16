@@ -4,11 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'adhkar/adhkar.dart';
+import 'adhkar/adhkar_player.dart';
 import 'audio/player_controller.dart';
+import 'audio/speech.dart';
 import 'audio/timing.dart';
 import 'catalog/catalog.dart';
 import 'downloads/download_manager.dart';
 import 'hadith/hadith.dart';
+import 'hadith/hadith_reader.dart';
 import 'notifications/notifications.dart';
 import 'notifications/sounds.dart';
 import 'prayer/prayer.dart';
@@ -133,6 +136,21 @@ final clockProvider = StreamProvider.autoDispose<DateTime>(
 );
 
 final adhkarProvider = FutureProvider<List<AdhkarCategory>>((ref) => AdhkarRepository.load());
+
+/// The phone's text-to-speech (hadith, and adhkar without a recording).
+final speechProvider = Provider<Speech>((ref) => Speech());
+
+final hadithReaderProvider = Provider<HadithReader>((ref) {
+  final reader = HadithReader(ref.watch(speechProvider), beforeStart: () => ref.read(playerProvider).pause());
+  ref.onDispose(reader.dispose);
+  return reader;
+});
+
+final adhkarPlayerProvider = Provider<AdhkarPlayer>((ref) {
+  final player = AdhkarPlayer(ref.watch(speechProvider), beforeStart: () => ref.read(playerProvider).pause());
+  ref.onDispose(player.dispose);
+  return player;
+});
 
 // ---- Hadith ----
 final hadithRepoProvider = Provider<HadithRepository>((ref) => throw UnimplementedError());

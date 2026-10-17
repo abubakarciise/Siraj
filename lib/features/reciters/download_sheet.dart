@@ -36,8 +36,16 @@ class _DownloadSheetBody extends ConsumerStatefulWidget {
 
 class _DownloadSheetBodyState extends ConsumerState<_DownloadSheetBody> {
   late bool _wifiOnly = ref.read(settingsProvider).wifiOnly;
-  late final Future<int?> _size =
-      ref.read(downloadManagerProvider).estimateBytes(widget.recitation, widget.surahs);
+  final _checked = ValueNotifier<(int, int)>((0, 0));
+  late final Future<int?> _size = ref
+      .read(downloadManagerProvider)
+      .estimateBytes(widget.recitation, widget.surahs, progress: (d, t) => _checked.value = (d, t));
+
+  @override
+  void dispose() {
+    _checked.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,15 +73,20 @@ class _DownloadSheetBodyState extends ConsumerState<_DownloadSheetBody> {
           const SizedBox(height: Space.md),
           FutureBuilder<int?>(
             future: _size,
-            builder: (_, snap) => _Row(
-              icon: Icons.sd_storage_outlined,
-              label: 'Size',
-              value: snap.connectionState != ConnectionState.done
-                  ? 'Calculating…'
-                  : snap.data == null
-                      ? 'Unknown (offline)'
-                      : formatBytes(snap.data!),
-            ),
+            builder: (_, snap) => snap.connectionState != ConnectionState.done
+                ? _Row(
+                    icon: Icons.sd_storage_outlined,
+                    label: 'Size',
+                    valueWidget: ValueListenableBuilder<(int, int)>(
+                      valueListenable: _checked,
+                      builder: (_, p, _) => CalculatingText(done: p.$1, total: p.$2),
+                    ),
+                  )
+                : _Row(
+                    icon: Icons.sd_storage_outlined,
+                    label: 'Size',
+                    value: snap.data == null ? 'Unknown (offline)' : formatBytes(snap.data!),
+                  ),
           ),
           const SizedBox(height: Space.md),
           const _Row(icon: Icons.phone_android_rounded, label: 'Saved', value: 'On this phone'),
@@ -112,9 +125,10 @@ class _DownloadSheetBodyState extends ConsumerState<_DownloadSheetBody> {
 }
 
 class _Row extends StatelessWidget {
-  const _Row({required this.icon, required this.label, required this.value});
+  const _Row({required this.icon, required this.label, this.value = '', this.valueWidget});
   final IconData icon;
   final String label, value;
+  final Widget? valueWidget;
 
   @override
   Widget build(BuildContext context) => Row(children: [
@@ -122,6 +136,47 @@ class _Row extends StatelessWidget {
         const SizedBox(width: Space.md),
         Text(label, style: context.text.bodyMedium?.copyWith(color: context.colors.inkMuted)),
         const Spacer(),
-        Text(value, style: context.text.titleMedium),
+        valueWidget ?? Text(value, style: context.text.titleMedium),
       ]);
+}
+
+/// "Calculating." "Calculating.." "Calculating..." and back, with how many
+/// surahs are checked so far: the sheet is clearly working.
+class CalculatingText extends StatefulWidget {
+  const CalculatingText({super.key, this.done = 0, this.total = 0});
+  final int done, total;
+
+  @override
+  State<CalculatingText> createState() => _CalculatingTextState();
+}
+
+class _CalculatingTextState extends State<CalculatingText> with SingleTickerProviderStateMixin {
+  late final _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600))..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: _c,
+        builder: (context, _) {
+          // 1, 2, 3, 2 dots, then again.
+          const steps = [1, 2, 3, 2];
+          final n = steps[(_c.value * steps.length).floor() % steps.length];
+          final count = widget.total > 0 ? '  ${widget.done}/${widget.total}' : '';
+          return Text.rich(
+            TextSpan(children: [
+              const TextSpan(text: 'Calculating'),
+              // The dots keep their place, so the text never jumps.
+              TextSpan(text: '.' * n),
+              TextSpan(text: '.' * (3 - n), style: const TextStyle(color: Colors.transparent)),
+              TextSpan(text: count, style: TextStyle(color: context.colors.inkMuted)),
+            ]),
+            style: context.text.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          );
+        },
+      );
 }

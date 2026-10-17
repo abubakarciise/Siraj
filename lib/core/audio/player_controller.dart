@@ -110,10 +110,27 @@ class PlayerController {
 
   /// Plays [recitation] from [surah] (optionally from [ayah]) and continues
   /// through the following surahs. Offline, only downloaded surahs are queued.
+  /// The surah being prepared ("recitation key|surah") between a tap and the
+  /// first sound, so screens can show it loading and ignore repeated taps.
+  final preparing = ValueNotifier<String?>(null);
+
   Future<void> play(Recitation recitation, Reciter reciter, int surah, {int? ayah, bool resume = false}) async {
-    final online = await hasInternet();
+    final id = '${recitation.key}|$surah';
+    if (preparing.value == id) return; // already starting: a second tap changes nothing
+    preparing.value = id;
+    try {
+      await _play(recitation, reciter, surah, ayah: ayah, resume: resume);
+    } finally {
+      if (preparing.value == id) preparing.value = null;
+    }
+  }
+
+  Future<void> _play(Recitation recitation, Reciter reciter, int surah, {int? ayah, bool resume = false}) async {
     var surahs = recitation.surahs.where((s) => s >= surah).toList();
-    if (!online) surahs = surahs.where((s) => _downloads.localFile(recitation.key, s) != null).toList();
+    // Only a surah that is not on the phone needs the internet.
+    if (_downloads.localFile(recitation.key, surah) == null && !await hasInternet()) {
+      surahs = surahs.where((s) => _downloads.localFile(recitation.key, s) != null).toList();
+    }
     if (surahs.isEmpty) throw const OfflineException();
 
     _recitation = recitation;
@@ -123,13 +140,12 @@ class PlayerController {
     _repeatDone = 0;
 
     Duration? start;
-    // Load the ayah timing before the first word plays, so the highlight is
-    // exact from the start instead of catching up once the timing arrives.
-    final t = recitation.timingReadId == null
-        ? null
-        : await _timing
-            .get(recitation.timingReadId!, surahs.first)
-            .timeout(const Duration(seconds: 4), onTimeout: () => null);
+    // The ayah timing loads alongside the audio (the highlight follows as soon
+    // as it arrives); only starting from a given ayah has to wait for it.
+    final timing = recitation.timingReadId == null ? null : _timing.get(recitation.timingReadId!, surahs.first);
+    final t = ayah != null && ayah > 1 && timing != null
+        ? await timing.timeout(const Duration(seconds: 4), onTimeout: () => null)
+        : null;
     if (ayah != null && ayah > 1 && t != null && surahs.first == surah) {
       final ms = t.startOf(ayah);
       if (ms != null) start = Duration(milliseconds: ms);
@@ -164,10 +180,10 @@ class PlayerController {
       ));
     }
     await _handler.load(items, sources, position: start);
-    await _onItemChanged();
+    unawaited(_handler.play());
+    unawaited(_onItemChanged());
     // Remember it at once (Home's "continue listening" reads this).
     await _savePosition(force: true);
-    unawaited(_handler.play());
   }
 
   static const _accurateSeeking = ProgressiveAudioSourceOptions(
@@ -394,10 +410,17 @@ class PlayerController {
     return ((player.position.inMilliseconds - start) / (end - start)).clamp(0.0, 1.0);
   }
 
+  static DateTime? _onlineAt;
+
+  /// Whether the audio server can be reached (remembered for a minute).
   static Future<bool> hasInternet() async {
+    final at = _onlineAt;
+    if (at != null && DateTime.now().difference(at) < const Duration(minutes: 1)) return true;
     try {
       final r = await InternetAddress.lookup('cdn.mp3quran.net').timeout(const Duration(seconds: 3));
-      return r.isNotEmpty && r.first.rawAddress.isNotEmpty;
+      final ok = r.isNotEmpty && r.first.rawAddress.isNotEmpty;
+      if (ok) _onlineAt = DateTime.now();
+      return ok;
     } catch (_) {
       return false;
     }

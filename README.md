@@ -56,6 +56,9 @@
   wording no recording matches is left for you to read.
 - **Tasbih.** A misbaha of 33 beads (or count on without end), swipe for another dhikr, and your history: streak,
   today, 7 and 30 days, a weekly chart and the dhikr you say most.
+- **Scenes.** Each tab has a living scene of its own, moving gently without end: stars and swaying lanterns over a
+  mosque (Home), light rising from an open Mushaf (Quran), sound waves (Listen), falling Arabic letters over books
+  (Hadith), the sun crossing the five prayers (Daily), falling beads (Tasbih). Paint-only, paused when not seen.
 - **Appearance.** Light, Dark and true-black Midnight themes. The Mushaf page colour (Ivory, White, Sepia, Dark, Black)
   can differ, and everything on the reading screen takes the page colour.
 - **Private.** No account, no ads, no analytics. Bookmarks, history and downloads stay on the device.
@@ -109,8 +112,7 @@ shown comes from the source collections with its reference and grade.
   Mishary Alafasy via [everyayah.com](https://everyayah.com); cut to each dhikr and included for offline listening
   (`tool/build_adhkar_audio.py`, needs ffmpeg and faster-whisper). Prayer times: the open-source Adhan library. Hijri dates: Umm al-Qura.
 - Fonts: IBM Plex Sans Arabic and Amiri (SIL Open Font License).
-- Logo: "القرآن الكريم" in Amiri Bold (SIL Open Font License) under a gold mihrab arch on lapis, drawn by
-  tool/make_icons.py. Adhkar notification art: a Mamluk glass mosque lamp,
+- Logo: the name سراج in Amiri Bold (SIL Open Font License). Adhkar notification art: a Mamluk glass mosque lamp,
   photographed by The Metropolitan Museum of Art (Open Access, CC0).
 - Reminder sound "Pixie Dust" from the Android Open Source Project (Apache 2.0).
 

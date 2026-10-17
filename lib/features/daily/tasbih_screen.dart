@@ -115,7 +115,7 @@ class _TasbihScreenState extends ConsumerState<TasbihScreen> with SingleTickerPr
     final c = context.colors;
     final (ar, en) = _phrases[_phrase];
     final lit = _count % _round == 0 && _count > 0 && !_endless ? _round : _count % _round;
-    return ArtBackdrop(
+    return SceneBackdrop(
       kind: ArtKind.tasbih,
       accent: c.gold,
       child: Scaffold(

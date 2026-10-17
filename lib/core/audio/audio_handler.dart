@@ -45,7 +45,16 @@ class QuranAudioHandler extends BaseAudioHandler with SeekHandler {
     });
   }
 
-  final player = AudioPlayer();
+  // Starts after 0.8 s of audio is buffered (Android waits for 2.5 s by
+  // default), so a tapped surah is heard sooner; it then keeps buffering ahead.
+  final player = AudioPlayer(
+    audioLoadConfiguration: const AudioLoadConfiguration(
+      androidLoadControl: AndroidLoadControl(
+        bufferForPlaybackDuration: Duration(milliseconds: 800),
+        bufferForPlaybackAfterRebufferDuration: Duration(seconds: 2),
+      ),
+    ),
+  );
   Timer? _idle;
 
   /// "Close" on the notification: Android 13+ media controls do not show Stop.

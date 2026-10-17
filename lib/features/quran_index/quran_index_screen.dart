@@ -21,7 +21,6 @@ class _QuranIndexScreenState extends ConsumerState<QuranIndexScreen> {
   int _tab = 0;
 
   /// Surahs most often opened on their own.
-  static const _quick = [18, 36, 67, 55, 56, 1];
 
   @override
   Widget build(BuildContext context) {
@@ -58,32 +57,6 @@ class _QuranIndexScreenState extends ConsumerState<QuranIndexScreen> {
             child: _ContinueCard(),
           ),
         ),
-        SliverToBoxAdapter(
-          child: SizedBox(
-            height: 40 + context.ts(20),
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 0),
-              itemCount: _quick.length,
-              separatorBuilder: (_, _) => const SizedBox(width: Space.sm),
-              itemBuilder: (_, i) {
-                final s = ref.read(quranDbProvider).surah(_quick[i]);
-                return ActionChip(
-                  label: Text.rich(TextSpan(children: [
-                    TextSpan(text: s.nameEn),
-                    TextSpan(
-                      text: '  ${s.nameAr}',
-                      style: TextStyle(fontFamily: kQuranFont, fontSize: 16, color: c.primary),
-                    ),
-                  ])),
-                  backgroundColor: c.surface,
-                  side: BorderSide(color: c.divider),
-                  onPressed: () => context.openReader(s.pageStart, surah: s.id),
-                );
-              },
-            ),
-          ),
-        ),
         SliverPersistentHeader(
           pinned: true,
           delegate: _SwitchHeader(
@@ -91,7 +64,9 @@ class _QuranIndexScreenState extends ConsumerState<QuranIndexScreen> {
             height: 64,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.sm),
+              // Full width: two wide, easy targets.
               child: SegmentedButton<int>(
+                expandedInsets: EdgeInsets.zero,
                 showSelectedIcon: false,
                 segments: const [
                   ButtonSegment(value: 0, label: Text('Surah')),

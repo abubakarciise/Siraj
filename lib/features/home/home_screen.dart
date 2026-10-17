@@ -65,13 +65,13 @@ class HomeScreen extends ConsumerWidget {
                 const SliverToBoxAdapter(child: SizedBox(height: 40)),
               ],
             ),
-            // The page scrolls under a status bar of its own colour.
+            // The status bar keeps the header's colour while the page scrolls under it.
             Positioned(
               top: 0,
               left: 0,
               right: 0,
               height: MediaQuery.paddingOf(context).top,
-              child: ColoredBox(color: c.bg.withValues(alpha: 0.94)),
+              child: ColoredBox(color: AppTab.home.header(c)),
             ),
           ],
         ),
@@ -99,46 +99,52 @@ class _Header extends ConsumerWidget {
     final c = context.colors;
     final hijri = ref.watch(hijriTodayProvider);
     final now = DateTime.now();
-    // On the page's own background, like the rest of Home.
-    return SafeArea(
-      bottom: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.xs, 0),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${_weekdays[now.weekday - 1]} · ${hijri.day} ${hijri.monthName} ${hijri.year}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.text.bodySmall?.copyWith(color: c.gold),
-                  ),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: AlignmentDirectional.centerStart,
-                    child: Text(_greeting(), maxLines: 1, style: context.text.headlineSmall?.copyWith(color: c.ink)),
-                  ),
-                  Text(
-                    'السلام عليكم ورحمة الله',
-                    style: TextStyle(fontFamily: kNaskhFont, fontSize: 15, color: c.inkMuted),
-                  ),
-                ],
+    // In Home's own header colour.
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTab.home.header(c),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(Radii.xl)),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.xs, Space.lg),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${_weekdays[now.weekday - 1]} · ${hijri.day} ${hijri.monthName} ${hijri.year}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.bodySmall?.copyWith(color: c.gold),
+                    ),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Text(_greeting(), maxLines: 1, style: context.text.headlineSmall?.copyWith(color: c.ink)),
+                    ),
+                    Text(
+                      'السلام عليكم ورحمة الله',
+                      style: TextStyle(fontFamily: kNaskhFont, fontSize: 15, color: c.inkMuted),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            IconButton(
-              tooltip: 'Search',
-              icon: Icon(Icons.search_rounded, color: c.ink),
-              onPressed: () => context.push('/search'),
-            ),
-            IconButton(
-              tooltip: 'Settings',
-              icon: Icon(Icons.settings_outlined, color: c.ink),
-              onPressed: () => context.push('/settings'),
-            ),
-          ],
+              IconButton(
+                tooltip: 'Search',
+                icon: Icon(Icons.search_rounded, color: c.ink),
+                onPressed: () => context.push('/search'),
+              ),
+              IconButton(
+                tooltip: 'Settings',
+                icon: Icon(Icons.settings_outlined, color: c.ink),
+                onPressed: () => context.push('/settings'),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/providers.dart';
+import '../design/tab_theme.dart';
 import '../design/tokens.dart';
 import '../features/daily/adhkar_mini_player.dart';
 import '../features/player/mini_player.dart';
@@ -25,6 +26,9 @@ class AppShell extends ConsumerWidget {
           DecoratedBox(
             decoration: BoxDecoration(border: Border(top: BorderSide(color: c.divider))),
             child: NavigationBar(
+              // The bar takes the colour of the tab that is open.
+              backgroundColor: AppTab.values[shell.currentIndex].header(c),
+              indicatorColor: AppTab.values[shell.currentIndex].accent.withValues(alpha: c.isDark ? 0.35 : 0.22),
               selectedIndex: shell.currentIndex,
               onDestinationSelected: (i) => shell.goBranch(i, initialLocation: i == shell.currentIndex),
               destinations: [

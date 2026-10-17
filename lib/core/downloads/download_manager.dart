@@ -183,21 +183,34 @@ class DownloadManager {
     _emit(DownloadsState(downloaded: downloaded, active: _current.active));
   }
 
-  /// Exact download size of [surahs] (HEAD requests, 24 at a time), or null offline.
-  Future<int?> estimateBytes(Recitation r, List<int> surahs) async {
+  final _sizeCache = <String, int>{}; // "key|surah" -> bytes
+
+  /// Exact download size of [surahs] (HEAD requests over one kept-alive
+  /// connection, 40 at a time; sizes are remembered), or null offline.
+  /// [progress] gets (checked, total) as answers arrive.
+  Future<int?> estimateBytes(Recitation r, List<int> surahs, {void Function(int done, int total)? progress}) async {
     final todo = surahs.where((s) => r.hasSurah(s) && !_current.isDownloaded(r.key, s)).toList();
-    var total = 0;
+    var total = 0, done = 0;
+    final client = http.Client();
     try {
-      for (var i = 0; i < todo.length; i += 24) {
-        final sizes = await Future.wait(todo.skip(i).take(24).map((s) async {
-          final res = await http.head(Uri.parse(r.urlFor(s))).timeout(const Duration(seconds: 10));
-          return int.tryParse(res.headers['content-length'] ?? '') ?? 0;
+      for (var i = 0; i < todo.length; i += 40) {
+        final sizes = await Future.wait(todo.skip(i).take(40).map((s) async {
+          final key = '${r.key}|$s';
+          final known = _sizeCache[key];
+          if (known != null) return known;
+          final res = await client.head(Uri.parse(r.urlFor(s))).timeout(const Duration(seconds: 10));
+          final n = int.tryParse(res.headers['content-length'] ?? '') ?? 0;
+          if (n > 0) _sizeCache[key] = n;
+          progress?.call(++done, todo.length);
+          return n;
         }));
         total += sizes.fold(0, (a, b) => a + b);
       }
       return total;
     } catch (_) {
       return null;
+    } finally {
+      client.close();
     }
   }
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -12,9 +13,9 @@ enum AppTab { home, quran, listen, hadith, daily }
 extension AppTabX on AppTab {
   /// The hue each tab leans toward.
   Color get accent => switch (this) {
-        AppTab.home => const Color(0xFF0F6B56), // emerald
+        AppTab.home => const Color(0xFF1F4E8C), // lapis
         AppTab.quran => const Color(0xFFB8892F), // parchment gold
-        AppTab.listen => const Color(0xFF2F7FA3), // calm teal-blue
+        AppTab.listen => const Color(0xFF2A9D8F), // turquoise
         AppTab.hadith => const Color(0xFFB5653B), // warm sand
         AppTab.daily => const Color(0xFF5B5BA6), // dawn lavender
       };
@@ -42,27 +43,133 @@ class TabTheme extends StatelessWidget {
   }
 }
 
-/// The tab's art behind its first page, over the whole screen. The page's
-/// Scaffold must be transparent.
+/// Art of its own behind each page. [ArtKind.tasbih] is the Tasbih screen's.
+enum ArtKind { home, quran, listen, hadith, daily, tasbih }
+
+/// The tab's art behind its first page, over the whole screen, drifting very
+/// slowly. The page's Scaffold must be transparent.
 class TabBackdrop extends StatelessWidget {
   const TabBackdrop({super.key, required this.tab, required this.child});
   final AppTab tab;
   final Widget child;
 
   @override
+  Widget build(BuildContext context) =>
+      ArtBackdrop(kind: ArtKind.values[tab.index], accent: tab.accent, child: child);
+}
+
+/// The art is drawn once into a layer of its own and only moved (shifted,
+/// scaled, turned): nothing is repainted while it drifts, and it moves about
+/// eight times a second, so slowly that it is barely noticed. It stops on
+/// hidden tabs, in the background, and with the system's "remove animations".
+class ArtBackdrop extends StatefulWidget {
+  const ArtBackdrop({super.key, required this.kind, required this.accent, required this.child});
+  final ArtKind kind;
+  final Color accent;
+  final Widget child;
+
+  @override
+  State<ArtBackdrop> createState() => _ArtBackdropState();
+}
+
+class _ArtBackdropState extends State<ArtBackdrop> with WidgetsBindingObserver {
+  static const _margin = 60.0;
+  Timer? _timer;
+  final _start = DateTime.now();
+  double _t = 0; // seconds since start
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  bool _visible = true, _still = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _visible = TickerMode.of(context); // false on hidden tabs
+    _still = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    _sync();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) => _sync(state);
+
+  void _sync([AppLifecycleState? state]) {
+    final life = state ?? WidgetsBinding.instance.lifecycleState;
+    final active = life == null || life == AppLifecycleState.resumed;
+    if (_visible && !_still && active) {
+      _timer ??= Timer.periodic(const Duration(milliseconds: 125), (_) {
+        if (mounted) setState(() => _t = DateTime.now().difference(_start).inMilliseconds / 1000);
+      });
+    } else {
+      _timer?.cancel();
+      _timer = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// How each art drifts: a slow loop of a minute or more.
+  Matrix4 _motion() {
+    final t = _t;
+    final w = 2 * math.pi;
+    switch (widget.kind) {
+      case ArtKind.home: // a slow circle
+        return Matrix4.translationValues(math.cos(t * w / 70) * 22, math.sin(t * w / 70) * 22, 0);
+      case ArtKind.quran: // arches rise gently and settle
+        return Matrix4.translationValues(0, math.sin(t * w / 80) * 26, 0);
+      case ArtKind.listen: // rings breathe
+        final k = 1 + 0.035 * math.sin(t * w / 30);
+        return Matrix4.diagonal3Values(k, k, 1);
+      case ArtKind.hadith: // the page drifts sideways
+        return Matrix4.translationValues(math.sin(t * w / 90) * 24, math.cos(t * w / 120) * 8, 0);
+      case ArtKind.daily: // the sky turns, as at night
+        return Matrix4.translationValues(math.sin(t * w / 100) * 30, math.cos(t * w / 100) * 12, 0);
+      case ArtKind.tasbih: // the rosette turns slowly
+        return Matrix4.rotationZ(t * w / 240);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final ink = c.isDark ? Color.lerp(tab.accent, Colors.white, 0.35)! : tab.accent;
+    final ink = c.isDark ? Color.lerp(widget.accent, Colors.white, 0.35)! : widget.accent;
     return ColoredBox(
       color: c.bg,
       child: Stack(children: [
-        // Its own layer: scrolling the page never repaints the art.
         Positioned.fill(
-          child: RepaintBoundary(
-            child: CustomPaint(painter: _TabArt(tab, ink.withValues(alpha: c.isDark ? 0.10 : 0.12))),
+          child: ClipRect(
+            child: OverflowBox(
+              alignment: Alignment.center,
+              maxWidth: double.infinity,
+              maxHeight: double.infinity,
+              child: LayoutBuilder(builder: (context, _) {
+                final size = MediaQuery.sizeOf(context);
+                return SizedBox(
+                  width: size.width + 2 * _margin,
+                  height: size.height + 2 * _margin,
+                  child: Transform(
+                    alignment: Alignment.center,
+                    transform: _motion(),
+                    // Drawn once; only moved.
+                    child: RepaintBoundary(
+                      child: CustomPaint(painter: _TabArt(widget.kind, ink.withValues(alpha: c.isDark ? 0.10 : 0.12))),
+                    ),
+                  ),
+                );
+              }),
+            ),
           ),
         ),
-        child,
+        widget.child,
       ]),
     );
   }
@@ -70,7 +177,7 @@ class TabBackdrop extends StatelessWidget {
 
 class _TabArt extends CustomPainter {
   _TabArt(this.tab, this.color);
-  final AppTab tab;
+  final ArtKind tab;
   final Color color;
 
   Paint get _line => Paint()
@@ -82,16 +189,18 @@ class _TabArt extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     canvas.clipRect(Offset.zero & size);
     switch (tab) {
-      case AppTab.home:
+      case ArtKind.home:
         _starLattice(canvas, size);
-      case AppTab.quran:
+      case ArtKind.quran:
         _arcades(canvas, size);
-      case AppTab.listen:
+      case ArtKind.listen:
         _waves(canvas, size);
-      case AppTab.hadith:
+      case ArtKind.hadith:
         _manuscript(canvas, size);
-      case AppTab.daily:
+      case ArtKind.daily:
         _sky(canvas, size);
+      case ArtKind.tasbih:
+        _rosettes(canvas, size);
     }
   }
 
@@ -215,6 +324,24 @@ class _TabArt extends CustomPainter {
       final a = math.pi + math.pi * (0.12 + i * 0.19);
       canvas.drawCircle(c + Offset(math.cos(a), math.sin(a)) * r, 6, p..style = PaintingStyle.fill);
     }
+  }
+
+  /// Tasbih: a great rosette of rings of eight-point stars, like beads around
+  /// a centre, filling the screen.
+  void _rosettes(Canvas canvas, Size size) {
+    final p = _line;
+    final c = size.center(Offset.zero);
+    final far = size.longestSide * 0.75;
+    var ring = 0;
+    for (var r = 70.0; r < far; r += 64, ring++) {
+      canvas.drawCircle(c, r, p..strokeWidth = 0.8);
+      final n = 8 + ring * 6;
+      for (var k = 0; k < n; k++) {
+        final a = 2 * math.pi * k / n + ring * 0.2;
+        _star(canvas, c + Offset(math.cos(a), math.sin(a)) * r, 8, p..strokeWidth = 1.0);
+      }
+    }
+    _star(canvas, c, 40, p..strokeWidth = 1.4);
   }
 
   @override

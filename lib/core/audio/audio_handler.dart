@@ -123,6 +123,11 @@ class QuranAudioHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> onNotificationDeleted() => stop();
 
+  /// The app was closed (swiped away from recent apps): stop everything,
+  /// Quran or adhkar, and remove the notification.
+  @override
+  Future<void> onTaskRemoved() => stop();
+
   /// Stops audio and removes the notification, without calling back.
   Future<void> endSession() async {
     _idle?.cancel();

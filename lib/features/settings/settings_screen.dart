@@ -9,7 +9,7 @@ import '../../design/tokens.dart';
 import '../reader/reader_screen.dart' show PaperPicker, MushafPaperX;
 
 const kAppName = 'Siraj';
-const kAppVersion = '2.6.0';
+const kAppVersion = '2.7.0';
 const kRepoUrl = 'github.com/Abuubakar-Ciise/Siraj';
 
 class SettingsScreen extends ConsumerWidget {
@@ -83,7 +83,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
             _Switch(
               icon: Icons.auto_stories_rounded,
-              color: const Color(0xFF0F6B56),
+              color: const Color(0xFF1F4E8C),
               title: 'Turn pages with the recitation',
               value: s.followAudio,
               onChanged: (v) => n.update((x) => x.copyWith(followAudio: v)),
@@ -109,7 +109,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
             _Row(
               icon: Icons.download_done_rounded,
-              color: const Color(0xFF3E7C59),
+              color: const Color(0xFF2A9D8F),
               title: 'Downloads & bookmarks',
               onTap: () => context.push('/library'),
             ),
@@ -129,7 +129,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
             _Row(
               icon: Icons.mosque_rounded,
-              color: const Color(0xFF0E5A49),
+              color: const Color(0xFF17345F),
               title: 'Prayer times',
               onTap: () => context.push('/prayer'),
             ),
@@ -346,7 +346,7 @@ class _Sources extends StatelessWidget {
       ('Hadith', 'Arabic texts, English translations and grades from the hadith-api project by Fawaz Ahmed (public domain).'),
       ('Hijri calendar', 'Umm al-Qura calculation, adjustable for local moon sighting.'),
       ('Adhkar recordings', 'hisnmuslim.com (Hisn al-Muslim) and, for Quranic adhkar, Mishary Alafasy via everyayah.com. Included in the app, so they play offline.'),
-      ('App icon', 'The name سراج in Amiri Bold (SIL Open Font License).'),
+      ('App icon', '"القرآن الكريم" in Amiri Bold (SIL Open Font License) under a mihrab arch.'),
       ('Reminder sound', 'Pixie Dust, from the Android Open Source Project (Apache 2.0).'),
       ('Prayer times & Qibla', 'Calculated on your phone with the open-source Adhan library.'),
       ('UI font', 'IBM Plex Sans Arabic (SIL Open Font License).'),

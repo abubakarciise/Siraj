@@ -109,7 +109,8 @@ shown comes from the source collections with its reference and grade.
   Mishary Alafasy via [everyayah.com](https://everyayah.com); cut to each dhikr and included for offline listening
   (`tool/build_adhkar_audio.py`, needs ffmpeg and faster-whisper). Prayer times: the open-source Adhan library. Hijri dates: Umm al-Qura.
 - Fonts: IBM Plex Sans Arabic and Amiri (SIL Open Font License).
-- Logo: the name سراج in Amiri Bold (SIL Open Font License). Adhkar notification art: a Mamluk glass mosque lamp,
+- Logo: "القرآن الكريم" in Amiri Bold (SIL Open Font License) under a gold mihrab arch on lapis, drawn by
+  tool/make_icons.py. Adhkar notification art: a Mamluk glass mosque lamp,
   photographed by The Metropolitan Museum of Art (Open Access, CC0).
 - Reminder sound "Pixie Dust" from the Android Open Source Project (Apache 2.0).
 

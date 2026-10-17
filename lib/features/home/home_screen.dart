@@ -28,7 +28,7 @@ class HomeScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Colors.transparent, // the tab's art shows through (TabBackdrop)
       body: AnnotatedRegion(
-        value: SystemUiOverlayStyle.light,
+        value: c.isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
         child: Stack(
           children: [
             CustomScrollView(
@@ -65,13 +65,13 @@ class HomeScreen extends ConsumerWidget {
                 const SliverToBoxAdapter(child: SizedBox(height: 40)),
               ],
             ),
-            // The status bar keeps the header's green while the page scrolls under it.
+            // The page scrolls under a status bar of its own colour.
             Positioned(
               top: 0,
               left: 0,
               right: 0,
               height: MediaQuery.paddingOf(context).top,
-              child: ColoredBox(color: c.brand),
+              child: ColoredBox(color: c.bg.withValues(alpha: 0.94)),
             ),
           ],
         ),
@@ -80,7 +80,7 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-/// A short green header: date, greeting, search and settings.
+/// A short header: date, greeting, search and settings.
 class _Header extends ConsumerWidget {
   const _Header();
 
@@ -97,67 +97,46 @@ class _Header extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
-    final fg = c.onBrand;
     final hijri = ref.watch(hijriTodayProvider);
     final now = DateTime.now();
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(Radii.xl)),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [c.brand, Color.lerp(c.brand, Colors.black, c.isDark ? 0.25 : 0.18)!],
-          ),
-        ),
-        child: Stack(
+    // On the page's own background, like the rest of Home.
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.xs, 0),
+        child: Row(
           children: [
-            Positioned.fill(child: GirihPattern(color: fg, cell: 48, opacity: 0.06)),
-            SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.xs, Space.lg),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${_weekdays[now.weekday - 1]} · ${hijri.day} ${hijri.monthName} ${hijri.year}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.text.bodySmall?.copyWith(color: c.gold),
-                          ),
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: AlignmentDirectional.centerStart,
-                            child: Text(
-                              _greeting(),
-                              maxLines: 1,
-                              style: context.text.headlineSmall?.copyWith(color: fg),
-                            ),
-                          ),
-                          Text(
-                            'السلام عليكم ورحمة الله',
-                            style: TextStyle(fontFamily: kNaskhFont, fontSize: 15, color: fg.withValues(alpha: 0.75)),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Search',
-                      icon: Icon(Icons.search_rounded, color: fg),
-                      onPressed: () => context.push('/search'),
-                    ),
-                    IconButton(
-                      tooltip: 'Settings',
-                      icon: Icon(Icons.settings_outlined, color: fg),
-                      onPressed: () => context.push('/settings'),
-                    ),
-                  ],
-                ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${_weekdays[now.weekday - 1]} · ${hijri.day} ${hijri.monthName} ${hijri.year}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.bodySmall?.copyWith(color: c.gold),
+                  ),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Text(_greeting(), maxLines: 1, style: context.text.headlineSmall?.copyWith(color: c.ink)),
+                  ),
+                  Text(
+                    'السلام عليكم ورحمة الله',
+                    style: TextStyle(fontFamily: kNaskhFont, fontSize: 15, color: c.inkMuted),
+                  ),
+                ],
               ),
+            ),
+            IconButton(
+              tooltip: 'Search',
+              icon: Icon(Icons.search_rounded, color: c.ink),
+              onPressed: () => context.push('/search'),
+            ),
+            IconButton(
+              tooltip: 'Settings',
+              icon: Icon(Icons.settings_outlined, color: c.ink),
+              onPressed: () => context.push('/settings'),
             ),
           ],
         ),
@@ -207,7 +186,7 @@ class _AdhkarNow extends ConsumerWidget {
         side: BorderSide(color: c.divider),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(Space.lg),
+        padding: const EdgeInsets.all(Space.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -227,18 +206,20 @@ class _AdhkarNow extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(moment.reason.toUpperCase(), style: context.text.labelSmall?.copyWith(color: c.gold)),
-                        Text(title, style: context.text.titleLarge),
+                        Text(title, style: context.text.titleMedium),
                         Text(
-                          done
-                              ? 'Done today · تقبّل الله'
-                              : [
-                                  arabic,
-                                  if (started) '$counted of $total',
-                                  if (cat != null && cat.listeningTime > Duration.zero)
-                                    '${formatListeningTime(cat.listeningTime)} to listen',
-                                ].join(' · '),
+                          done ? 'Done today · تقبّل الله' : arabic,
                           style: context.text.bodyMedium?.copyWith(color: done ? c.primary : c.inkMuted),
                         ),
+                        // English on its own line: mixed with Arabic, the order would jumble.
+                        if (!done && cat != null && cat.listeningTime > Duration.zero)
+                          Text(
+                            [
+                              if (started) '$counted of $total read',
+                              '${formatListeningTime(cat.listeningTime)} to listen',
+                            ].join(' · '),
+                            style: context.text.labelSmall?.copyWith(color: c.primary),
+                          ),
                       ],
                     ),
                   ),
@@ -246,10 +227,10 @@ class _AdhkarNow extends ConsumerWidget {
                 ],
               ),
             ),
-            const SizedBox(height: Space.lg),
+            const SizedBox(height: Space.md),
             if (tasbih)
               FilledButton.icon(
-                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(44)),
+                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(40)),
                 onPressed: () => context.push('/tasbih'),
                 icon: const Icon(Icons.blur_circular_rounded),
                 label: const Text('Open Tasbih'),
@@ -259,7 +240,7 @@ class _AdhkarNow extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: FilledButton.icon(
-                      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(44)),
+                      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(40)),
                       onPressed: () => context.push('/adhkar/$id?listen=1'),
                       icon: const Icon(Icons.play_arrow_rounded),
                       label: Text(started ? 'Continue' : 'Listen'),
@@ -268,7 +249,7 @@ class _AdhkarNow extends ConsumerWidget {
                   const SizedBox(width: Space.md),
                   Expanded(
                     child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44)),
+                      style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(40)),
                       onPressed: () => context.push('/adhkar/$id'),
                       icon: const Icon(Icons.menu_book_outlined, size: 20),
                       label: const Text('Read'),
@@ -276,66 +257,7 @@ class _AdhkarNow extends ConsumerWidget {
                   ),
                 ],
               ),
-            const SizedBox(height: Space.lg),
-            Divider(color: c.divider, height: 1),
-            const SizedBox(height: Space.md),
-            // Today's main adhkar at a glance: a missed one stays visible.
-            Row(
-              children: [
-                for (final (k, label) in const [
-                  ('morning', 'Morning'),
-                  ('evening', 'Evening'),
-                  ('sleep', 'Sleep'),
-                ]) ...[
-                  if (k != 'morning') const SizedBox(width: Space.sm),
-                  Expanded(
-                    child: _DayChip(id: k, label: label, done: adhkarDoneToday(ref, k), current: k == id),
-                  ),
-                ],
-              ],
-            ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DayChip extends StatelessWidget {
-  const _DayChip({required this.id, required this.label, required this.done, required this.current});
-  final String id, label;
-  final bool done, current;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Material(
-      color: done ? c.primarySoft : c.surfaceAlt,
-      borderRadius: BorderRadius.circular(99),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(99),
-        onTap: () => context.push('/adhkar/$id'),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Space.sm, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                done ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                size: 16,
-                color: done ? c.primary : (current ? c.gold : c.inkFaint),
-              ),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.text.bodySmall?.copyWith(color: done ? c.primary : c.ink),
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -367,14 +289,14 @@ class _MemorizeCard extends ConsumerWidget {
             children: [
               const Positioned.fill(child: GirihPattern(color: ink, cell: 40, opacity: 0.06)),
               Padding(
-                padding: const EdgeInsets.all(Space.lg),
+                padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.md),
                 child: Row(
                   children: [
                     Container(
-                      width: 56,
-                      height: 56,
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(color: ink.withValues(alpha: 0.9), shape: BoxShape.circle),
-                      child: const Icon(Icons.psychology_alt_rounded, color: Color(0xFFF4E3BC), size: 30),
+                      child: const Icon(Icons.psychology_alt_rounded, color: Color(0xFFF4E3BC), size: 24),
                     ),
                     const SizedBox(width: Space.lg),
                     Expanded(
@@ -383,7 +305,7 @@ class _MemorizeCard extends ConsumerWidget {
                         children: [
                           Text(
                             'Test your hifz',
-                            style: context.text.titleLarge?.copyWith(color: ink, fontWeight: FontWeight.w700),
+                            style: context.text.titleMedium?.copyWith(color: ink, fontWeight: FontWeight.w700),
                           ),
                           Text(
                             last == null
@@ -492,7 +414,11 @@ class _ExploreTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleMedium),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Text(title, maxLines: 1, style: context.text.titleMedium),
+                      ),
                       Text(
                         arabic,
                         maxLines: 1,

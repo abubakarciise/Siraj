@@ -9,6 +9,7 @@ import '../../design/theme.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
 
+/// The Quran tab: where you left off, quick picks, then every surah and juz.
 class QuranIndexScreen extends ConsumerStatefulWidget {
   const QuranIndexScreen({super.key});
 
@@ -19,36 +20,76 @@ class QuranIndexScreen extends ConsumerStatefulWidget {
 class _QuranIndexScreenState extends ConsumerState<QuranIndexScreen> {
   int _tab = 0;
 
+  /// Surahs most often opened on their own.
+  static const _quick = [18, 36, 67, 55, 56, 1];
+
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final last = ref.watch(lastReadProvider).value;
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Quran', style: context.text.headlineSmall),
-        actions: [
-          IconButton(
-            tooltip: 'Memorization test',
-            icon: const Icon(Icons.fact_check_outlined),
-            onPressed: () => context.push('/memorize'),
-          ),
-          IconButton(
-            tooltip: 'Bookmarks & downloads',
-            icon: const Icon(Icons.bookmarks_outlined),
-            onPressed: () => context.push('/library'),
-          ),
-          IconButton(icon: const Icon(Icons.search_rounded), onPressed: () => context.push('/search')),
-          IconButton(
-            tooltip: 'Go to page',
-            icon: const Icon(Icons.tag_rounded),
-            onPressed: () => _goToPage(context),
-          ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
+      body: CustomScrollView(slivers: [
+        SliverAppBar(
+          pinned: true,
+          title: Text('Quran', style: context.text.headlineSmall),
+          actions: [
+            IconButton(
+              tooltip: 'Memorization test',
+              icon: const Icon(Icons.fact_check_outlined),
+              onPressed: () => context.push('/memorize'),
+            ),
+            IconButton(
+              tooltip: 'Bookmarks & downloads',
+              icon: const Icon(Icons.bookmarks_outlined),
+              onPressed: () => context.push('/library'),
+            ),
+            IconButton(tooltip: 'Search', icon: const Icon(Icons.search_rounded), onPressed: () => context.push('/search')),
+            IconButton(
+              tooltip: 'Go to page',
+              icon: const Icon(Icons.tag_rounded),
+              onPressed: () => _goToPage(context),
+            ),
+          ],
+        ),
+        SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.sm),
-            child: SizedBox(
-              width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xs, Space.gutter, 0),
+            child: _ContinueCard(),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: 40 + context.ts(20),
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 0),
+              itemCount: _quick.length,
+              separatorBuilder: (_, _) => const SizedBox(width: Space.sm),
+              itemBuilder: (_, i) {
+                final s = ref.read(quranDbProvider).surah(_quick[i]);
+                return ActionChip(
+                  label: Text.rich(TextSpan(children: [
+                    TextSpan(text: s.nameEn),
+                    TextSpan(
+                      text: '  ${s.nameAr}',
+                      style: TextStyle(fontFamily: kQuranFont, fontSize: 16, color: c.primary),
+                    ),
+                  ])),
+                  backgroundColor: c.surface,
+                  side: BorderSide(color: c.divider),
+                  onPressed: () => context.openReader(s.pageStart, surah: s.id),
+                );
+              },
+            ),
+          ),
+        ),
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _SwitchHeader(
+            color: c.bg,
+            height: 64,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.sm),
               child: SegmentedButton<int>(
                 showSelectedIcon: false,
                 segments: const [
@@ -61,13 +102,9 @@ class _QuranIndexScreenState extends ConsumerState<QuranIndexScreen> {
             ),
           ),
         ),
-      ),
-      body: AnimatedSwitcher(
-        duration: Motion.quick,
-        child: _tab == 0
-            ? _SurahList(key: const ValueKey('s'), currentSurah: last?.ref.surah)
-            : _JuzGrid(key: const ValueKey('j'), currentPage: last?.page),
-      ),
+        if (_tab == 0) _SurahList(currentSurah: last?.ref.surah) else _JuzGrid(currentPage: last?.page),
+        const SliverToBoxAdapter(child: SizedBox(height: 24)),
+      ]),
     );
   }
 
@@ -94,65 +131,174 @@ class _QuranIndexScreenState extends ConsumerState<QuranIndexScreen> {
   }
 }
 
+class _SwitchHeader extends SliverPersistentHeaderDelegate {
+  _SwitchHeader({required this.child, required this.color, required this.height});
+  final Widget child;
+  final Color color;
+  final double height;
+
+  @override
+  double get minExtent => height;
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) =>
+      ColoredBox(color: color, child: Center(child: child));
+
+  @override
+  bool shouldRebuild(_SwitchHeader old) => old.child != child || old.color != color;
+}
+
+/// Where the reader left off, with progress through the surah.
+class _ContinueCard extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
+    final db = ref.watch(quranDbProvider);
+    final last = ref.watch(lastReadProvider).value;
+    final surah = db.surah(last?.ref.surah ?? 1);
+    final progress = last == null
+        ? 0.0
+        : ((last.page - surah.pageStart + 1) / (surah.pageEnd - surah.pageStart + 1)).clamp(0.0, 1.0);
+    return Material(
+      color: c.brand,
+      borderRadius: BorderRadius.circular(Radii.xl),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.openReader(last?.page ?? 1),
+        child: Stack(children: [
+          Positioned.fill(child: GirihPattern(color: c.onBrand, cell: 46, opacity: 0.07)),
+          Padding(
+            padding: const EdgeInsets.all(Space.xl),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(last == null ? 'START READING' : 'CONTINUE READING',
+                        style: context.text.labelSmall?.copyWith(color: c.gold)),
+                    const SizedBox(height: Space.xs),
+                    Text(surah.nameEn,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.headlineSmall?.copyWith(color: c.onBrand)),
+                    Text(
+                      last == null ? 'The Opening' : 'Page ${last.page} · Ayah ${last.ref.ayah}',
+                      style: context.text.bodyMedium?.copyWith(color: c.onBrand.withValues(alpha: 0.8)),
+                    ),
+                  ]),
+                ),
+                Text(surah.nameAr,
+                    style: TextStyle(fontFamily: kQuranFont, fontSize: 30, color: c.onBrand, height: 1.4)),
+              ]),
+              const SizedBox(height: Space.lg),
+              Row(children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 5,
+                      color: c.gold,
+                      backgroundColor: c.onBrand.withValues(alpha: 0.2),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: Space.lg),
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: c.gold,
+                    foregroundColor: c.brand,
+                    minimumSize: const Size(0, 40),
+                  ),
+                  onPressed: () => context.openReader(last?.page ?? 1),
+                  icon: const Icon(Icons.menu_book_rounded, size: 18),
+                  label: Text(last == null ? 'Open' : 'Continue'),
+                ),
+              ]),
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
 class _SurahList extends ConsumerWidget {
-  const _SurahList({super.key, this.currentSurah});
+  const _SurahList({this.currentSurah});
   final int? currentSurah;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
     final surahs = ref.watch(surahsProvider);
-    return ListView.builder(
-      itemCount: surahs.length,
-      padding: const EdgeInsets.only(bottom: 24),
-      itemBuilder: (_, i) {
-        final s = surahs[i];
-        final current = s.id == currentSurah;
-        return InkWell(
-          onTap: () => context.openReader(s.pageStart, surah: s.id),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Space.gutter, vertical: 10),
-            child: Row(children: [
-              StarMedallion(number: s.id, active: current),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(s.nameEn, style: context.text.titleMedium?.copyWith(color: current ? c.primary : null)),
-                  Text('${s.isMakki ? 'Makki' : 'Madani'} · ${s.ayahCount} ayahs · ${s.meaning}',
-                      style: context.text.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
-                ]),
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: Space.md),
+      sliver: SliverList.builder(
+        itemCount: surahs.length,
+        itemBuilder: (_, i) {
+          final s = surahs[i];
+          final current = s.id == currentSurah;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Material(
+              color: current ? c.primarySoft : c.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(Radii.lg),
+                side: BorderSide(color: current ? c.primary.withValues(alpha: 0.35) : c.divider),
               ),
-              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                Text(s.nameAr, style: TextStyle(fontFamily: kQuranFont, fontSize: 21, color: c.ink, height: 1.4)),
-                Text('p. ${s.pageStart}', style: context.text.bodySmall),
-              ]),
-            ]),
-          ),
-        );
-      },
+              child: InkWell(
+                borderRadius: BorderRadius.circular(Radii.lg),
+                onTap: () => context.openReader(s.pageStart, surah: s.id),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Space.md, vertical: 10),
+                  child: Row(children: [
+                    StarMedallion(number: s.id, active: current),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(s.nameEn, style: context.text.titleMedium?.copyWith(color: current ? c.primary : null)),
+                        Text('${s.isMakki ? 'Makki' : 'Madani'} · ${s.ayahCount} ayahs · ${s.meaning}',
+                            style: context.text.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ]),
+                    ),
+                    Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                      Text(s.nameAr, style: TextStyle(fontFamily: kQuranFont, fontSize: 21, color: c.ink, height: 1.4)),
+                      Text('p. ${s.pageStart}', style: context.text.bodySmall),
+                    ]),
+                  ]),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
 
 class _JuzGrid extends ConsumerWidget {
-  const _JuzGrid({super.key, this.currentPage});
+  const _JuzGrid({this.currentPage});
   final int? currentPage;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
     final db = ref.watch(quranDbProvider);
-    final juz = ref.watch(juzListProvider);
-    return juz.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('$e')),
-      data: (list) => GridView.builder(
-        padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, 24),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
+    final list = ref.watch(juzListProvider).value;
+    if (list == null) {
+      return const SliverToBoxAdapter(
+        child: Padding(padding: EdgeInsets.all(Space.xxl), child: Center(child: CircularProgressIndicator())),
+      );
+    }
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xs, Space.gutter, 0),
+      sliver: SliverGrid.builder(
+        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 240,
           mainAxisSpacing: Space.md,
           crossAxisSpacing: Space.md,
-          childAspectRatio: 1.45,
+          mainAxisExtent: 60 + context.ts(56),
         ),
         itemCount: list.length,
         itemBuilder: (_, i) {
@@ -161,16 +307,15 @@ class _JuzGrid extends ConsumerWidget {
           final current = currentPage != null && currentPage! >= j.page && currentPage! < nextPage;
           return Material(
             color: current ? c.primarySoft : c.surface,
-            borderRadius: BorderRadius.circular(Radii.lg),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(Radii.lg),
+              side: BorderSide(color: current ? c.primary.withValues(alpha: 0.4) : c.divider),
+            ),
             child: InkWell(
               borderRadius: BorderRadius.circular(Radii.lg),
               onTap: () => context.openReader(j.page),
-              child: Container(
+              child: Padding(
                 padding: const EdgeInsets.all(Space.lg),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(Radii.lg),
-                  border: Border.all(color: current ? c.primary.withValues(alpha: 0.4) : c.divider),
-                ),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [
                     Text('Juz ${j.number}', style: context.text.titleMedium),
@@ -178,7 +323,8 @@ class _JuzGrid extends ConsumerWidget {
                     StarMedallion(number: j.number, size: 30, active: current),
                   ]),
                   const Spacer(),
-                  Text('${db.surah(j.start.surah).nameEn} ${j.start}', style: context.text.bodySmall),
+                  Text('${db.surah(j.start.surah).nameEn} ${j.start}',
+                      maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.bodySmall),
                   Text('Page ${j.page}', style: context.text.bodySmall),
                 ]),
               ),

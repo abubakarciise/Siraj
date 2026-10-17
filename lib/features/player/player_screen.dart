@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../app/shell.dart';
-import '../../core/audio/ayah_estimate.dart';
 import '../../core/audio/player_controller.dart';
 import '../../core/providers.dart';
 import '../../design/dialogs.dart';
@@ -97,8 +96,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   ),
                 ]),
               ),
-              // The whole surah, following the recitation (exact with timing data,
-              // estimated otherwise) so listeners always see where the reciter is.
+              // The whole surah, following the recitation when it has ayah timing.
               Expanded(child: SurahFollowAlong(key: ValueKey('${np.recitation.key}|${np.surah}'), surah: np.surah)),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: Space.xxl),
@@ -198,9 +196,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 }
 
 /// The surah as a scrolling text that follows the reciter: the current ayah is
-/// highlighted and kept in view. Uses ayah timing when the recitation has it,
-/// otherwise an estimate from the ayah lengths (marked ≈). Tap an ayah to jump
-/// to it; scrolling by hand pauses the follow until "Back to current ayah".
+/// highlighted and kept in view, from the recitation's ayah timing (without
+/// timing the text is shown to read along, with nothing highlighted). Tap an
+/// ayah to jump to it; scrolling by hand pauses the follow until "Back to ayah".
 class SurahFollowAlong extends ConsumerStatefulWidget {
   const SurahFollowAlong({super.key, required this.surah});
   final int surah;
@@ -211,7 +209,6 @@ class SurahFollowAlong extends ConsumerStatefulWidget {
 
 class _SurahFollowAlongState extends ConsumerState<SurahFollowAlong> {
   final _items = ItemScrollController();
-  SurahPace? _pace;
   bool _following = true;
   bool _userDragging = false;
   int? _shown;
@@ -221,14 +218,12 @@ class _SurahFollowAlongState extends ConsumerState<SurahFollowAlong> {
   /// List index of [ayah] (0 = basmala row when the surah has one).
   int _indexOf(int ayah) => _hasBasmala ? ayah : math.max(0, ayah - 1);
 
-  /// (current ayah, exact?); ayah 0 is the opening basmala.
-  (int, bool)? _current(NowPlaying? np) {
-    if (np == null || np.surah != widget.surah) return null;
-    if (np.hasTiming) return np.ayah == null ? (0, true) : (np.ayah!.ayah, true);
-    final pace = _pace;
-    final dur = np.duration.inMilliseconds;
-    if (pace == null || dur <= 0) return null;
-    return (pace.ayahAt(np.position.inMilliseconds / dur), false);
+  /// The ayah being recited (0 = the opening basmala), from the recitation's
+  /// ayah timing. Without timing nothing is highlighted: a guess from ayah
+  /// lengths was right only about a quarter of the time.
+  int? _current(NowPlaying? np) {
+    if (np == null || np.surah != widget.surah || !np.hasTiming) return null;
+    return np.ayah?.ayah ?? 0;
   }
 
   void _scrollTo(int ayah, {bool jump = false}) {
@@ -245,12 +240,9 @@ class _SurahFollowAlongState extends ConsumerState<SurahFollowAlong> {
     final pc = ref.read(playerProvider);
     final np = ref.read(nowPlayingProvider).value;
     if (np == null) return;
+    if (!np.hasTiming) return;
     setState(() => _following = true);
-    if (np.hasTiming && await pc.seekToAyah(ayah)) return;
-    final pace = _pace;
-    if (pace != null && np.duration > Duration.zero) {
-      await pc.seek(np.duration * pace.startOf(ayah));
-    }
+    await pc.seekToAyah(ayah);
   }
 
   @override
@@ -259,11 +251,9 @@ class _SurahFollowAlongState extends ConsumerState<SurahFollowAlong> {
     final ayahs = ref.watch(surahAyahsProvider(widget.surah)).value;
     final translations = ref.watch(surahTranslationProvider(widget.surah)).value ?? const {};
     if (ayahs == null) return const Center(child: CircularProgressIndicator());
-    _pace ??= SurahPace(widget.surah, ayahs);
     // Rebuild only when the current ayah changes, not on every position tick.
-    final current = ref.watch(nowPlayingProvider.select((v) => _current(v.value)));
-    final ayah = current?.$1;
-    final exact = current?.$2 ?? true;
+    final ayah = ref.watch(nowPlayingProvider.select((v) => _current(v.value)));
+    final timed = ref.watch(nowPlayingProvider.select((v) => v.value?.recitation.hasTiming ?? true));
 
     if (ayah != null && ayah != _shown) {
       final first = _shown == null;
@@ -272,7 +262,23 @@ class _SurahFollowAlongState extends ConsumerState<SurahFollowAlong> {
     }
 
     final count = ayahs.length + (_hasBasmala ? 1 : 0);
-    return Stack(children: [
+    return Column(children: [
+      if (!timed)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, 0),
+          child: Row(children: [
+            Icon(Icons.info_outline_rounded, size: 16, color: c.inkMuted),
+            const SizedBox(width: Space.sm),
+            Expanded(
+              child: Text(
+                'This recitation has no ayah timing, so the ayah being recited cannot be highlighted. '
+                'Reciters marked Ayah sync follow along exactly.',
+                style: context.text.bodySmall,
+              ),
+            ),
+          ]),
+        ),
+      Expanded(child: Stack(children: [
       NotificationListener<ScrollNotification>(
         onNotification: (n) {
           if (n is ScrollStartNotification && n.dragDetails != null) _userDragging = true;
@@ -312,7 +318,6 @@ class _SurahFollowAlongState extends ConsumerState<SurahFollowAlong> {
               final tr = translations[a.ref.ayah];
               return _FollowRow(
                 active: active,
-                approximate: active && !exact,
                 onTap: () => _seekTo(a.ref.ayah),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                   Text(
@@ -323,14 +328,14 @@ class _SurahFollowAlongState extends ConsumerState<SurahFollowAlong> {
                       fontFamily: kQuranFont,
                       fontSize: 25,
                       height: 1.9,
-                      color: active ? c.ink : c.ink.withValues(alpha: 0.55),
+                      color: active || !timed ? c.ink : c.ink.withValues(alpha: 0.55),
                     ),
                   ),
                   if (tr != null) ...[
                     const SizedBox(height: Space.sm),
                     Text(tr,
                         textAlign: TextAlign.center,
-                        style: context.text.bodyMedium?.copyWith(color: active ? c.inkMuted : c.inkFaint, height: 1.5)),
+                        style: context.text.bodyMedium?.copyWith(color: active || !timed ? c.inkMuted : c.inkFaint, height: 1.5)),
                   ],
                 ]),
               );
@@ -360,13 +365,14 @@ class _SurahFollowAlongState extends ConsumerState<SurahFollowAlong> {
           ),
         ),
       ),
+      ])),
     ]);
   }
 }
 
 class _FollowRow extends StatelessWidget {
-  const _FollowRow({required this.active, required this.onTap, required this.child, this.approximate = false});
-  final bool active, approximate;
+  const _FollowRow({required this.active, required this.onTap, required this.child});
+  final bool active;
   final VoidCallback onTap;
   final Widget child;
 
@@ -389,18 +395,7 @@ class _FollowRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(Radii.lg),
               border: Border.all(color: active ? c.primary.withValues(alpha: 0.35) : Colors.transparent),
             ),
-            child: Stack(children: [
-              child,
-              if (approximate)
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  child: Tooltip(
-                    message: 'Estimated position: this recitation has no ayah timing data',
-                    child: Text('≈', style: context.text.titleMedium?.copyWith(color: c.inkFaint)),
-                  ),
-                ),
-            ]),
+            child: child,
           ),
         ),
       ),

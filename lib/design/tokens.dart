@@ -156,6 +156,26 @@ class AppColors extends ThemeExtension<AppColors> {
         isDark: base.isDark,
       );
 
+  /// The same colours on another background (each tab has its own tint).
+  AppColors withBg(Color background) => AppColors(
+        bg: background,
+        surface: surface,
+        surfaceAlt: Color.lerp(surfaceAlt, background, 0.35)!,
+        pageBg: pageBg,
+        ink: ink,
+        inkMuted: inkMuted,
+        inkFaint: inkFaint,
+        primary: primary,
+        primarySoft: primarySoft,
+        onPrimary: onPrimary,
+        brand: brand,
+        onBrand: onBrand,
+        gold: gold,
+        divider: divider,
+        danger: danger,
+        isDark: isDark,
+      );
+
   @override
   AppColors copyWith() => this;
 

@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app/app.dart';
 import 'app/payload.dart';
 import 'app/router.dart';
+import 'core/audio/artwork.dart';
 import 'core/audio/audio_handler.dart';
 import 'core/audio/player_controller.dart';
 import 'core/adhkar/adhkar.dart';
@@ -42,7 +43,8 @@ Future<void> main() async {
       androidNotificationChannelId: 'com.quranapp.playback',
       androidNotificationChannelName: 'Siraj playback',
       androidNotificationIcon: 'drawable/ic_stat_quran',
-      androidStopForegroundOnPause: false,
+      // Paused audio can be swiped away from the notification shade.
+      androidStopForegroundOnPause: true,
     ),
   );
   final session = await AudioSession.instance;
@@ -51,7 +53,7 @@ Future<void> main() async {
   final timing = TimingService();
   final downloads = DownloadManager(timing);
   await downloads.init();
-  final player = PlayerController(handler, db, downloads, timing, user);
+  final player = PlayerController(handler, db, downloads, timing, user, artUri: Artwork.quran);
 
   final notifications = NotificationService();
   await notifications.init();

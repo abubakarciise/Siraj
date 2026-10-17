@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/quran/models.dart';
+import '../design/tab_theme.dart';
 import '../features/daily/adhkar_screen.dart';
 import '../features/daily/daily_screen.dart';
 import '../features/daily/prayer_screen.dart';
@@ -29,8 +30,19 @@ final appRouter = GoRouter(
   navigatorKey: _rootKey,
   initialLocation: '/home',
   routes: [
-    StatefulShellRoute.indexedStack(
+    StatefulShellRoute(
       builder: (context, state, shell) => AppShell(shell: shell),
+      // Each tab keeps its own stack, and its own background colour.
+      navigatorContainerBuilder: (context, shell, children) => IndexedStack(
+        index: shell.currentIndex,
+        children: [
+          for (var i = 0; i < children.length; i++)
+            TickerMode(
+              enabled: i == shell.currentIndex,
+              child: TabTheme(tab: AppTab.values[i], child: children[i]),
+            ),
+        ],
+      ),
       branches: [
         StatefulShellBranch(routes: [
           GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),

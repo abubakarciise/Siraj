@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/hadith/hadith.dart';
 import '../../core/providers.dart';
-import '../../core/quran/arabic.dart';
 import '../../core/reminders/reminders.dart';
 import '../../design/dialogs.dart';
 import '../../design/theme.dart';
@@ -58,8 +57,6 @@ const _tagLabels = {
 extension _BookName on WidgetRef {
   String bookName(String id) =>
       watch(hadithBooksProvider).value?.where((b) => b.id == id).firstOrNull?.nameEn ?? id;
-  String bookNameAr(String id) =>
-      watch(hadithBooksProvider).value?.where((b) => b.id == id).firstOrNull?.nameAr ?? id;
 }
 
 // =============================================================================
@@ -73,7 +70,6 @@ class HadithHomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
     final books = ref.watch(hadithBooksProvider).value ?? const [];
-    final daily = ref.watch(hadithOfDayProvider).value;
     final repo = ref.read(hadithRepoProvider);
     final tags = ReminderComposer.occasions(DateTime.now(), ref.watch(dailyRemindersProvider).hijriOffset);
     final sunnah = [...repo.sunnah.indexed]
@@ -101,13 +97,6 @@ class HadithHomeScreen extends ConsumerWidget {
             title: TabTitle('Hadith & Sunnah'),
           ),
         ),
-        if (daily != null)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, 0),
-              child: _HadithOfDay(hadith: daily, bookName: ref.bookNameAr(daily.book)),
-            ),
-          ),
         SliverToBoxAdapter(
           child: SectionTitle('Sunnah to practise',
               trailing: TextButton(onPressed: () => context.push('/sunnah'), child: const Text('See all'))),
@@ -148,54 +137,6 @@ class HadithHomeScreen extends ConsumerWidget {
           ),
         ),
       ]),
-    );
-  }
-}
-
-class _HadithOfDay extends StatelessWidget {
-  const _HadithOfDay({required this.hadith, required this.bookName});
-  final Hadith hadith;
-  final String bookName;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    final number = hadith.number == hadith.number.truncate() ? toArabicDigits(hadith.number.toInt()) : hadith.numberLabel;
-    return Material(
-      color: c.brand,
-      borderRadius: BorderRadius.circular(Radii.xl),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.push('/hadith/${hadith.book}/n/${hadith.numberLabel}'),
-        child: Stack(children: [
-          Positioned.fill(child: GirihPattern(color: c.onBrand, cell: 52, opacity: 0.07)),
-          Padding(
-            padding: const EdgeInsets.all(Space.xxl),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              Row(children: [
-                Text('HADITH OF THE DAY', style: context.text.labelSmall?.copyWith(color: c.gold)),
-                const Spacer(),
-                Text('حديث اليوم',
-                    style: TextStyle(fontFamily: kNaskhFont, fontSize: 15, color: c.gold, fontWeight: FontWeight.w700)),
-              ]),
-              const SizedBox(height: Space.md),
-              Text(
-                hadith.arabic.trim(),
-                maxLines: 7,
-                overflow: TextOverflow.ellipsis,
-                textDirection: TextDirection.rtl,
-                textAlign: TextAlign.right,
-                style: TextStyle(fontFamily: kNaskhFont, fontSize: 20, height: 1.9, color: c.onBrand),
-              ),
-              const SizedBox(height: Space.lg),
-              Text('$bookName · $number',
-                  textDirection: TextDirection.rtl,
-                  textAlign: TextAlign.right,
-                  style: TextStyle(fontFamily: kNaskhFont, fontSize: 15, color: c.onBrand.withValues(alpha: 0.85))),
-            ]),
-          ),
-        ]),
-      ),
     );
   }
 }

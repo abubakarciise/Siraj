@@ -63,8 +63,13 @@ class Recitation {
         server: j['server'] as String,
         surahs: (j['surahs'] as String).split(',').where((s) => s.trim().isNotEmpty).map(int.parse).toList()..sort(),
         rewaya: j['rewaya'] as int?,
-        timingReadId: j['timing'] as int?,
+        timingReadId: _wrongTiming.contains('$reciterId-${j['id']}') ? null : j['timing'] as int?,
       );
+
+  /// mp3quran timing that belongs to another edition of the audio: checked
+  /// against the recordings (surahs 67 and 78), the ayah starts fall in the
+  /// middle of words. These play without timing (estimated follow-along).
+  static const _wrongTiming = {'134-134', '135-135', '137-137', '125-288'};
 }
 
 class Reciter {

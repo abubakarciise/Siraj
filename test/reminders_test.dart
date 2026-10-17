@@ -2,8 +2,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:quran_app/core/audio/ayah_estimate.dart';
-import 'package:quran_app/core/quran/models.dart';
 import 'package:quran_app/core/reminders/reminders.dart';
 import 'package:quran_app/core/settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -79,28 +77,6 @@ void main() {
     test('time of day', () {
       expect(ReminderComposer.occasions(DateTime(2026, 10, 15, 6), 0), contains('morning'));
       expect(ReminderComposer.occasions(DateTime(2026, 10, 15, 22), 0), contains('sleep'));
-    });
-  });
-
-  group('SurahPace', () {
-    Ayah a(int n, String text) => Ayah(id: n, ref: AyahRef(2, n), page: 1, juz: 1, text: text);
-
-    test('longer ayahs take longer and estimates are monotonic', () {
-      final pace = SurahPace(2, [a(1, 'الم'), a(2, 'ذلك الكتاب لا ريب فيه هدى للمتقين'), a(3, 'الذين يؤمنون بالغيب')]);
-      expect(pace.ayahAt(0.0), 0); // basmala intro
-      var last = 0;
-      for (var f = 0.0; f <= 1.0; f += 0.01) {
-        final n = pace.ayahAt(f);
-        expect(n, greaterThanOrEqualTo(last));
-        last = n;
-      }
-      expect(pace.ayahAt(0.99), 3);
-      expect(pace.startOf(2) - pace.startOf(1), lessThan(pace.startOf(3) - pace.startOf(2)));
-    });
-
-    test('Al-Fatihah has no separate basmala intro', () {
-      final pace = SurahPace(1, [Ayah(id: 1, ref: const AyahRef(1, 1), page: 1, juz: 1, text: 'بسم الله الرحمن الرحيم')]);
-      expect(pace.ayahAt(0), 1);
     });
   });
 

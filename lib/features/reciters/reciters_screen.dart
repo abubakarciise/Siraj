@@ -7,6 +7,7 @@ import '../../core/providers.dart';
 import '../../core/quran/arabic.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../player/play_actions.dart';
 
 enum _Filter { all, favorites, downloaded, highlight, warsh, mujawwad }
 
@@ -108,6 +109,7 @@ class _RecitersScreenState extends ConsumerState<RecitersScreen> {
                   ),
                 ),
               ),
+              if (showFeatured) const SliverToBoxAdapter(child: _ContinueListening()),
               if (showFeatured) ...[
                 const SliverToBoxAdapter(child: SectionTitle('Featured')),
                 SliverToBoxAdapter(
@@ -218,6 +220,60 @@ class _ReciterTile extends ConsumerWidget {
             ),
           ),
         ]),
+      ),
+    );
+  }
+}
+
+/// Where the listener left off: one tap resumes it.
+class _ContinueListening extends ConsumerWidget {
+  const _ContinueListening();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
+    final listening = ref.watch(lastListeningProvider).value;
+    final cat = ref.watch(catalogProvider).value;
+    final rec = listening == null ? null : cat?.recitation(listening.recitationKey);
+    final reciter = rec == null ? null : cat?.reciter(rec.reciterId);
+    if (listening == null || rec == null || reciter == null) return const SizedBox.shrink();
+    final surah = ref.watch(quranDbProvider).surah(listening.surah);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 0),
+      child: Material(
+        color: c.brand,
+        borderRadius: BorderRadius.circular(Radii.xl),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => playRecitation(context, ref, reciter, rec, listening.surah, resume: true),
+          child: Stack(children: [
+            Positioned.fill(child: GirihPattern(color: c.onBrand, cell: 44, opacity: 0.07)),
+            Padding(
+              padding: const EdgeInsets.all(Space.lg),
+              child: Row(children: [
+                ReciterAvatar(id: reciter.id, nameAr: reciter.nameAr, size: 52),
+                const SizedBox(width: Space.lg),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('CONTINUE LISTENING', style: context.text.labelSmall?.copyWith(color: c.gold)),
+                    Text('${surah.nameEn} · ${surah.nameAr}',
+                        maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleMedium?.copyWith(color: c.onBrand)),
+                    Text(reciter.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.bodySmall?.copyWith(color: c.onBrand.withValues(alpha: 0.8))),
+                  ]),
+                ),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(color: c.gold, shape: BoxShape.circle),
+                  child: Icon(Icons.play_arrow_rounded, color: c.brand, size: 28),
+                ),
+              ]),
+            ),
+          ]),
+        ),
       ),
     );
   }

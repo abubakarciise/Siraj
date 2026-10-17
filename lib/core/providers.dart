@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'adhkar/adhkar.dart';
 import 'adhkar/adhkar_player.dart';
+import 'audio/artwork.dart';
 import 'audio/player_controller.dart';
 import 'audio/timing.dart';
 import 'catalog/catalog.dart';
@@ -139,7 +140,8 @@ final clockProvider = StreamProvider.autoDispose<DateTime>(
 final adhkarProvider = FutureProvider<List<AdhkarCategory>>((ref) => AdhkarRepository.load());
 
 final adhkarPlayerProvider = Provider<AdhkarPlayer>((ref) {
-  final player = AdhkarPlayer(beforeStart: () => ref.read(playerProvider).pause());
+  final quran = ref.read(playerProvider);
+  final player = AdhkarPlayer(handler: quran.handler, beforeStart: quran.stop, artUri: Artwork.adhkar);
   ref.onDispose(player.dispose);
   return player;
 });
@@ -174,9 +176,6 @@ final hadithProvider = FutureProvider.family<Hadith?, (String, num)>(
     (ref, k) => ref.watch(hadithRepoProvider).hadith(k.$1, k.$2));
 
 final hadithBookmarksProvider = FutureProvider<List<Hadith>>((ref) => ref.watch(hadithRepoProvider).bookmarks());
-
-final hadithOfDayProvider =
-    FutureProvider<Hadith?>((ref) => ref.watch(hadithRepoProvider).ofTheDay(DateTime.now()));
 
 // ---- Daily reminders ----
 final reminderServiceProvider = Provider<ReminderService>((ref) => throw UnimplementedError());

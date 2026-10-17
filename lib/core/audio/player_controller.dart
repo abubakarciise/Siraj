@@ -57,7 +57,12 @@ class NowPlaying {
 /// App-level playback orchestration: queue building (local-first, offline aware),
 /// ayah tracking from timing data, ayah repeat (hifz), sleep timer, resume.
 class PlayerController {
-  PlayerController(this._handler, this._db, this._downloads, this._timing, this._user) {
+  PlayerController(this._handler, this._db, this._downloads, this._timing, this._user, {this.artUri}) {
+    // Dismissed from the notification: forget what was playing.
+    _handler.onStoppedOutside = () {
+      _savePosition(force: true);
+      _clear();
+    };
     final p = _handler.player;
     p.playerStateStream.listen((_) => _emit());
     p.currentIndexStream.listen((_) => _onItemChanged());
@@ -137,6 +142,7 @@ class PlayerController {
     // constant bitrate and land seconds off on every seek, so index them instead.
     _vbr ??= await _loadVbr();
     final options = recitation.hasTiming && _vbr!.contains(recitation.server) ? _accurateSeeking : null;
+    final art = await artUri?.call();
     final items = <MediaItem>[];
     final sources = <AudioSource>[];
     for (final s in surahs) {
@@ -146,6 +152,7 @@ class PlayerController {
         title: '${info.nameEn} · ${info.nameAr}',
         artist: reciter.name,
         album: recitation.shortName,
+        artUri: art,
         extras: {'key': recitation.key, 'surah': s},
       );
       final local = _downloads.localFile(recitation.key, s);
@@ -196,13 +203,23 @@ class PlayerController {
 
   Future<void> stop() async {
     await _savePosition(force: true);
-    await _handler.stop();
+    _clear();
+    await _handler.endSession();
+  }
+
+  void _clear() {
+    if (_recitation == null) return;
     _recitation = null;
     _now = null;
     currentAyah.value = null;
     cancelSleep();
     _controller.add(null);
   }
+
+  QuranAudioHandler get handler => _handler;
+
+  /// Artwork for the Quran notification.
+  final Future<Uri?> Function()? artUri;
 
   /// Jump to an ayah inside the current surah (needs timing data).
   Future<bool> seekToAyah(int ayah) async {

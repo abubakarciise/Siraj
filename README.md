@@ -33,11 +33,11 @@
   turns. Search in Arabic and English. Translations: English (Saheeh International) and Somali.
 - **Listen.** 243 reciters and 289 recitations (Hafs, Warsh, Qalun, Mujawwad…). Download one surah or the whole Quran,
   play in the background, and use ayah repeat for memorisation, a sleep timer and speed control.
-- **Follow the recitation.** The player shows the whole surah and keeps the ayah being recited in view. It is exact for
-  reciters with timing data and estimated for the rest. Tap any ayah to jump to it.
+- **Follow the recitation.** The player shows the whole surah and keeps the ayah being recited in view, exactly, for the
+  111 recitations with ayah timing ("Ayah sync"; each checked against its audio). Tap any ayah to jump to it.
 - **Hadith & Sunnah.** Sahih al-Bukhari, Sahih Muslim, Abu Dawud, at-Tirmidhi, an-Nasa'i, Ibn Majah, Muwatta Malik,
-  40 Nawawi, 40 Qudsi: Arabic, English and grades, searchable and offline. Includes a hadith of the day and 41 Sunnah
-  practices with their sources.
+  40 Nawawi, 40 Qudsi: Arabic, English and grades, searchable and offline. Includes 41 Sunnah practices with their
+  sources.
 - **Memorization test.** Test a surah, part of a surah or a juz: next ayah, previous ayah, complete the ayah, missing
   word, arrange the words, which surah, and recite from memory. Mistakes are listed for revision and can be practised
   again.

@@ -147,7 +147,19 @@ final adhkarPlayerProvider = Provider<AdhkarPlayer>((ref) {
     artUri: Artwork.adhkar,
     onCompleted: (cat) {
       final d = DateTime.now();
-      ref.read(prefsProvider).setString('adhkar_done_${cat.id}', '${d.year}-${d.month}-${d.day}');
+      final prefs = ref.read(prefsProvider);
+      prefs.setString('adhkar_done_${cat.id}', '${d.year}-${d.month}-${d.day}');
+      // After prayer: which prayer it was done for (the time it was completed).
+      if (cat.id == 'after_salah') prefs.setInt('adhkar_done_at_after_salah', d.millisecondsSinceEpoch);
+    },
+    prefs: ref.read(prefsProvider),
+    // The adhkar after prayer are counted afresh for each prayer; the rest each day.
+    scopeOf: (id) {
+      final d = DateTime.now();
+      final day = '${d.year}-${d.month}-${d.day}';
+      if (id != 'after_salah') return day;
+      final prayer = ref.read(prayerServiceProvider).day(d)?.currentAt(d);
+      return '$day-${prayer?.name}';
     },
   );
   ref.onDispose(player.dispose);

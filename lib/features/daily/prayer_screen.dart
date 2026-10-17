@@ -39,7 +39,8 @@ class _PrayerScreenState extends ConsumerState<PrayerScreen> {
     final service = ref.read(prayerServiceProvider);
     final date = DateTime(now.year, now.month, now.day).add(Duration(days: _offset));
     final day = service.day(date, s);
-    final next = _offset == 0 ? service.next(now) : null;
+    final focus = _offset == 0 ? service.focus(now) : null;
+    final next = focus == null ? null : (focus.salah, focus.time);
 
     return Scaffold(
       appBar: AppBar(
@@ -87,10 +88,13 @@ class _PrayerScreenState extends ConsumerState<PrayerScreen> {
                     child: Stack(children: [
                       Positioned.fill(child: GirihPattern(color: c.onBrand, cell: 44, opacity: 0.08)),
                       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text('NEXT · ${next.$1.ar}', style: context.text.labelSmall?.copyWith(color: c.onBrand.withValues(alpha: 0.8))),
+                        Text('${focus!.started ? 'NOW' : 'NEXT'} · ${next.$1.ar}', style: context.text.labelSmall?.copyWith(color: c.onBrand.withValues(alpha: 0.8))),
                         const SizedBox(height: 4),
                         Text(next.$1.en, style: context.text.displaySmall?.copyWith(color: c.onBrand)),
-                        Text('${formatTime(context, next.$2)} · in ${formatCountdown(next.$2.difference(now))}',
+                        Text(
+                            focus.started
+                                ? '${formatTime(context, next.$2)} · began ${formatCountdown(now.difference(next.$2))} ago'
+                                : '${formatTime(context, next.$2)} · in ${formatCountdown(next.$2.difference(now))}',
                             style: context.text.titleMedium?.copyWith(color: c.onBrand)),
                       ]),
                     ]),

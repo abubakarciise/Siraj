@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../audio/audio_handler.dart';
 import 'adhkar.dart';
@@ -16,23 +18,61 @@ import 'adhkar.dart';
 /// each recitation. A dhikr without a recording is the listener's turn:
 /// playback waits until they have counted it on screen, then continues.
 class AdhkarPlayer extends ChangeNotifier implements ExternalPlayback {
-  AdhkarPlayer({required this.handler, this.beforeStart, this.artUri, this.onCompleted});
+  AdhkarPlayer({required this.handler, this.beforeStart, this.artUri, this.onCompleted, this.prefs, this.scopeOf});
 
   /// A category was counted to the end today (saved as done).
   final void Function(AdhkarCategory category)? onCompleted;
 
-  // ---- Counters: how many recitations are left today, per category ----
+  /// Where progress is kept, so reading and listening continue where they
+  /// stopped, even after the app was closed.
+  final SharedPreferences? prefs;
+
+  /// How long a category's count lasts: today, or (after prayer) this prayer.
+  final String Function(String categoryId)? scopeOf;
+
+  // ---- Counters: how many recitations are left, per category ----
   final _counts = <String, Map<int, int>>{};
-  String _day = '';
+  final _scopes = <String, String>{};
+
+  static String _today() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month}-${now.day}';
+  }
 
   Map<int, int> _of(String id) {
-    final now = DateTime.now();
-    final d = '${now.year}-${now.month}-${now.day}';
-    if (d != _day) {
-      _day = d;
-      _counts.clear();
+    final scope = scopeOf?.call(id) ?? _today();
+    if (_scopes[id] != scope) {
+      _scopes[id] = scope;
+      _counts[id] = _load(id, scope);
     }
-    return _counts.putIfAbsent(id, () => {});
+    return _counts[id]!;
+  }
+
+  Map<int, int> _load(String id, String scope) {
+    try {
+      final raw = prefs?.getString('adhkar_progress_$id');
+      if (raw == null) return {};
+      final j = jsonDecode(raw) as Map<String, dynamic>;
+      if (j['scope'] != scope) return {};
+      return {for (final e in (j['left'] as Map<String, dynamic>).entries) int.parse(e.key): e.value as int};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  void _save(String id) => prefs?.setString(
+        'adhkar_progress_$id',
+        jsonEncode({
+          'scope': _scopes[id],
+          'left': {for (final e in _of(id).entries) '${e.key}': e.value},
+        }),
+      );
+
+  /// (recitations counted, all recitations) of [cat] in its current scope.
+  (int, int) progress(AdhkarCategory cat) {
+    final total = cat.totalCount;
+    final remaining = List.generate(cat.items.length, (i) => left(cat, i)).fold(0, (a, b) => a + b);
+    return (total - remaining, total);
   }
 
   int left(AdhkarCategory cat, int i) => _of(cat.id)[i] ?? cat.items[i].count;
@@ -44,6 +84,7 @@ class AdhkarPlayer extends ChangeNotifier implements ExternalPlayback {
     final l = left(cat, i);
     if (l == 0) return false;
     _of(cat.id)[i] = l - 1;
+    _save(cat.id);
     if (l == 1 && allDone(cat)) onCompleted?.call(cat);
     notifyListeners();
     return true;
@@ -52,6 +93,7 @@ class AdhkarPlayer extends ChangeNotifier implements ExternalPlayback {
   /// Starts the category's count again.
   void reset(AdhkarCategory cat) {
     _of(cat.id).clear();
+    _save(cat.id);
     notifyListeners();
   }
 

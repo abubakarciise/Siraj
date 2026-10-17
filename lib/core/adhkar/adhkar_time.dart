@@ -17,12 +17,14 @@ class AdhkarMoment {
 /// the scholars give (al-Nawawi, Ibn al-Qayyim, Ibn Hajar):
 /// - morning adhkar from Fajr until sunrise, and, if missed, until Dhuhr;
 /// - evening adhkar from Asr until Maghrib, and, if missed, into the night;
-/// - the adhkar after each prayer for 20 minutes after it begins;
+/// - the adhkar after each prayer once it has been prayed (the adhan, the wait
+///   for the iqama and the prayer: [prayedAfter]) for 30 minutes, unless
+///   they were completed after that prayer ([afterSalahDoneAt]);
 /// - at night, the adhkar before sleep; before Fajr, waking up.
 /// Between those (midday, or once the morning or evening adhkar are done)
 /// it suggests general dhikr and the duas of the Quran.
 /// [done] tells whether a category was completed today.
-AdhkarMoment adhkarFor(DateTime now, PrayerDay? day, {bool Function(String id)? done}) {
+AdhkarMoment adhkarFor(DateTime now, PrayerDay? day, {bool Function(String id)? done, DateTime? afterSalahDoneAt}) {
   bool isDone(String id) => done?.call(id) ?? false;
   DateTime at(Salah s, int h, int m) => day?.times[s] ?? DateTime(now.year, now.month, now.day, h, m);
   final fajr = at(Salah.fajr, 5, 0);
@@ -40,7 +42,9 @@ AdhkarMoment adhkarFor(DateTime now, PrayerDay? day, {bool Function(String id)? 
     (Salah.maghrib, maghrib),
     (Salah.isha, isha),
   ]) {
-    if (!before(t) && before(t.add(const Duration(minutes: 20))) && !isDone('after_salah_${s.name}')) {
+    final from = t.add(prayedAfter[s]!);
+    final doneHere = afterSalahDoneAt != null && afterSalahDoneAt.isAfter(t);
+    if (!before(from) && before(from.add(const Duration(minutes: 30))) && !doneHere) {
       return AdhkarMoment('after_salah', 'After ${s.en}', afterPrayer: s);
     }
   }
@@ -60,3 +64,24 @@ AdhkarMoment adhkarFor(DateTime now, PrayerDay? day, {bool Function(String id)? 
   }
   return const AdhkarMoment('sleep', 'Before you sleep');
 }
+
+/// From the adhan until the prayer is usually over: the wait for the iqama
+/// (shorter for Maghrib) and the prayer itself.
+const prayedAfter = {
+  Salah.fajr: Duration(minutes: 30),
+  Salah.dhuhr: Duration(minutes: 25),
+  Salah.asr: Duration(minutes: 25),
+  Salah.maghrib: Duration(minutes: 15),
+  Salah.isha: Duration(minutes: 25),
+};
+
+/// English and Arabic names of the adhkar [adhkarFor] can suggest.
+const adhkarNames = {
+  'waking': ('Waking up', 'أذكار الاستيقاظ'),
+  'morning': ('Morning adhkar', 'أذكار الصباح'),
+  'after_salah': ('After prayer', 'أذكار بعد الصلاة'),
+  'tasbih': ('Tasbih & dhikr', 'التسبيح'),
+  'evening': ('Evening adhkar', 'أذكار المساء'),
+  'quran_duas': ('Duas of the Quran', 'أدعية قرآنية'),
+  'sleep': ('Before sleep', 'أذكار النوم'),
+};

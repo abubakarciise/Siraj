@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/prayer/prayer.dart';
+import '../../core/adhkar/adhkar_time.dart';
 import '../../core/providers.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
@@ -19,11 +19,18 @@ class DailyScreen extends ConsumerWidget {
     final s = ref.watch(prayerSettingsProvider);
     final now = DateTime.now();
     final service = ref.read(prayerServiceProvider);
-    // Morning adhkar until Asr (or 3 pm without location), evening afterwards.
-    final asr = service.day(now, s)?.times[Salah.asr] ?? DateTime(now.year, now.month, now.day, 15);
-    final isMorning = now.isBefore(asr) && now.hour >= 3;
-    final suggested = isMorning ? 'morning' : 'evening';
-    final suggestedDone = adhkarDoneToday(ref, suggested);
+    ref.watch(clockProvider.select((v) => v.value?.minute));
+    // The same adhkar as on Home, following the time of day and the prayers.
+    final doneAt = ref.read(prefsProvider).getInt('adhkar_done_at_after_salah');
+    final moment = adhkarFor(
+      now,
+      service.day(now, s),
+      done: (id) => adhkarDoneToday(ref, id),
+      afterSalahDoneAt: doneAt == null ? null : DateTime.fromMillisecondsSinceEpoch(doneAt),
+    );
+    final suggested = moment.categoryId;
+    final (title, arabic) = adhkarNames[suggested]!;
+    final suggestedDone = suggested != 'after_salah' && adhkarDoneToday(ref, suggested);
 
     return Scaffold(
       backgroundColor: Colors.transparent, // the tab's art shows through (TabBackdrop)
@@ -48,23 +55,23 @@ class DailyScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(Radii.lg),
               clipBehavior: Clip.antiAlias,
               child: InkWell(
-                onTap: () => context.push('/adhkar/$suggested'),
+                onTap: () => context.push(suggested == 'tasbih' ? '/tasbih' : '/adhkar/$suggested'),
                 child: Stack(children: [
                   Positioned.fill(child: GirihPattern(color: c.onBrand, cell: 44, opacity: 0.08)),
                   Padding(
                     padding: const EdgeInsets.all(Space.xl),
                     child: Row(children: [
-                      Icon(isMorning ? Icons.wb_twilight_rounded : Icons.nights_stay_outlined,
-                          color: c.onBrand, size: 32),
+                      Icon(adhkarIcons[suggested] ?? Icons.auto_awesome_rounded, color: c.onBrand, size: 32),
                       const SizedBox(width: Space.lg),
                       Expanded(
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(isMorning ? 'Morning adhkar' : 'Evening adhkar',
-                              style: context.text.titleLarge?.copyWith(color: c.onBrand)),
+                          Text(moment.reason.toUpperCase(),
+                              style: context.text.labelSmall?.copyWith(color: c.onBrand.withValues(alpha: 0.75))),
+                          Text(title, style: context.text.titleLarge?.copyWith(color: c.onBrand)),
                           Text(
                             suggestedDone
                                 ? 'Completed today · تقبّل الله'
-                                : (isMorning ? 'أذكار الصباح' : 'أذكار المساء'),
+                                : arabic,
                             style: context.text.bodyMedium?.copyWith(color: c.onBrand.withValues(alpha: 0.85)),
                           ),
                         ]),

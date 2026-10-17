@@ -237,6 +237,23 @@ class PrayerService {
     return today.nextAfter(now) ?? day(now.add(const Duration(days: 1)))!.nextAfter(DateTime(now.year, now.month, now.day));
   }
 
+  /// The prayer to show: one whose time began less than [stay] ago (it is
+  /// being prayed now), otherwise the next one. started = its time has begun.
+  ({Salah salah, DateTime time, bool started})? focus(DateTime now, {Duration stay = const Duration(minutes: 30)}) {
+    final today = day(now);
+    if (today != null) {
+      for (final s in Salah.values.reversed) {
+        final t = today.times[s]!;
+        if (s.isPrayer && !t.isAfter(now)) {
+          if (now.difference(t) < stay) return (salah: s, time: t, started: true);
+          break;
+        }
+      }
+    }
+    final n = next(now);
+    return n == null ? null : (salah: n.$1, time: n.$2, started: false);
+  }
+
   /// Where the phone is, for the Qibla (prayer times stay on Makkah).
   City? get qiblaPlace {
     final raw = _prefs.getString('qibla_location');

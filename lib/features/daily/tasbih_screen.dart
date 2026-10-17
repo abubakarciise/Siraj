@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/providers.dart';
 import '../../design/theme.dart';
@@ -23,7 +25,44 @@ const _night = Color(0xFF0E1B33);
 const _nightDeep = Color(0xFF060C1A);
 const _gold = Color(0xFFE2BC6E);
 
-/// A misbaha: a ring of beads that light up one by one. Tap anywhere to count.
+/// A misbaha has 33 beads: one round.
+const _round = 33;
+
+/// Every count, by day and by dhikr: {"2026-10-17": {"0": 99, "4": 100}}.
+class TasbihLog {
+  TasbihLog(this._prefs);
+  final SharedPreferences _prefs;
+  static const _key = 'tasbih_log';
+
+  static String dayKey(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  Map<String, Map<String, int>> read() {
+    try {
+      final raw = _prefs.getString(_key);
+      if (raw == null) return {};
+      return {
+        for (final e in (jsonDecode(raw) as Map<String, dynamic>).entries)
+          e.key: {for (final p in (e.value as Map<String, dynamic>).entries) p.key: p.value as int},
+      };
+    } catch (_) {
+      return {};
+    }
+  }
+
+  void add(int phrase, {DateTime? at}) {
+    final log = read();
+    final day = log.putIfAbsent(dayKey(at ?? DateTime.now()), () => {});
+    day['$phrase'] = (day['$phrase'] ?? 0) + 1;
+    _prefs.setString(_key, jsonEncode(log));
+  }
+
+  int onDay(DateTime d, [Map<String, Map<String, int>>? log]) =>
+      ((log ?? read())[dayKey(d)]?.values ?? const <int>[]).fold(0, (a, b) => a + b);
+}
+
+/// A misbaha: a ring of beads that light up one by one. Tap anywhere to count;
+/// swipe sideways (or use the arrows) for another dhikr.
 class TasbihScreen extends ConsumerStatefulWidget {
   const TasbihScreen({super.key});
 
@@ -32,32 +71,47 @@ class TasbihScreen extends ConsumerStatefulWidget {
 }
 
 class _TasbihScreenState extends ConsumerState<TasbihScreen> with SingleTickerProviderStateMixin {
-  int _phrase = 0, _count = 0, _rounds = 0, _target = 33;
+  int _phrase = 0, _count = 0, _rounds = 0;
+  bool _endless = false; // false: rounds of 33; true: ∞, counting on
   late final _pulse = AnimationController(vsync: this, duration: const Duration(milliseconds: 260));
-
-  String get _todayKey {
-    final d = DateTime.now();
-    return 'tasbih_total_${d.year}-${d.month}-${d.day}';
-  }
-
-  int get _todayTotal => ref.read(prefsProvider).getInt(_todayKey) ?? 0;
+  late final _log = TasbihLog(ref.read(prefsProvider));
+  final _chipKeys = List.generate(_phrases.length, (_) => GlobalKey());
+  late int _today = _log.onDay(DateTime.now());
 
   void _tap() {
     setState(() {
       _count++;
-      if (_target > 0 && _count >= _target) {
-        _count = 0;
+      _today++;
+      if (_count % _round == 0) {
         _rounds++;
+        if (!_endless) _count = 0;
         HapticFeedback.heavyImpact();
       } else {
         HapticFeedback.lightImpact();
       }
     });
-    ref.read(prefsProvider).setInt(_todayKey, _todayTotal + 1);
+    _log.add(_phrase);
     _pulse.forward(from: 0);
   }
 
   void _reset() => setState(() => _count = _rounds = 0);
+
+  void _select(int i) {
+    final next = (i + _phrases.length) % _phrases.length;
+    if (next == _phrase) return;
+    HapticFeedback.selectionClick();
+    setState(() {
+      _phrase = next;
+      _count = _rounds = 0;
+    });
+    // Keep the chosen dhikr in view in the row at the top.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _chipKeys[next].currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(ctx, alignment: 0.5, duration: Motion.standard, curve: Motion.curve);
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -67,17 +121,24 @@ class _TasbihScreenState extends ConsumerState<TasbihScreen> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
-    final (ar, en) = _phrases[_phrase];
-    // A misbaha has 33 beads; with 99 or 100 the ring goes round three times.
-    final beads = _target == 0 ? 33 : (_target <= 33 ? _target : 33);
-    final lit = _target == 0 ? _count % 33 : (_count % beads);
+    final (ar, _) = _phrases[_phrase];
+    final lit = _count % _round == 0 && _count > 0 && !_endless ? _round : _count % _round;
     return Scaffold(
       backgroundColor: _nightDeep,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
-        title: const Text('Tasbih · التسبيح', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600)),
+        title: const Text('Tasbih · التسبيح',
+            style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600)),
         actions: [
+          IconButton(
+            tooltip: 'Your tasbih',
+            icon: const Icon(Icons.insights_rounded),
+            onPressed: () async {
+              await Navigator.of(context).push(MaterialPageRoute(builder: (_) => TasbihStatsScreen(log: _log)));
+              if (mounted) setState(() => _today = _log.onDay(DateTime.now()));
+            },
+          ),
           IconButton(tooltip: 'Start again', icon: const Icon(Icons.restart_alt_rounded), onPressed: _reset),
         ],
       ),
@@ -91,25 +152,26 @@ class _TasbihScreenState extends ConsumerState<TasbihScreen> with SingleTickerPr
             const SizedBox(height: Space.sm),
             SizedBox(
               height: 46,
-              child: ListView.separated(
+              child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-                itemCount: _phrases.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 8),
-                itemBuilder: (_, i) => _Chip(
-                  label: _phrases[i].$2,
-                  selected: i == _phrase,
-                  onTap: () => setState(() {
-                    _phrase = i;
-                    _count = _rounds = 0;
-                  }),
-                ),
+                child: Row(children: [
+                  for (var i = 0; i < _phrases.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 8),
+                    _Chip(key: _chipKeys[i], label: _phrases[i].$2, selected: i == _phrase, onTap: () => _select(i)),
+                  ],
+                ]),
               ),
             ),
             Expanded(
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: _tap,
+                // Swipe sideways for the next or previous dhikr.
+                onHorizontalDragEnd: (d) {
+                  final v = d.primaryVelocity ?? 0;
+                  if (v.abs() > 250) _select(_phrase + (v < 0 ? 1 : -1));
+                },
                 child: LayoutBuilder(builder: (context, box) {
                   final size = math.min(box.maxWidth - 32, box.maxHeight - 24);
                   return Center(
@@ -118,25 +180,35 @@ class _TasbihScreenState extends ConsumerState<TasbihScreen> with SingleTickerPr
                       child: AnimatedBuilder(
                         animation: _pulse,
                         builder: (_, _) => CustomPaint(
-                          painter: _MisbahaPainter(beads: beads, lit: lit, pulse: _pulse.value),
+                          painter: _MisbahaPainter(beads: _round, lit: lit, pulse: _pulse.value),
                           child: Center(
                             child: Padding(
-                              padding: EdgeInsets.all(size * 0.2),
+                              padding: EdgeInsets.all(size * 0.17),
                               child: Column(mainAxisSize: MainAxisSize.min, children: [
-                                FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Text(ar,
-                                      textDirection: TextDirection.rtl,
-                                      style: const TextStyle(
-                                          fontFamily: kNaskhFont, fontSize: 30, color: _gold, height: 1.6)),
-                                ),
+                                Row(children: [
+                                  _Arrow(icon: Icons.chevron_left_rounded, onTap: () => _select(_phrase - 1)),
+                                  Expanded(
+                                    child: AnimatedSwitcher(
+                                      duration: Motion.quick,
+                                      child: FittedBox(
+                                        key: ValueKey(_phrase),
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(ar,
+                                            textDirection: TextDirection.rtl,
+                                            style: const TextStyle(
+                                                fontFamily: kNaskhFont, fontSize: 30, color: _gold, height: 1.6)),
+                                      ),
+                                    ),
+                                  ),
+                                  _Arrow(icon: Icons.chevron_right_rounded, onTap: () => _select(_phrase + 1)),
+                                ]),
                                 Text('$_count',
                                     style: TextStyle(
                                         fontSize: size * 0.2,
                                         fontWeight: FontWeight.w300,
                                         color: Colors.white,
                                         height: 1.1)),
-                                Text(_target == 0 ? 'Tap anywhere' : 'of $_target',
+                                Text(_endless ? 'Tap anywhere' : 'of $_round',
                                     style: const TextStyle(color: Colors.white60, fontSize: 14)),
                               ]),
                             ),
@@ -151,27 +223,35 @@ class _TasbihScreenState extends ConsumerState<TasbihScreen> with SingleTickerPr
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
               child: Row(children: [
-                for (final t in [33, 99, 100, 0]) ...[
-                  Expanded(
-                    child: _Chip(
-                      label: t == 0 ? '∞' : '$t',
-                      selected: _target == t,
-                      onTap: () => setState(() {
-                        _target = t;
-                        _count = _rounds = 0;
-                      }),
-                    ),
+                Expanded(
+                  child: _Chip(
+                    label: '33',
+                    selected: !_endless,
+                    onTap: () => setState(() {
+                      _endless = false;
+                      _count = _rounds = 0;
+                    }),
                   ),
-                  if (t != 0) const SizedBox(width: 8),
-                ],
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _Chip(
+                    label: '∞',
+                    selected: _endless,
+                    onTap: () => setState(() {
+                      _endless = true;
+                      _count = _rounds = 0;
+                    }),
+                  ),
+                ),
               ]),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, Space.xl),
               child: Row(children: [
-                _Stat(label: 'Rounds', value: '$_rounds'),
+                _Stat(label: 'Rounds of 33', value: '$_rounds'),
                 const SizedBox(width: Space.md),
-                _Stat(label: 'Today', value: '$_todayTotal'),
+                _Stat(label: 'Today', value: '$_today'),
               ]),
             ),
           ]),
@@ -181,8 +261,21 @@ class _TasbihScreenState extends ConsumerState<TasbihScreen> with SingleTickerPr
   }
 }
 
+class _Arrow extends StatelessWidget {
+  const _Arrow({required this.icon, required this.onTap});
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => IconButton(
+        onPressed: onTap,
+        visualDensity: VisualDensity.compact,
+        icon: Icon(icon, color: Colors.white54, size: 28),
+      );
+}
+
 class _Chip extends StatelessWidget {
-  const _Chip({required this.label, required this.selected, required this.onTap});
+  const _Chip({super.key, required this.label, required this.selected, required this.onTap});
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -225,6 +318,178 @@ class _Stat extends StatelessWidget {
             Text(label, style: const TextStyle(color: Colors.white60, fontSize: 13)),
           ]),
         ),
+      );
+}
+
+/// Your tasbih over time: today, the week, the month, the streak, and which dhikr.
+class TasbihStatsScreen extends StatelessWidget {
+  const TasbihStatsScreen({super.key, required this.log});
+  final TasbihLog log;
+
+  @override
+  Widget build(BuildContext context) {
+    final data = log.read();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    int sumDays(int n) => List.generate(n, (i) => log.onDay(today.subtract(Duration(days: i)), data)).fold(0, (a, b) => a + b);
+    final all = data.values.expand((d) => d.values).fold(0, (a, b) => a + b);
+    // Streak: days in a row with tasbih, up to today (or yesterday, if not yet today).
+    var streak = 0;
+    var d = log.onDay(today, data) > 0 ? today : today.subtract(const Duration(days: 1));
+    while (log.onDay(d, data) > 0) {
+      streak++;
+      d = d.subtract(const Duration(days: 1));
+    }
+    final week = List.generate(7, (i) => today.subtract(Duration(days: 6 - i)));
+    final weekCounts = [for (final w in week) log.onDay(w, data)];
+    final month = List.generate(30, (i) => today.subtract(Duration(days: 29 - i)));
+    final byPhrase = List.filled(_phrases.length, 0);
+    for (final m in month) {
+      for (final e in (data[TasbihLog.dayKey(m)] ?? const <String, int>{}).entries) {
+        final k = int.tryParse(e.key);
+        if (k != null && k < byPhrase.length) byPhrase[k] += e.value;
+      }
+    }
+    final best = byPhrase.fold(0, math.max);
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    return Scaffold(
+      backgroundColor: _nightDeep,
+      appBar: AppBar(
+        backgroundColor: _nightDeep,
+        foregroundColor: Colors.white,
+        title: const Text('Your tasbih', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600)),
+      ),
+      body: ListView(padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xxl), children: [
+        // Streak
+        Container(
+          padding: const EdgeInsets.all(Space.lg),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(colors: [Color(0xFF2A2210), Color(0xFF14110A)]),
+            borderRadius: BorderRadius.circular(Radii.xl),
+            border: Border.all(color: _gold.withValues(alpha: 0.35)),
+          ),
+          child: Row(children: [
+            const Icon(Icons.local_fire_department_rounded, color: _gold, size: 40),
+            const SizedBox(width: Space.md),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(streak == 1 ? '1 day in a row' : '$streak days in a row',
+                    style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700)),
+                Text(streak == 0 ? 'Start today: a few taps are enough' : 'Keep it going, a little every day',
+                    style: const TextStyle(color: Colors.white60)),
+              ]),
+            ),
+          ]),
+        ),
+        const SizedBox(height: Space.md),
+        Row(children: [
+          _Stat(label: 'Today', value: '${log.onDay(today, data)}'),
+          const SizedBox(width: Space.sm),
+          _Stat(label: '7 days', value: '${sumDays(7)}'),
+        ]),
+        const SizedBox(height: Space.sm),
+        Row(children: [
+          _Stat(label: '30 days', value: '${sumDays(30)}'),
+          const SizedBox(width: Space.sm),
+          _Stat(label: 'All time', value: '$all'),
+        ]),
+        const _StatsTitle('This week'),
+        Container(
+          height: 180,
+          padding: const EdgeInsets.fromLTRB(Space.md, Space.lg, Space.md, Space.sm),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(Radii.lg),
+            border: Border.all(color: Colors.white12),
+          ),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            for (var i = 0; i < 7; i++)
+              Expanded(
+                child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
+                  if (weekCounts[i] > 0)
+                    FittedBox(
+                      child: Text('${weekCounts[i]}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                    ),
+                  const SizedBox(height: 4),
+                  Flexible(
+                    child: FractionallySizedBox(
+                      heightFactor: weekCounts.fold(0, math.max) == 0
+                          ? 0.02
+                          : math.max(0.02, weekCounts[i] / weekCounts.fold(0, math.max)),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 6),
+                        decoration: BoxDecoration(
+                          color: i == 6 ? _gold : _gold.withValues(alpha: 0.45),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(days[week[i].weekday - 1],
+                      style: TextStyle(color: i == 6 ? _gold : Colors.white60, fontSize: 12)),
+                ]),
+              ),
+          ]),
+        ),
+        const _StatsTitle('Last 30 days'),
+        Wrap(spacing: 5, runSpacing: 5, children: [
+          for (final m in month)
+            Builder(builder: (_) {
+              final n = log.onDay(m, data);
+              final k = n == 0 ? 0.0 : math.min(1.0, 0.25 + n / 400);
+              return Tooltip(
+                message: '${m.day}/${m.month}: $n',
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: n == 0 ? Colors.white.withValues(alpha: 0.06) : _gold.withValues(alpha: k),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              );
+            }),
+        ]),
+        const _StatsTitle('Dhikr this month'),
+        if (best == 0)
+          const Text('Nothing yet this month.', style: TextStyle(color: Colors.white60))
+        else
+          for (var i = 0; i < _phrases.length; i++)
+            if (byPhrase[i] > 0)
+              Padding(
+                padding: const EdgeInsets.only(bottom: Space.md),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  Row(children: [
+                    Expanded(child: Text(_phrases[i].$2, style: const TextStyle(color: Colors.white))),
+                    Text('${byPhrase[i]}', style: const TextStyle(color: _gold, fontWeight: FontWeight.w600)),
+                  ]),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: byPhrase[i] / best,
+                      minHeight: 6,
+                      color: _gold,
+                      backgroundColor: Colors.white10,
+                    ),
+                  ),
+                ]),
+              ),
+      ]),
+    );
+  }
+}
+
+class _StatsTitle extends StatelessWidget {
+  const _StatsTitle(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: Space.xl, bottom: Space.md),
+        child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
       );
 }
 

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/hadith/hadith.dart';
 import '../../core/providers.dart';
+import '../../core/quran/arabic.dart';
 import '../../core/reminders/reminders.dart';
 import '../../design/dialogs.dart';
 import '../../design/theme.dart';
@@ -85,12 +86,12 @@ class HadithHomeScreen extends ConsumerWidget {
             IconButton(
               tooltip: 'Search hadith',
               icon: const Icon(Icons.search_rounded),
-              onPressed: () => context.push('/hadith-search'),
+              onPressed: () => context.push('/hadith/search'),
             ),
             IconButton(
               tooltip: 'Saved hadith',
               icon: const Icon(Icons.bookmarks_outlined),
-              onPressed: () => context.push('/hadith-saved'),
+              onPressed: () => context.push('/hadith/saved'),
             ),
           ],
           flexibleSpace: FlexibleSpaceBar(
@@ -299,54 +300,135 @@ class _BookTile extends ConsumerWidget {
 // Book → chapters → hadith
 // =============================================================================
 
-class HadithBookScreen extends ConsumerWidget {
+class HadithBookScreen extends ConsumerStatefulWidget {
   const HadithBookScreen({super.key, required this.bookId});
   final String bookId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HadithBookScreen> createState() => _HadithBookScreenState();
+}
+
+/// A collection with chapters: the chapters, or (while searching) the hadith
+/// of the whole collection that match.
+class _HadithBookScreenState extends ConsumerState<HadithBookScreen> {
+  String _q = '';
+  List<Hadith>? _found;
+  Timer? _debounce;
+  bool _searching = false;
+
+  void _search(String q) {
+    setState(() => _q = q.trim());
+    _debounce?.cancel();
+    if (_q.length < 2) {
+      setState(() => _found = null);
+      return;
+    }
+    _debounce = Timer(const Duration(milliseconds: 280), () async {
+      setState(() => _searching = true);
+      final r = await ref.read(hadithRepoProvider).search(_q, book: widget.bookId);
+      if (mounted) setState(() => (_found = r, _searching = false));
+    });
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final c = context.colors;
+    final bookId = widget.bookId;
     final book = ref.watch(hadithBooksProvider).value?.where((b) => b.id == bookId).firstOrNull;
     final sections = ref.watch(hadithSectionsProvider(bookId)).value;
     if (book == null || sections == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
     if (sections.length <= 1) return HadithListScreen(bookId: bookId, section: sections.firstOrNull?.number);
+    final q = _q.toLowerCase();
+    final chapters = q.isEmpty
+        ? sections
+        : sections.where((s) => s.title.toLowerCase().contains(q) || '${s.number}' == q).toList();
+    final found = _found;
     return Scaffold(
       appBar: AppBar(
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(book.nameEn, style: context.text.titleMedium),
           Text('${sections.length} books · ${book.nameAr}', style: context.text.bodySmall),
         ]),
+        bottom: CollectionSearchBar(hint: 'Search ${book.nameEn}', onChanged: _search, busy: _searching),
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.only(bottom: Space.xxxl),
-        itemCount: sections.length,
-        separatorBuilder: (_, _) => Divider(indent: 76, color: c.divider),
-        itemBuilder: (_, i) {
-          final s = sections[i];
-          return ListTile(
-            leading: StarMedallion(number: s.number, size: 40),
-            title: Text(s.title, style: context.text.titleMedium),
-            subtitle: Text('${s.count} hadith'),
-            trailing: Icon(Icons.chevron_right_rounded, color: c.inkFaint),
-            onTap: () => context.push('/hadith/$bookId/s/${s.number}'),
-          );
-        },
+      body: AnimatedSwitcher(
+        duration: Motion.quick,
+        child: found == null
+            ? ListView.separated(
+                key: const ValueKey('chapters'),
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.only(bottom: Space.xxxl),
+                itemCount: chapters.length,
+                separatorBuilder: (_, _) => Divider(indent: 76, color: c.divider),
+                itemBuilder: (_, i) {
+                  final s = chapters[i];
+                  return ListTile(
+                    leading: StarMedallion(number: s.number, size: 40),
+                    title: Text(s.title, style: context.text.titleMedium),
+                    subtitle: Text('${s.count} hadith'),
+                    trailing: Icon(Icons.chevron_right_rounded, color: c.inkFaint),
+                    onTap: () => context.push('/hadith/$bookId/s/${s.number}'),
+                  );
+                },
+              )
+            : _Results(
+                key: ValueKey('found $_q'),
+                list: [
+                  // Matching chapter titles first, then the hadith.
+                  for (final s in chapters)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: StarMedallion(number: s.number, size: 36),
+                      title: Text(s.title, style: context.text.titleMedium),
+                      subtitle: Text('Chapter · ${s.count} hadith'),
+                      onTap: () => context.push('/hadith/$bookId/s/${s.number}'),
+                    ),
+                  for (final h in found) HadithCard(hadith: h),
+                ],
+                empty: 'Nothing in ${book.nameEn} matches "$_q"',
+              ),
       ),
     );
   }
 }
 
-class HadithListScreen extends ConsumerWidget {
+class HadithListScreen extends ConsumerStatefulWidget {
   const HadithListScreen({super.key, required this.bookId, this.section});
   final String bookId;
   final int? section;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final list = ref.watch(hadithListProvider((bookId, section))).value;
+  ConsumerState<HadithListScreen> createState() => _HadithListScreenState();
+}
+
+/// The hadith of a collection (or one of its chapters), filtered as you type:
+/// English, Arabic (with or without harakat) or a hadith number.
+class _HadithListScreenState extends ConsumerState<HadithListScreen> {
+  String _q = '';
+
+  bool _matches(Hadith h) {
+    final q = _q.trim();
+    if (q.isEmpty) return true;
+    if (int.tryParse(q) != null) return h.numberLabel == q || h.numberLabel.startsWith('$q.');
+    if (isArabic(q)) return normalizeArabic(h.arabic).contains(normalizeArabic(q));
+    return h.english.toLowerCase().contains(q.toLowerCase());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bookId = widget.bookId;
+    final all = ref.watch(hadithListProvider((bookId, widget.section))).value;
     final sections = ref.watch(hadithSectionsProvider(bookId)).value ?? const [];
-    final title = sections.where((s) => s.number == section).firstOrNull?.title;
+    final title = sections.where((s) => s.number == widget.section).firstOrNull?.title;
     final bookName = ref.bookName(bookId);
+    final list = all?.where(_matches).toList();
+    final searching = _q.trim().isNotEmpty;
     return Scaffold(
       appBar: AppBar(
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -354,15 +436,124 @@ class HadithListScreen extends ConsumerWidget {
               maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleMedium),
           if (title != null && title != bookName) Text(bookName, style: context.text.bodySmall),
         ]),
+        bottom: CollectionSearchBar(
+          hint: all == null ? 'Search' : 'Search ${all.length} hadith · word or number',
+          onChanged: (v) => setState(() => _q = v),
+        ),
       ),
       body: list == null
           ? const Center(child: CircularProgressIndicator())
-          : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xxxl),
-              itemCount: list.length,
-              separatorBuilder: (_, _) => const SizedBox(height: Space.md),
-              itemBuilder: (_, i) => HadithCard(hadith: list[i]),
+          : AnimatedSwitcher(
+              duration: Motion.quick,
+              child: _Results(
+                key: ValueKey(searching ? 'q' : 'all'),
+                list: [for (final h in list) HadithCard(hadith: h)],
+                empty: 'No hadith match "${_q.trim()}"',
+                count: searching ? list.length : null,
+              ),
             ),
+    );
+  }
+}
+
+/// A rounded search field under a collection's title.
+class CollectionSearchBar extends StatefulWidget implements PreferredSizeWidget {
+  const CollectionSearchBar({super.key, required this.hint, required this.onChanged, this.busy = false});
+  final String hint;
+  final ValueChanged<String> onChanged;
+  final bool busy;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(60);
+
+  @override
+  State<CollectionSearchBar> createState() => _CollectionSearchBarState();
+}
+
+class _CollectionSearchBarState extends State<CollectionSearchBar> {
+  final _text = TextEditingController();
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    OutlineInputBorder border(Color color) =>
+        OutlineInputBorder(borderRadius: BorderRadius.circular(99), borderSide: BorderSide(color: color));
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.sm),
+      child: SizedBox(
+        height: 48,
+        child: TextField(
+          controller: _text,
+          onChanged: (v) {
+            setState(() {});
+            widget.onChanged(v);
+          },
+          textInputAction: TextInputAction.search,
+          decoration: InputDecoration(
+            hintText: widget.hint,
+            filled: true,
+            fillColor: c.surface,
+            contentPadding: EdgeInsets.zero,
+            prefixIcon: widget.busy
+                ? const Padding(
+                    padding: EdgeInsets.all(14),
+                    child: SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                  )
+                : Icon(Icons.search_rounded, color: c.inkMuted),
+            suffixIcon: _text.text.isEmpty
+                ? null
+                : IconButton(
+                    tooltip: 'Clear',
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () {
+                      _text.clear();
+                      setState(() {});
+                      widget.onChanged('');
+                    },
+                  ),
+            border: border(c.divider),
+            enabledBorder: border(c.divider),
+            focusedBorder: border(c.primary),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Results extends StatelessWidget {
+  const _Results({super.key, required this.list, required this.empty, this.count});
+  final List<Widget> list;
+  final String empty;
+  final int? count;
+
+  @override
+  Widget build(BuildContext context) {
+    if (list.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(Space.xxl),
+          child: Text(empty,
+              textAlign: TextAlign.center, style: context.text.bodyMedium?.copyWith(color: context.colors.inkMuted)),
+        ),
+      );
+    }
+    final head = count == null ? 0 : 1;
+    return ListView.separated(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xxxl),
+      itemCount: list.length + head,
+      separatorBuilder: (_, _) => const SizedBox(height: Space.md),
+      itemBuilder: (_, i) {
+        if (head == 1 && i == 0) return Text(count == 1 ? '1 hadith' : '$count hadith', style: context.text.labelSmall);
+        return list[i - head];
+      },
     );
   }
 }

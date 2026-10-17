@@ -220,7 +220,7 @@ class ReminderComposer {
     return const Reminder(
       title: 'Remember Allah',
       body: 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ · Glory be to Allah and praise be to Him',
-      payload: 'adhkar:tasbih',
+      payload: 'tasbih',
     );
   }
 
@@ -287,7 +287,7 @@ class ReminderComposer {
             ? 'evening'
             : tags.contains('sleep')
                 ? 'sleep'
-                : (['tasbih', 'quran_duas', 'prophets_duas', 'tasbih']..shuffle(rnd)).first;
+                : (['quran_duas', 'prophets_duas']..shuffle(rnd)).first;
     final cat = adhkar.where((c) => c.id == id).firstOrNull;
     if (cat == null || cat.items.isEmpty) return null;
     final short = cat.items.where((d) => d.text.length < 320).toList();

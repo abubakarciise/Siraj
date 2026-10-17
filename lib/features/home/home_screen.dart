@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/shell.dart';
+import '../../core/adhkar/adhkar.dart';
 import '../../core/adhkar/adhkar_time.dart';
 import '../../core/providers.dart';
 import '../../design/tab_theme.dart';
@@ -28,48 +29,52 @@ class HomeScreen extends ConsumerWidget {
       backgroundColor: Colors.transparent, // the tab's art shows through (TabBackdrop)
       body: AnnotatedRegion(
         value: SystemUiOverlayStyle.light,
-        child: Stack(children: [
-          CustomScrollView(slivers: [
-            const SliverToBoxAdapter(child: _Header()),
-            const SliverToBoxAdapter(child: SectionTitle('Today')),
-            const SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: Space.gutter),
-              sliver: SliverToBoxAdapter(child: _AdhkarNow()),
-            ),
-            if (isFriday)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 0),
-                  child: _WideTile(
-                    icon: Icons.menu_book_rounded,
-                    color: AppTab.quran.accent,
-                    title: "Surah Al-Kahf · Jumu'ah",
-                    subtitle: 'The Sunnah of Friday',
-                    onTap: () => context.openReader(db.surah(18).pageStart, surah: 18),
-                  ),
+        child: Stack(
+          children: [
+            CustomScrollView(
+              slivers: [
+                const SliverToBoxAdapter(child: _Header()),
+                const SliverToBoxAdapter(child: SectionTitle('Today')),
+                const SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: Space.gutter),
+                  sliver: SliverToBoxAdapter(child: _AdhkarNow()),
                 ),
-              ),
-            const SliverToBoxAdapter(child: SectionTitle('Memorize')),
-            const SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: Space.gutter),
-              sliver: SliverToBoxAdapter(child: _MemorizeCard()),
+                if (isFriday)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 0),
+                      child: _WideTile(
+                        icon: Icons.menu_book_rounded,
+                        color: AppTab.quran.accent,
+                        title: "Surah Al-Kahf · Jumu'ah",
+                        subtitle: 'The Sunnah of Friday',
+                        onTap: () => context.openReader(db.surah(18).pageStart, surah: 18),
+                      ),
+                    ),
+                  ),
+                const SliverToBoxAdapter(child: SectionTitle('Memorize')),
+                const SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: Space.gutter),
+                  sliver: SliverToBoxAdapter(child: _MemorizeCard()),
+                ),
+                const SliverToBoxAdapter(child: SectionTitle('Explore')),
+                const SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: Space.gutter),
+                  sliver: SliverToBoxAdapter(child: _Explore()),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 40)),
+              ],
             ),
-            const SliverToBoxAdapter(child: SectionTitle('Explore')),
-            const SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: Space.gutter),
-              sliver: SliverToBoxAdapter(child: _Explore()),
+            // The status bar keeps the header's green while the page scrolls under it.
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: MediaQuery.paddingOf(context).top,
+              child: ColoredBox(color: c.brand),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 40)),
-          ]),
-          // The status bar keeps the header's green while the page scrolls under it.
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: MediaQuery.paddingOf(context).top,
-            child: ColoredBox(color: c.brand),
-          ),
-        ]),
+          ],
+        ),
       ),
     );
   }
@@ -105,58 +110,61 @@ class _Header extends ConsumerWidget {
             colors: [c.brand, Color.lerp(c.brand, Colors.black, c.isDark ? 0.25 : 0.18)!],
           ),
         ),
-        child: Stack(children: [
-          Positioned.fill(child: GirihPattern(color: fg, cell: 48, opacity: 0.06)),
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.xs, Space.lg),
-              child: Row(children: [
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(
-                      '${_weekdays[now.weekday - 1]} · ${hijri.day} ${hijri.monthName} ${hijri.year}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.text.bodySmall?.copyWith(color: c.gold),
+        child: Stack(
+          children: [
+            Positioned.fill(child: GirihPattern(color: fg, cell: 48, opacity: 0.06)),
+            SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.xs, Space.lg),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${_weekdays[now.weekday - 1]} · ${hijri.day} ${hijri.monthName} ${hijri.year}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.text.bodySmall?.copyWith(color: c.gold),
+                          ),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: AlignmentDirectional.centerStart,
+                            child: Text(
+                              _greeting(),
+                              maxLines: 1,
+                              style: context.text.headlineSmall?.copyWith(color: fg),
+                            ),
+                          ),
+                          Text(
+                            'السلام عليكم ورحمة الله',
+                            style: TextStyle(fontFamily: kNaskhFont, fontSize: 15, color: fg.withValues(alpha: 0.75)),
+                          ),
+                        ],
+                      ),
                     ),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: AlignmentDirectional.centerStart,
-                      child: Text(_greeting(), maxLines: 1, style: context.text.headlineSmall?.copyWith(color: fg)),
+                    IconButton(
+                      tooltip: 'Search',
+                      icon: Icon(Icons.search_rounded, color: fg),
+                      onPressed: () => context.push('/search'),
                     ),
-                    Text('السلام عليكم ورحمة الله',
-                        style: TextStyle(fontFamily: kNaskhFont, fontSize: 15, color: fg.withValues(alpha: 0.75))),
-                  ]),
+                    IconButton(
+                      tooltip: 'Settings',
+                      icon: Icon(Icons.settings_outlined, color: fg),
+                      onPressed: () => context.push('/settings'),
+                    ),
+                  ],
                 ),
-                IconButton(
-                  tooltip: 'Search',
-                  icon: Icon(Icons.search_rounded, color: fg),
-                  onPressed: () => context.push('/search'),
-                ),
-                IconButton(
-                  tooltip: 'Settings',
-                  icon: Icon(Icons.settings_outlined, color: fg),
-                  onPressed: () => context.push('/settings'),
-                ),
-              ]),
+              ),
             ),
-          ),
-        ]),
+          ],
+        ),
       ),
     );
   }
 }
-
-const _adhkarInfo = {
-  'waking': ('Waking up', 'أذكار الاستيقاظ'),
-  'morning': ('Morning adhkar', 'أذكار الصباح'),
-  'after_salah': ('After prayer', 'أذكار بعد الصلاة'),
-  'tasbih': ('Tasbih & dhikr', 'التسبيح'),
-  'evening': ('Evening adhkar', 'أذكار المساء'),
-  'quran_duas': ('Duas of the Quran', 'أدعية قرآنية'),
-  'sleep': ('Before sleep', 'أذكار النوم'),
-};
 
 /// The adhkar for this moment, then today's main adhkar and whether they are done.
 class _AdhkarNow extends ConsumerWidget {
@@ -164,77 +172,130 @@ class _AdhkarNow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.colors;
     ref.watch(clockProvider.select((v) => v.value?.minute)); // follows the clock
-    ref.watch(adhkarPlayerProvider); // and completed adhkar
-    final settings = ref.watch(prayerSettingsProvider);
+    ref.watch(adhkarProvider);
+    ref.watch(prayerSettingsProvider);
+    // Rebuilds as adhkar are counted, here or while listening.
+    return ListenableBuilder(listenable: ref.watch(adhkarPlayerProvider), builder: (context, _) => _card(context, ref));
+  }
+
+  Widget _card(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
+    final audio = ref.read(adhkarPlayerProvider);
+    final settings = ref.read(prayerSettingsProvider);
     final now = DateTime.now();
+    final doneAt = ref.read(prefsProvider).getInt('adhkar_done_at_after_salah');
     final moment = adhkarFor(
       now,
       ref.read(prayerServiceProvider).day(now, settings),
       done: (id) => adhkarDoneToday(ref, id),
+      afterSalahDoneAt: doneAt == null ? null : DateTime.fromMillisecondsSinceEpoch(doneAt),
     );
     final id = moment.categoryId;
-    final (title, arabic) = _adhkarInfo[id]!;
-    final done = adhkarDoneToday(ref, id);
+    final (title, arabic) = adhkarNames[id]!;
+    final done = id != 'after_salah' && adhkarDoneToday(ref, id);
+    final cat = ref.read(adhkarProvider).value?.where((x) => x.id == id).firstOrNull;
+    final (counted, total) = cat == null ? (0, 0) : audio.progress(cat);
+    final started = !done && counted > 0;
+    // Dhikr through the day happens on the Tasbih screen.
+    final tasbih = id == 'tasbih';
+    final page = tasbih ? '/tasbih' : '/adhkar/$id';
     return Material(
       color: c.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.xl), side: BorderSide(color: c.divider)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Radii.xl),
+        side: BorderSide(color: c.divider),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(Space.lg),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(Radii.lg),
-            onTap: () => context.push('/adhkar/$id'),
-            child: Row(children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: c.primarySoft, shape: BoxShape.circle),
-                child: Icon(adhkarIcons[id] ?? Icons.auto_awesome_rounded, color: c.primary, size: 22),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InkWell(
+              borderRadius: BorderRadius.circular(Radii.lg),
+              onTap: () => context.push(page),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(color: c.primarySoft, shape: BoxShape.circle),
+                    child: Icon(adhkarIcons[id] ?? Icons.auto_awesome_rounded, color: c.primary, size: 22),
+                  ),
+                  const SizedBox(width: Space.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(moment.reason.toUpperCase(), style: context.text.labelSmall?.copyWith(color: c.gold)),
+                        Text(title, style: context.text.titleLarge),
+                        Text(
+                          done
+                              ? 'Done today · تقبّل الله'
+                              : [
+                                  arabic,
+                                  if (started) '$counted of $total',
+                                  if (cat != null && cat.listeningTime > Duration.zero)
+                                    '${formatListeningTime(cat.listeningTime)} to listen',
+                                ].join(' · '),
+                          style: context.text.bodyMedium?.copyWith(color: done ? c.primary : c.inkMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (done) Icon(Icons.check_circle_rounded, color: c.primary),
+                ],
               ),
-              const SizedBox(width: Space.md),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(moment.reason.toUpperCase(), style: context.text.labelSmall?.copyWith(color: c.gold)),
-                  Text(title, style: context.text.titleLarge),
-                  Text(done ? 'Done today · تقبّل الله' : arabic,
-                      style: context.text.bodyMedium?.copyWith(color: done ? c.primary : c.inkMuted)),
-                ]),
-              ),
-              if (done) Icon(Icons.check_circle_rounded, color: c.primary),
-            ]),
-          ),
-          const SizedBox(height: Space.lg),
-          Row(children: [
-            Expanded(
-              child: FilledButton.icon(
+            ),
+            const SizedBox(height: Space.lg),
+            if (tasbih)
+              FilledButton.icon(
                 style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(44)),
-                onPressed: () => context.push('/adhkar/$id?listen=1'),
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: const Text('Listen'),
+                onPressed: () => context.push('/tasbih'),
+                icon: const Icon(Icons.blur_circular_rounded),
+                label: const Text('Open Tasbih'),
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(44)),
+                      onPressed: () => context.push('/adhkar/$id?listen=1'),
+                      icon: const Icon(Icons.play_arrow_rounded),
+                      label: Text(started ? 'Continue' : 'Listen'),
+                    ),
+                  ),
+                  const SizedBox(width: Space.md),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44)),
+                      onPressed: () => context.push('/adhkar/$id'),
+                      icon: const Icon(Icons.menu_book_outlined, size: 20),
+                      label: const Text('Read'),
+                    ),
+                  ),
+                ],
               ),
+            const SizedBox(height: Space.lg),
+            Divider(color: c.divider, height: 1),
+            const SizedBox(height: Space.md),
+            // Today's main adhkar at a glance: a missed one stays visible.
+            Row(
+              children: [
+                for (final (k, label) in const [
+                  ('morning', 'Morning'),
+                  ('evening', 'Evening'),
+                  ('sleep', 'Sleep'),
+                ]) ...[
+                  if (k != 'morning') const SizedBox(width: Space.sm),
+                  Expanded(
+                    child: _DayChip(id: k, label: label, done: adhkarDoneToday(ref, k), current: k == id),
+                  ),
+                ],
+              ],
             ),
-            const SizedBox(width: Space.md),
-            Expanded(
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44)),
-                onPressed: () => context.push('/adhkar/$id'),
-                icon: const Icon(Icons.menu_book_outlined, size: 20),
-                label: const Text('Read'),
-              ),
-            ),
-          ]),
-          const SizedBox(height: Space.lg),
-          Divider(color: c.divider, height: 1),
-          const SizedBox(height: Space.md),
-          // Today's main adhkar at a glance: a missed one stays visible.
-          Row(children: [
-            for (final (k, label) in const [('morning', 'Morning'), ('evening', 'Evening'), ('sleep', 'Sleep')]) ...[
-              if (k != 'morning') const SizedBox(width: Space.sm),
-              Expanded(child: _DayChip(id: k, label: label, done: adhkarDoneToday(ref, k), current: k == id)),
-            ],
-          ]),
-        ]),
+          ],
+        ),
       ),
     );
   }
@@ -256,17 +317,25 @@ class _DayChip extends StatelessWidget {
         onTap: () => context.push('/adhkar/$id'),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: Space.sm, vertical: 8),
-          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(done ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                size: 16, color: done ? c.primary : (current ? c.gold : c.inkFaint)),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(label,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                done ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                size: 16,
+                color: done ? c.primary : (current ? c.gold : c.inkFaint),
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: context.text.bodySmall?.copyWith(color: done ? c.primary : c.ink)),
-            ),
-          ]),
+                  style: context.text.bodySmall?.copyWith(color: done ? c.primary : c.ink),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -294,36 +363,45 @@ class _MemorizeCard extends ConsumerWidget {
               colors: [Color(0xFFF4E3BC), Color(0xFFE2C27F)],
             ),
           ),
-          child: Stack(children: [
-            const Positioned.fill(child: GirihPattern(color: ink, cell: 40, opacity: 0.06)),
-            Padding(
-              padding: const EdgeInsets.all(Space.lg),
-              child: Row(children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(color: ink.withValues(alpha: 0.9), shape: BoxShape.circle),
-                  child: const Icon(Icons.psychology_alt_rounded, color: Color(0xFFF4E3BC), size: 30),
-                ),
-                const SizedBox(width: Space.lg),
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('Test your hifz',
-                        style: context.text.titleLarge?.copyWith(color: ink, fontWeight: FontWeight.w700)),
-                    Text(
-                      last == null
-                          ? 'Surahs, juz or the whole Quran'
-                          : 'Last: ${last.scope} · ${last.score}/${last.total}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.text.bodyMedium?.copyWith(color: ink.withValues(alpha: 0.8)),
+          child: Stack(
+            children: [
+              const Positioned.fill(child: GirihPattern(color: ink, cell: 40, opacity: 0.06)),
+              Padding(
+                padding: const EdgeInsets.all(Space.lg),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(color: ink.withValues(alpha: 0.9), shape: BoxShape.circle),
+                      child: const Icon(Icons.psychology_alt_rounded, color: Color(0xFFF4E3BC), size: 30),
                     ),
-                  ]),
+                    const SizedBox(width: Space.lg),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Test your hifz',
+                            style: context.text.titleLarge?.copyWith(color: ink, fontWeight: FontWeight.w700),
+                          ),
+                          Text(
+                            last == null
+                                ? 'Surahs, juz or the whole Quran'
+                                : 'Last: ${last.scope} · ${last.score}/${last.total}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.text.bodyMedium?.copyWith(color: ink.withValues(alpha: 0.8)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_rounded, color: ink),
+                  ],
                 ),
-                const Icon(Icons.arrow_forward_rounded, color: ink),
-              ]),
-            ),
-          ]),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -346,20 +424,35 @@ class _Explore extends StatelessWidget {
       (Icons.blur_circular_rounded, 'Tasbih', 'التسبيح', const Color(0xFF2E4A7D), () => context.push('/tasbih')),
       (Icons.bookmarks_rounded, 'Saved', 'المحفوظات', const Color(0xFF7A6A3A), () => context.push('/library')),
     ];
-    return LayoutBuilder(builder: (context, box) {
-      final columns = box.maxWidth >= 560 ? 4 : 2;
-      const gap = Space.md;
-      final w = (box.maxWidth - gap * (columns - 1)) / columns;
-      return Wrap(spacing: gap, runSpacing: gap, children: [
-        for (final (icon, title, ar, color, onTap) in items)
-          SizedBox(width: w, child: _ExploreTile(icon: icon, title: title, arabic: ar, color: color, onTap: onTap)),
-      ]);
-    });
+    return LayoutBuilder(
+      builder: (context, box) {
+        final columns = box.maxWidth >= 560 ? 4 : 2;
+        const gap = Space.md;
+        final w = (box.maxWidth - gap * (columns - 1)) / columns;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final (icon, title, ar, color, onTap) in items)
+              SizedBox(
+                width: w,
+                child: _ExploreTile(icon: icon, title: title, arabic: ar, color: color, onTap: onTap),
+              ),
+          ],
+        );
+      },
+    );
   }
 }
 
 class _ExploreTile extends StatelessWidget {
-  const _ExploreTile({required this.icon, required this.title, required this.arabic, required this.color, required this.onTap});
+  const _ExploreTile({
+    required this.icon,
+    required this.title,
+    required this.arabic,
+    required this.color,
+    required this.onTap,
+  });
   final IconData icon;
   final String title, arabic;
   final Color color;
@@ -386,24 +479,31 @@ class _ExploreTile extends StatelessWidget {
           ),
           child: Padding(
             padding: const EdgeInsets.all(Space.md),
-            child: Row(children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(color: tint, borderRadius: BorderRadius.circular(Radii.md)),
-                child: Icon(icon, color: Colors.white, size: 22),
-              ),
-              const SizedBox(width: Space.md),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleMedium),
-                  Text(arabic,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: kNaskhFont, fontSize: 14, color: c.inkMuted, height: 1.4)),
-                ]),
-              ),
-            ]),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(color: tint, borderRadius: BorderRadius.circular(Radii.md)),
+                  child: Icon(icon, color: Colors.white, size: 22),
+                ),
+                const SizedBox(width: Space.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleMedium),
+                      Text(
+                        arabic,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontFamily: kNaskhFont, fontSize: 14, color: c.inkMuted, height: 1.4),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -413,7 +513,13 @@ class _ExploreTile extends StatelessWidget {
 
 /// A full-width row card.
 class _WideTile extends StatelessWidget {
-  const _WideTile({required this.icon, required this.color, required this.title, required this.subtitle, required this.onTap});
+  const _WideTile({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
   final IconData icon;
   final Color color;
   final String title, subtitle;
@@ -424,23 +530,31 @@ class _WideTile extends StatelessWidget {
     final c = context.colors;
     return Material(
       color: c.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.lg), side: BorderSide(color: c.divider)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Radii.lg),
+        side: BorderSide(color: c.divider),
+      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(Radii.lg),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(Space.lg, Space.md, Space.md, Space.md),
-          child: Row(children: [
-            Icon(icon, color: color),
-            const SizedBox(width: Space.lg),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(title, style: context.text.titleMedium),
-                Text(subtitle, style: context.text.bodySmall),
-              ]),
-            ),
-            Icon(Icons.chevron_right_rounded, color: c.inkMuted),
-          ]),
+          child: Row(
+            children: [
+              Icon(icon, color: color),
+              const SizedBox(width: Space.lg),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: context.text.titleMedium),
+                    Text(subtitle, style: context.text.bodySmall),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: c.inkMuted),
+            ],
+          ),
         ),
       ),
     );

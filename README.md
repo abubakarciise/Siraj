@@ -36,7 +36,7 @@
 - **Follow the recitation.** The player shows the whole surah and keeps the ayah being recited in view, exactly, for the
   111 recitations with ayah timing ("Ayah sync"; each checked against its audio). Tap any ayah to jump to it.
 - **Hadith & Sunnah.** Sahih al-Bukhari, Sahih Muslim, Abu Dawud, at-Tirmidhi, an-Nasa'i, Ibn Majah, Muwatta Malik,
-  40 Nawawi, 40 Qudsi: Arabic, English and grades, searchable and offline. Includes 41 Sunnah practices with their
+  40 Nawawi, 40 Qudsi: Arabic, English and grades, searchable (everywhere, or inside a collection by word or number) and offline. Includes 41 Sunnah practices with their
   sources.
 - **Memorization test.** Test one or more surahs (or part of one), one or more juz, or the whole Quran: next ayah,
   previous ayah, complete the ayah, missing word, which surah, and recite from memory. Mistakes are listed for revision and can be practised
@@ -47,11 +47,15 @@
   A separate reminder at the times you choose to read the morning and evening adhkar.
 - **Prayer times & Qibla.** Calculated on the phone, with 11 methods, Hanafi/Standard Asr, prayer alerts and a Qibla
   compass.
-- **Adhkar & tasbih.** Hisn al-Muslim in 8 categories, with tap-to-count cards and a tasbih counter. Listen to a whole
-  category: each dhikr is recited by a human voice, repeated as many times as prescribed while the counter counts
-  down, then the next one begins. Quranic adhkar are recited by Mishary Alafasy. The recordings ship with the app,
-  so listening works offline, and keep playing while you use the rest of the app. Every recording is checked word by
-  word against the text; a dhikr without an exact recording is left for you to read.
+- **Adhkar.** Hisn al-Muslim in 7 categories, with tap-to-count cards that remember where you stopped. Listen to a
+  whole category (each shows how long it takes): each dhikr is recited by a human voice, repeated as many times as
+  prescribed while the counter counts down, then the next one begins, and keeps playing while you use the rest of the
+  app. Recordings come from Hisn al-Muslim, Mishary Alafasy's morning, evening and after-prayer adhkar, Fares Abbad,
+  Idrees Abkar and "Dua Rabbana" (archive.org), and Alafasy's recitation for Quranic duas, cut on Quran.com's word
+  timings. Every recording is checked word by word against the text (tool/check_adhkar_audio.py); a dhikr whose
+  wording no recording matches is left for you to read.
+- **Tasbih.** A misbaha of 33 beads (or count on without end), swipe for another dhikr, and your history: streak,
+  today, 7 and 30 days, a weekly chart and the dhikr you say most.
 - **Appearance.** Light, Dark and true-black Midnight themes. The Mushaf page colour (Ivory, White, Sepia, Dark, Black)
   can differ, and everything on the reading screen takes the page colour.
 - **Private.** No account, no ads, no analytics. Bookmarks, history and downloads stay on the device.

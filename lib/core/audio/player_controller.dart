@@ -199,7 +199,6 @@ class PlayerController {
   Future<void> seek(Duration d) => _handler.seek(d);
   Future<void> next() => _handler.skipToNext();
   Future<void> previous() => _handler.skipToPrevious();
-  Future<void> setSpeed(double s) => _handler.setSpeed(s);
 
   Future<void> stop() async {
     await _savePosition(force: true);

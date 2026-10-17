@@ -142,11 +142,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     fit: BoxFit.scaleDown,
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       TextButton.icon(
-                        onPressed: () => _speedSheet(context, pc, np.speed),
-                        icon: const Icon(Icons.speed_rounded, size: 20),
-                        label: Text('${np.speed}×'),
-                      ),
-                      TextButton.icon(
                         onPressed: np.hasPrevious ? pc.previous : null,
                         icon: const Icon(Icons.first_page_rounded, size: 20),
                         label: const Text('Surah'),
@@ -175,24 +170,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       ),
     );
   }
-
-  void _speedSheet(BuildContext context, PlayerController pc, double current) {
-    showAppSheet(
-      context,
-      title: 'Playback speed',
-      builder: (ctx) => Wrap(spacing: 8, runSpacing: 8, children: [
-        for (final s in [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0])
-          ChoiceChip(
-            label: Text('$s×'),
-            selected: s == current,
-            onSelected: (_) {
-              pc.setSpeed(s);
-              Navigator.pop(ctx);
-            },
-          ),
-      ]),
-    );
-  }
 }
 
 /// The surah as a scrolling text that follows the reciter: the current ayah is
@@ -209,6 +186,10 @@ class SurahFollowAlong extends ConsumerStatefulWidget {
 
 class _SurahFollowAlongState extends ConsumerState<SurahFollowAlong> {
   final _items = ItemScrollController();
+
+  /// Where the ayah being recited sits: its top a little above the middle, so
+  /// the ayah itself is in the centre of the screen.
+  static const _centre = 0.32;
   bool _following = true;
   bool _userDragging = false;
   int? _shown;
@@ -230,9 +211,9 @@ class _SurahFollowAlongState extends ConsumerState<SurahFollowAlong> {
     if (!_items.isAttached) return;
     final index = _indexOf(ayah);
     if (jump) {
-      _items.jumpTo(index: index, alignment: 0.1);
+      _items.jumpTo(index: index, alignment: _centre);
     } else {
-      _items.scrollTo(index: index, alignment: 0.1, duration: Motion.standard, curve: Motion.curve);
+      _items.scrollTo(index: index, alignment: _centre, duration: Motion.standard, curve: Motion.curve);
     }
   }
 
@@ -304,7 +285,7 @@ class _SurahFollowAlongState extends ConsumerState<SurahFollowAlong> {
           child: ScrollablePositionedList.builder(
             itemScrollController: _items,
             initialScrollIndex: ayah == null ? 0 : _indexOf(ayah),
-            initialAlignment: 0.1,
+            initialAlignment: _centre,
             padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, 160),
             itemCount: count,
             itemBuilder: (context, i) {

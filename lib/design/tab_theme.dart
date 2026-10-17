@@ -42,7 +42,8 @@ class TabTheme extends StatelessWidget {
   }
 }
 
-/// The tab's art behind its first page. The page's Scaffold must be transparent.
+/// The tab's art behind its first page, over the whole screen. The page's
+/// Scaffold must be transparent.
 class TabBackdrop extends StatelessWidget {
   const TabBackdrop({super.key, required this.tab, required this.child});
   final AppTab tab;
@@ -52,12 +53,17 @@ class TabBackdrop extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final ink = c.isDark ? Color.lerp(tab.accent, Colors.white, 0.35)! : tab.accent;
-    return DecoratedBox(
-      decoration: BoxDecoration(color: c.bg),
-      child: CustomPaint(
-        painter: _TabArt(tab, ink.withValues(alpha: c.isDark ? 0.14 : 0.16)),
-        child: child,
-      ),
+    return ColoredBox(
+      color: c.bg,
+      child: Stack(children: [
+        // Its own layer: scrolling the page never repaints the art.
+        Positioned.fill(
+          child: RepaintBoundary(
+            child: CustomPaint(painter: _TabArt(tab, ink.withValues(alpha: c.isDark ? 0.10 : 0.12))),
+          ),
+        ),
+        child,
+      ]),
     );
   }
 }
@@ -70,107 +76,144 @@ class _TabArt extends CustomPainter {
   Paint get _line => Paint()
     ..color = color
     ..style = PaintingStyle.stroke
-    ..strokeWidth = 1.4;
+    ..strokeWidth = 1.2;
 
   @override
   void paint(Canvas canvas, Size size) {
+    canvas.clipRect(Offset.zero & size);
     switch (tab) {
       case AppTab.home:
-        _rosette(canvas, Offset(size.width * 0.92, size.height * 0.78), size.width * 0.62);
+        _starLattice(canvas, size);
       case AppTab.quran:
-        _arches(canvas, size);
+        _arcades(canvas, size);
       case AppTab.listen:
         _waves(canvas, size);
       case AppTab.hadith:
         _manuscript(canvas, size);
       case AppTab.daily:
-        _sunPath(canvas, size);
+        _sky(canvas, size);
     }
   }
 
-  /// An eight-point star rosette, rings of stars around it.
-  void _rosette(Canvas canvas, Offset c, double r) {
-    final p = _line;
-    for (final k in [1.0, 0.72, 0.46]) {
-      final rr = r * k;
-      for (final rot in [0.0, math.pi / 4]) {
-        final path = Path();
-        for (var i = 0; i < 4; i++) {
-          final a = rot + i * math.pi / 2 - math.pi / 4;
-          final pt = c + Offset(math.cos(a), math.sin(a)) * rr;
-          i == 0 ? path.moveTo(pt.dx, pt.dy) : path.lineTo(pt.dx, pt.dy);
-        }
-        path.close();
-        canvas.drawPath(path, p);
+  /// An eight-point star (two squares) at [c], radius [r].
+  void _star(Canvas canvas, Offset c, double r, Paint p) {
+    for (final rot in [0.0, math.pi / 4]) {
+      final path = Path();
+      for (var i = 0; i < 4; i++) {
+        final a = rot + i * math.pi / 2 + math.pi / 4;
+        final pt = c + Offset(math.cos(a), math.sin(a)) * r;
+        i == 0 ? path.moveTo(pt.dx, pt.dy) : path.lineTo(pt.dx, pt.dy);
       }
-      canvas.drawCircle(c, rr * 0.71, p);
+      path.close();
+      canvas.drawPath(path, p);
     }
   }
 
-  /// Pointed mihrab arches standing along the bottom, like a mosque wall.
-  void _arches(Canvas canvas, Size size) {
+  /// Home: a lattice of eight-point stars joined by diamonds, edge to edge.
+  void _starLattice(Canvas canvas, Size size) {
     final p = _line;
-    final w = size.width / 3;
-    for (var i = 0; i < 4; i++) {
-      final x0 = -w / 2 + i * w, x1 = x0 + w * 0.86;
-      final base = size.height;
-      final spring = size.height * 0.62;
-      final apex = size.height * 0.46;
-      for (final inset in [0.0, w * 0.08]) {
+    const cell = 96.0;
+    for (var y = -cell / 2, row = 0; y < size.height + cell; y += cell, row++) {
+      for (var x = (row.isOdd ? cell / 2 : 0.0) - cell / 2; x < size.width + cell; x += cell) {
+        final c = Offset(x, y);
+        _star(canvas, c, cell * 0.30, p);
+        canvas.drawCircle(c, cell * 0.12, p);
+        // A small diamond between neighbours.
+        final d = c + const Offset(cell / 2, 0);
         final path = Path()
-          ..moveTo(x0 + inset, base)
-          ..lineTo(x0 + inset, spring)
-          ..quadraticBezierTo(x0 + inset, apex + (spring - apex) * 0.3, (x0 + x1) / 2, apex + inset)
-          ..quadraticBezierTo(x1 - inset, apex + (spring - apex) * 0.3, x1 - inset, spring)
-          ..lineTo(x1 - inset, base);
+          ..moveTo(d.dx, d.dy - 7)
+          ..lineTo(d.dx + 7, d.dy)
+          ..lineTo(d.dx, d.dy + 7)
+          ..lineTo(d.dx - 7, d.dy)
+          ..close();
         canvas.drawPath(path, p);
       }
-      // A hanging lamp in each arch.
-      final lamp = Offset((x0 + x1) / 2, size.height * 0.58);
-      canvas.drawLine(Offset(lamp.dx, apex + w * 0.08), lamp - const Offset(0, 8), p);
-      canvas.drawCircle(lamp, 6, p);
     }
   }
 
-  /// Sound rings from the bottom-left corner.
+  /// Quran: rows of pointed mihrab arches with hanging lamps, top to bottom.
+  void _arcades(Canvas canvas, Size size) {
+    final p = _line;
+    const w = 120.0, h = 180.0;
+    for (var row = 0; row * h < size.height + h; row++) {
+      final top = row * h;
+      final shift = row.isOdd ? w / 2 : 0.0;
+      for (var x0 = -w + shift; x0 < size.width + w; x0 += w) {
+        final x1 = x0 + w * 0.84, mid = (x0 + x1) / 2;
+        final spring = top + h * 0.45, apex = top + h * 0.10, base = top + h;
+        for (final inset in [0.0, 7.0]) {
+          canvas.drawPath(
+            Path()
+              ..moveTo(x0 + inset, base)
+              ..lineTo(x0 + inset, spring)
+              ..quadraticBezierTo(x0 + inset, apex + inset + 30, mid, apex + inset)
+              ..quadraticBezierTo(x1 - inset, apex + inset + 30, x1 - inset, spring)
+              ..lineTo(x1 - inset, base),
+            p,
+          );
+        }
+        final lamp = Offset(mid, top + h * 0.40);
+        canvas.drawLine(Offset(mid, apex + 7), lamp - const Offset(0, 7), p);
+        canvas.drawCircle(lamp, 5, p);
+      }
+    }
+  }
+
+  /// Listen: sound rings spreading from the lower left over the whole screen.
   void _waves(Canvas canvas, Size size) {
     final p = _line;
-    final c = Offset(size.width * 0.05, size.height * 0.98);
-    for (var i = 1; i <= 9; i++) {
-      canvas.drawCircle(c, i * size.width * 0.12, p..strokeWidth = i.isEven ? 1.0 : 1.8);
+    final c = Offset(-size.width * 0.15, size.height * 1.05);
+    final far = (Offset(size.width, 0) - c).distance;
+    var i = 0;
+    for (var r = 40.0; r < far + 40; r += 46, i++) {
+      canvas.drawCircle(c, r, p..strokeWidth = i % 3 == 0 ? 1.8 : 0.9);
     }
   }
 
-  /// A manuscript page: a double frame with ruled lines in the lower half.
+  /// Hadith: a ruled manuscript page with a double margin and rosettes down it.
   void _manuscript(Canvas canvas, Size size) {
     final p = _line;
-    final r = Rect.fromLTRB(14, size.height * 0.45, size.width - 14, size.height - 14);
-    canvas.drawRRect(RRect.fromRectAndRadius(r, const Radius.circular(10)), p);
-    canvas.drawRRect(RRect.fromRectAndRadius(r.deflate(7), const Radius.circular(6)), p..strokeWidth = 0.8);
-    for (var y = r.top + 40; y < r.bottom - 20; y += 26) {
-      canvas.drawLine(Offset(r.left + 28, y), Offset(r.right - 28, y), p..strokeWidth = 0.8);
+    final frame = Rect.fromLTWH(10, 10, size.width - 20, size.height - 20);
+    canvas.drawRRect(RRect.fromRectAndRadius(frame, const Radius.circular(12)), p);
+    canvas.drawRRect(RRect.fromRectAndRadius(frame.deflate(6), const Radius.circular(8)), p..strokeWidth = 0.8);
+    final margin = size.width - 44;
+    canvas.drawLine(Offset(margin, 16), Offset(margin, size.height - 16), p);
+    for (var y = 60.0; y < size.height - 24; y += 30) {
+      canvas.drawLine(Offset(28, y), Offset(margin - 12, y), p..strokeWidth = 0.6);
     }
-    // A rosette in the margin, as in old manuscripts.
-    _rosette(canvas, Offset(r.right - 4, r.top + 4), 26);
+    p.strokeWidth = 1.0;
+    for (var y = 90.0; y < size.height - 40; y += 210) {
+      _star(canvas, Offset(margin + 17, y), 11, p);
+      canvas.drawCircle(Offset(margin + 17, y), 4, p);
+    }
   }
 
-  /// The sun's path through the day with the five prayer points, and stars.
-  void _sunPath(Canvas canvas, Size size) {
+  /// Daily: a night sky of small stars over the whole screen, a crescent, and
+  /// the sun's path with the five prayers along the bottom.
+  void _sky(Canvas canvas, Size size) {
     final p = _line;
+    final rnd = math.Random(7);
+    final count = (size.width * size.height / 5200).round();
+    for (var i = 0; i < count; i++) {
+      final s = Offset(rnd.nextDouble() * size.width, rnd.nextDouble() * size.height);
+      final l = 1.5 + rnd.nextDouble() * 3.5;
+      canvas.drawLine(s - Offset(l, 0), s + Offset(l, 0), p);
+      canvas.drawLine(s - Offset(0, l), s + Offset(0, l), p);
+    }
+    // Crescent at the top right.
+    final m = Offset(size.width - 70, 120);
+    canvas.drawPath(
+      Path.combine(PathOperation.difference, Path()..addOval(Rect.fromCircle(center: m, radius: 34)),
+          Path()..addOval(Rect.fromCircle(center: m + const Offset(14, -8), radius: 30))),
+      p..strokeWidth = 1.4,
+    );
+    // The sun's path and the five prayers.
     final c = Offset(size.width / 2, size.height * 1.02);
     final r = size.width * 0.62;
     canvas.drawArc(Rect.fromCircle(center: c, radius: r), math.pi, math.pi, false, p);
     for (var i = 0; i < 5; i++) {
       final a = math.pi + math.pi * (0.12 + i * 0.19);
-      canvas.drawCircle(c + Offset(math.cos(a), math.sin(a)) * r, 7, p..style = PaintingStyle.fill);
-    }
-    p.style = PaintingStyle.stroke;
-    final rnd = math.Random(7);
-    for (var i = 0; i < 18; i++) {
-      final s = Offset(rnd.nextDouble() * size.width, size.height * (0.5 + rnd.nextDouble() * 0.25));
-      final l = 2.0 + rnd.nextDouble() * 3;
-      canvas.drawLine(s - Offset(l, 0), s + Offset(l, 0), p);
-      canvas.drawLine(s - Offset(0, l), s + Offset(0, l), p);
+      canvas.drawCircle(c + Offset(math.cos(a), math.sin(a)) * r, 6, p..style = PaintingStyle.fill);
     }
   }
 

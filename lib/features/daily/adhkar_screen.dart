@@ -68,6 +68,8 @@ class AdhkarListScreen extends ConsumerWidget {
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(cat.titleEn, style: context.text.titleMedium),
                         Text('${cat.titleAr} · ${cat.items.length} adhkar', style: context.text.bodySmall),
+                        const SizedBox(height: 4),
+                        _ListenTime(cat),
                       ]),
                     ),
                     if (done) Icon(Icons.check_circle_rounded, color: c.primary),
@@ -238,7 +240,16 @@ class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
               padding: const EdgeInsets.only(bottom: Space.lg),
               child: AnimatedSwitcher(
                 duration: Motion.quick,
-                child: _listening ? const SizedBox(width: double.infinity) : _ListenCard(onTap: () => _listen(cat)),
+                child: _listening
+                    ? const SizedBox(width: double.infinity)
+                    : _ListenCard(
+                        onTap: () => _listen(cat),
+                        time: cat.listeningTime > Duration.zero ? formatListeningTime(cat.listeningTime) : null,
+                        // Where reading or listening stopped (kept until "Start again").
+                        resumeAt: done > 0 && done < total
+                            ? List.generate(cat.items.length, (i) => i).firstWhere((i) => _left(cat, i) > 0) + 1
+                            : null,
+                      ),
               ),
             );
           }
@@ -355,8 +366,14 @@ class _DhikrCard extends StatelessWidget {
 }
 
 class _ListenCard extends StatelessWidget {
-  const _ListenCard({required this.onTap});
+  const _ListenCard({required this.onTap, this.resumeAt, this.time});
   final VoidCallback onTap;
+
+  /// How long listening to all of it takes, e.g. "12 min".
+  final String? time;
+
+  /// The dhikr (1-based) to continue from, when some were already counted.
+  final int? resumeAt;
 
   @override
   Widget build(BuildContext context) {
@@ -379,8 +396,17 @@ class _ListenCard extends StatelessWidget {
             const SizedBox(width: Space.lg),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Listen', style: context.text.titleMedium),
-                Text('Recited one after another, each as many times as prescribed', style: context.text.bodySmall),
+                Row(children: [
+                  Text(resumeAt == null ? 'Listen' : 'Continue listening', style: context.text.titleMedium),
+                  const Spacer(),
+                  if (time != null)
+                    Text(time!, style: context.text.labelLarge?.copyWith(color: context.colors.primary)),
+                ]),
+                Text(
+                    resumeAt == null
+                        ? 'Recited one after another, each as many times as prescribed'
+                        : 'From dhikr $resumeAt, where you stopped · "Start again" resets',
+                    style: context.text.bodySmall),
               ]),
             ),
           ]),
@@ -471,5 +497,32 @@ class _ListenBar extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// "12 min of listening", with a note when some adhkar have no recording.
+class _ListenTime extends StatelessWidget {
+  const _ListenTime(this.cat);
+  final AdhkarCategory cat;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final t = cat.listeningTime;
+    if (t == Duration.zero) return const SizedBox.shrink();
+    return Row(children: [
+      Icon(Icons.headphones_rounded, size: 14, color: c.primary),
+      const SizedBox(width: 4),
+      Flexible(
+        child: Text(
+          cat.unrecorded == 0
+              ? '${formatListeningTime(t)} of listening'
+              : '${formatListeningTime(t)} of listening · ${cat.unrecorded} to read',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: context.text.labelSmall?.copyWith(color: c.primary),
+        ),
+      ),
+    ]);
   }
 }

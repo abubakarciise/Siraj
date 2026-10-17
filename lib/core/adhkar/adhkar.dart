@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 
 class Dhikr {
-  const Dhikr({required this.text, required this.count, this.virtue = '', this.quranRef, this.audioFile});
+  const Dhikr({required this.text, required this.count, this.virtue = '', this.quranRef, this.audioFile, this.audioMs = 0});
   final String text;
   final int count;
   final String virtue;
@@ -15,12 +15,16 @@ class Dhikr {
   /// assets/adhkar/audio/ (tool/build_adhkar_audio.py); null when there is none.
   final String? audioFile;
 
+  /// Length of the recording (one recitation), 0 without one.
+  final int audioMs;
+
   factory Dhikr.fromJson(Map<String, dynamic> j, [Map<String, dynamic>? audio]) => Dhikr(
         text: j['text'] as String,
         count: (j['count'] as num).toInt().clamp(1, 1000),
         virtue: (j['virtue'] as String?) ?? '',
         quranRef: j['quran'] as String?,
         audioFile: audio?['file'] as String?,
+        audioMs: (audio?['ms'] as num?)?.toInt() ?? 0,
       );
 }
 
@@ -30,6 +34,23 @@ class AdhkarCategory {
   final List<Dhikr> items;
 
   int get totalCount => items.fold(0, (a, b) => a + b.count);
+
+  /// How long listening to the whole category takes: each recording as many
+  /// times as it is said, with the player's pauses between (450 ms between
+  /// repetitions, a second before the next dhikr). Adhkar without a recording
+  /// are left out; [unrecorded] says how many.
+  Duration get listeningTime => Duration(
+        milliseconds: items.where((d) => d.audioMs > 0).fold(0, (t, d) => t + d.count * (d.audioMs + 450) + 550),
+      );
+
+  int get unrecorded => items.where((d) => d.audioFile == null).length;
+}
+
+/// "12 min", "1 h 5 min", "45 s".
+String formatListeningTime(Duration d) {
+  if (d.inSeconds < 60) return '${d.inSeconds} s';
+  final m = (d.inSeconds / 60).round();
+  return m < 60 ? '$m min' : '${m ~/ 60} h ${m % 60} min';
 }
 
 /// Hisn al-Muslim adhkar bundled with the app (assets/adhkar/adhkar.json).

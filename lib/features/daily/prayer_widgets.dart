@@ -51,7 +51,8 @@ class PrayerCard extends ConsumerWidget {
     }
 
     final today = service.day(now, settings)!;
-    final next = service.next(now);
+    final focus = service.focus(now);
+    final next = focus == null ? null : (focus.salah, focus.time);
     final current = today.currentAt(now);
     return _Shell(
       onTap: () => context.push('/prayer'),
@@ -60,7 +61,8 @@ class PrayerCard extends ConsumerWidget {
           Icon(Icons.place_outlined, size: 16, color: c.inkMuted),
           const SizedBox(width: 4),
           Expanded(child: Text(settings.place ?? 'My location', style: context.text.bodySmall)),
-          Text('NEXT PRAYER', style: context.text.labelSmall),
+          Text(focus?.started ?? false ? 'PRAYER TIME · NOW' : 'NEXT PRAYER',
+              style: context.text.labelSmall?.copyWith(color: focus?.started ?? false ? c.primary : null)),
         ]),
         const SizedBox(height: Space.sm),
         if (next != null)
@@ -73,7 +75,11 @@ class PrayerCard extends ConsumerWidget {
             ),
             Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
               Text(formatTime(context, next.$2), style: context.text.headlineSmall?.copyWith(color: c.primary)),
-              Text('in ${formatCountdown(next.$2.difference(now))}', style: context.text.bodySmall),
+              Text(
+                  focus!.started
+                      ? 'began ${formatCountdown(now.difference(next.$2))} ago'
+                      : 'in ${formatCountdown(next.$2.difference(now))}',
+                  style: context.text.bodySmall),
             ]),
           ]),
         const SizedBox(height: Space.lg),

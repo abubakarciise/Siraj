@@ -67,6 +67,9 @@ final appRouter = GoRouter(
             path: '/hadith',
             builder: (_, _) => const TabBackdrop(tab: AppTab.hadith, child: HadithHomeScreen()),
             routes: [
+              // In the Hadith tab, so a hadith opened from them comes back to them.
+              GoRoute(path: 'search', builder: (_, _) => const HadithSearchScreen()),
+              GoRoute(path: 'saved', builder: (_, _) => const SavedHadithScreen()),
               GoRoute(
                 path: ':book',
                 builder: (_, s) => HadithBookScreen(bookId: s.pathParameters['book']!),
@@ -155,8 +158,6 @@ final appRouter = GoRouter(
     GoRoute(path: '/reminders', parentNavigatorKey: _rootKey, builder: (_, _) => const RemindersScreen()),
     GoRoute(path: '/library', parentNavigatorKey: _rootKey, builder: (_, _) => const LibraryScreen()),
     GoRoute(path: '/memorize', parentNavigatorKey: _rootKey, builder: (_, _) => const MemorizeScreen()),
-    GoRoute(path: '/hadith-search', parentNavigatorKey: _rootKey, builder: (_, _) => const HadithSearchScreen()),
-    GoRoute(path: '/hadith-saved', parentNavigatorKey: _rootKey, builder: (_, _) => const SavedHadithScreen()),
     GoRoute(
       path: '/sunnah',
       parentNavigatorKey: _rootKey,

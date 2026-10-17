@@ -77,6 +77,17 @@ class MushafPage {
     }
     return const AyahRef(1, 1);
   }
+
+  /// First ayah of [surah] on this page; on a page where a surah begins
+  /// mid-page, this skips the end of the previous surah.
+  AyahRef firstAyahOf(int surah) {
+    for (final l in lines) {
+      for (final w in l.words) {
+        if (w.surah == surah) return w.ref;
+      }
+    }
+    return firstAyah;
+  }
 }
 
 class JuzInfo {

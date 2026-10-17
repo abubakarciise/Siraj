@@ -71,6 +71,11 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Render with Skia: Impeller's OpenGL glyph cache corrupts text and icons
+             (wrong glyphs) on Mali GPUs with older drivers, e.g. Redmi Note 10S / Mali-G76 r26. -->
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableImpeller"
+            android:value="false" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
@@ -81,10 +86,6 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
-        </intent>
-        <!-- Text-to-speech engine, for listening to hadith (Android 11+ package visibility). -->
-        <intent>
-            <action android:name="android.intent.action.TTS_SERVICE"/>
         </intent>
     </queries>
 </manifest>

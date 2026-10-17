@@ -150,7 +150,7 @@ class _Reminders extends StatelessWidget {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: Space.gutter),
       leading: Icon(Icons.notifications_active_outlined, color: c.primary),
-      title: const Text('Reminders & sounds'),
+      title: const Text('Reminders'),
       subtitle: const Text('Morning and evening adhkar, prayer times, daily reminders'),
       trailing: const Icon(Icons.chevron_right_rounded),
       onTap: () => context.push('/reminders'),

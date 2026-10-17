@@ -22,10 +22,10 @@
 | <img src="docs/screenshots/01_home.png" width="260"> | <img src="docs/screenshots/02_reader.png" width="260"> | <img src="docs/screenshots/03_player.png" width="260"> |
 | **Hadith & Sunnah** | **Hadith** | **Daily reminders** |
 | <img src="docs/screenshots/04_hadith.png" width="260"> | <img src="docs/screenshots/05_hadith_detail.png" width="260"> | <img src="docs/screenshots/06_reminders.png" width="260"> |
-| **Reminder sounds** | **Settings** | **Dark** |
-| <img src="docs/screenshots/07_sounds.png" width="260"> | <img src="docs/screenshots/08_appearance.png" width="260"> | <img src="docs/screenshots/09_home_dark.png" width="260"> |
-| **Listen to adhkar** | **Listen to hadith** | **Memorization test** |
-| <img src="docs/screenshots/10_adhkar_listen.png" width="260"> | <img src="docs/screenshots/11_hadith_listen.png" width="260"> | <img src="docs/screenshots/12_memorize.png" width="260"> |
+| **Listen to adhkar** | **Settings** | **Dark** |
+| <img src="docs/screenshots/10_adhkar_listen.png" width="260"> | <img src="docs/screenshots/08_appearance.png" width="260"> | <img src="docs/screenshots/09_home_dark.png" width="260"> |
+| **Memorization test** | | |
+| <img src="docs/screenshots/12_memorize.png" width="260"> | | |
 
 ## Features
 
@@ -37,7 +37,7 @@
   reciters with timing data and estimated for the rest. Tap any ayah to jump to it.
 - **Hadith & Sunnah.** Sahih al-Bukhari, Sahih Muslim, Abu Dawud, at-Tirmidhi, an-Nasa'i, Ibn Majah, Muwatta Malik,
   40 Nawawi, 40 Qudsi: Arabic, English and grades, searchable and offline. Includes a hadith of the day and 41 Sunnah
-  practices with their sources. Listen to any chapter, one hadith after another, in Arabic or English (phone voice).
+  practices with their sources.
 - **Memorization test.** Test a surah, part of a surah or a juz: next ayah, previous ayah, complete the ayah, missing
   word, arrange the words, which surah, and recite from memory. Mistakes are listed for revision and can be practised
   again.
@@ -47,11 +47,10 @@
   A separate reminder at the times you choose to read the morning and evening adhkar.
 - **Prayer times & Qibla.** Calculated on the phone, with 11 methods, Hanafi/Standard Asr, prayer alerts and a Qibla
   compass.
-- **Your sounds.** Choose the sound for each kind of reminder: ocean waves, birdsong, flowing water or gentle rain
-  (nature sounds, no music), your phone's default, vibration only, or any sound on your phone.
 - **Adhkar & tasbih.** Hisn al-Muslim in 8 categories, with tap-to-count cards and a tasbih counter. Listen to a whole
   category: each dhikr is recited by a human voice, repeated as many times as prescribed while the counter counts
-  down, then the next one begins. Quranic adhkar are recited by Mishary Alafasy.
+  down, then the next one begins. Quranic adhkar are recited by Mishary Alafasy. The recordings ship with the app,
+  so listening works offline. Tap any card to jump to it; tap the card being recited to count it.
 - **Appearance.** Light, Dark and true-black Midnight themes. The Mushaf page colour (Ivory, White, Sepia, Dark, Black)
   can differ, and everything on the reading screen takes the page colour.
 - **Private.** No account, no ads, no analytics. Bookmarks, history and downloads stay on the device.
@@ -65,7 +64,7 @@ flutter test                # unit tests, Mushaf page goldens, renderer benchmar
 flutter build apk --release --split-per-abi
 ```
 
-Bundled content can be rebuilt with the scripts in `tool/` (Python 3 with Pillow, NumPy, SciPy and resvg-py; ffmpeg for the sounds):
+Bundled content can be rebuilt with the scripts in `tool/` (Python 3 with Pillow and NumPy):
 
 ```bash
 python tool/build_quran_db.py   # Quran text, Mushaf layout, translations -> assets/db/quran.db
@@ -74,15 +73,14 @@ python tool/build_catalog.py    # reciters -> assets/catalog/reciters.json
 python tool/scan_vbr.py         # variable-bitrate recitations (accurate seeking) -> assets/catalog/vbr.json
 python tool/build_adhkar.py     # Hisn al-Muslim adhkar -> assets/adhkar/adhkar.json
 python tool/build_adhkar_audio.py  # a verified recording cut for each dhikr -> assets/adhkar/audio.json (faster-whisper)
-python tool/make_sounds.py      # reminder sounds -> assets/sounds, res/raw (needs ffmpeg)
-python tool/make_icons.py       # app icon, splash and logo from one SVG (needs resvg-py)
+python tool/make_icons.py       # app icon, splash and logo from the mosque lamp photograph
 ```
 
 ## Project structure
 
 ```
 lib/
-  core/       quran db, hadith, reminders (Hijri-aware), notifications + sounds, audio, downloads, prayer, settings
+  core/       quran db, hadith, reminders (Hijri-aware), notifications, audio, downloads, prayer, settings
   design/     tokens (Light / Dark / Midnight + Mushaf paper), theme, shared widgets
   features/   home, quran_index, reader (Mushaf renderer), player, reciters, hadith, daily, library, search, settings
   app/        app, router, tab shell, notification routing
@@ -103,9 +101,10 @@ shown comes from the source collections with its reference and grade.
 - Recitations and ayah timings: [mp3quran.net](https://mp3quran.net), streamed from their servers.
 - Hadith: [fawazahmed0/hadith-api](https://github.com/fawazahmed0/hadith-api) (public domain).
 - Adhkar: Hisn al-Muslim. Adhkar recordings: [hisnmuslim.com](https://www.hisnmuslim.com) and, for Quranic adhkar,
-  Mishary Alafasy via [everyayah.com](https://everyayah.com); streamed, never re-hosted. Prayer times: the open-source Adhan library. Hijri dates: Umm al-Qura.
+  Mishary Alafasy via [everyayah.com](https://everyayah.com); cut to each dhikr and included for offline listening
+  (`tool/build_adhkar_audio.py`, needs ffmpeg and faster-whisper). Prayer times: the open-source Adhan library. Hijri dates: Umm al-Qura.
 - Fonts: IBM Plex Sans Arabic and Amiri (SIL Open Font License).
-- Reminder sounds from Wikimedia Commons (CC0): "Ocean Waves on a Tropical Beach", "Robin's song ZS V78-0033",
-  "363120 fractalstudios water-trickle" and "Light Rain Distant Thunder July 5th 2016".
+- Logo: a Mamluk enamelled glass mosque lamp, 14th century, photographed by The Metropolitan Museum of Art (Open
+  Access, CC0; "Mosque Lamp MET DP332337" on Wikimedia Commons). Lamps like it carry the Verse of Light (24:35).
 
 The app code is released under the [MIT License](LICENSE). Bundled content keeps its own terms.

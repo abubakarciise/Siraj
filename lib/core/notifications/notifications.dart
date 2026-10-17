@@ -5,13 +5,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
-import 'sounds.dart';
 
-/// The three kinds of reminder; each has its own sound and Android channel.
+/// The three kinds of reminder; each has its own Android channel, all with the
+/// phone's own notification sound.
 enum ReminderKind { prayer, adhkar, daily }
 
 extension ReminderKindX on ReminderKind {
@@ -26,18 +25,11 @@ extension ReminderKindX on ReminderKind {
         ReminderKind.adhkar => 'A reminder to read the morning and evening adhkar',
         ReminderKind.daily => 'An ayah, hadith, sunnah or dua through the day',
       };
-
-  NotificationSound get defaultSound => switch (this) {
-        ReminderKind.prayer => const NotificationSound.builtin('ocean'),
-        ReminderKind.adhkar => const NotificationSound.builtin('birds'),
-        ReminderKind.daily => const NotificationSound.builtin('stream'),
-      };
 }
 
 /// Local (on-device) reminders: prayer times, adhkar, daily reminders. No server.
 class NotificationService {
-  NotificationService(this._prefs);
-  final SharedPreferences _prefs;
+  NotificationService();
   final _plugin = FlutterLocalNotificationsPlugin();
   final _taps = StreamController<String>.broadcast();
 
@@ -75,47 +67,28 @@ class NotificationService {
     );
     final launch = await _plugin.getNotificationAppLaunchDetails();
     if (launch?.didNotificationLaunchApp ?? false) launchPayload = launch?.notificationResponse?.payload;
-    await SoundService.installForIos();
     for (final k in ReminderKind.values) {
       await _ensureChannel(k);
     }
   }
 
-  // ---- Sounds ----
+  // ---- Channels ----
 
-  NotificationSound soundFor(ReminderKind kind) =>
-      NotificationSound.decode(_prefs.getString('sound_${kind.name}'), kind.defaultSound);
-
-  /// Saves the sound and creates its channel. Callers re-schedule afterwards so
-  /// pending reminders move to the new channel.
-  Future<void> setSound(ReminderKind kind, NotificationSound sound) async {
-    await _prefs.setString('sound_${kind.name}', sound.encode());
-    await _ensureChannel(kind);
-  }
-
-  String _channelId(ReminderKind kind) => '${kind.name}_${soundFor(kind).key}';
+  /// A fresh id: an Android channel's sound can never change after it is
+  /// created, so earlier channels (with custom sounds) are replaced.
+  String _channelId(ReminderKind kind) => '${kind.name}_standard';
 
   Future<void> _ensureChannel(ReminderKind kind) async {
     final android = _android;
     if (android == null) return;
-    final sound = soundFor(kind);
     final id = _channelId(kind);
+    // No sound given: the phone's default notification sound and vibration.
     await android.createNotificationChannel(AndroidNotificationChannel(
       id,
       kind.title,
-      description: '${kind.description} · ${sound.label}',
+      description: kind.description,
       importance: Importance.high,
-      playSound: sound.plays,
-      sound: switch (sound.kind) {
-        SoundKind.builtin => RawResourceAndroidNotificationSound('snd_${sound.value}'),
-        SoundKind.device => UriAndroidNotificationSound(sound.value),
-        _ => null,
-      },
-      enableVibration: true,
-      vibrationPattern: _vibration,
     ));
-    // Remove channels for sounds no longer used (and the v1 channels, which
-    // could have been created silent and can never be changed afterwards).
     final channels = await android.getNotificationChannels() ?? const [];
     for (final ch in channels) {
       final stale = (ch.id.startsWith('${kind.name}_') && ch.id != id) || ch.id == kind.name;
@@ -123,39 +96,24 @@ class NotificationService {
     }
   }
 
-  /// Two soft pulses; the only signal when a reminder is set to vibration only.
-  static final _vibration = Int64List.fromList([0, 250, 180, 250]);
-
-  NotificationDetails _details(ReminderKind kind, {String? body}) {
-    final sound = soundFor(kind);
-    return NotificationDetails(
-      android: AndroidNotificationDetails(
-        _channelId(kind),
-        kind.title,
-        channelDescription: kind.description,
-        importance: Importance.high,
-        priority: Priority.high,
-        playSound: sound.plays,
-        sound: switch (sound.kind) {
-          SoundKind.builtin => RawResourceAndroidNotificationSound('snd_${sound.value}'),
-          SoundKind.device => UriAndroidNotificationSound(sound.value),
-          _ => null,
-        },
-        enableVibration: true,
-        vibrationPattern: _vibration,
-        category: kind == ReminderKind.prayer ? AndroidNotificationCategory.alarm : AndroidNotificationCategory.reminder,
-        styleInformation: body == null ? null : BigTextStyleInformation(body),
-      ),
-      iOS: DarwinNotificationDetails(
-        presentAlert: true,
-        presentBanner: true,
-        presentList: true,
-        presentSound: sound.plays,
-        sound: sound.kind == SoundKind.builtin ? '${sound.value}.wav' : null,
-        interruptionLevel: kind == ReminderKind.prayer ? InterruptionLevel.timeSensitive : InterruptionLevel.active,
-      ),
-    );
-  }
+  NotificationDetails _details(ReminderKind kind, {String? body}) => NotificationDetails(
+        android: AndroidNotificationDetails(
+          _channelId(kind),
+          kind.title,
+          channelDescription: kind.description,
+          importance: Importance.high,
+          priority: Priority.high,
+          category: kind == ReminderKind.prayer ? AndroidNotificationCategory.alarm : AndroidNotificationCategory.reminder,
+          styleInformation: body == null ? null : BigTextStyleInformation(body),
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBanner: true,
+          presentList: true,
+          presentSound: true,
+          interruptionLevel: kind == ReminderKind.prayer ? InterruptionLevel.timeSensitive : InterruptionLevel.active,
+        ),
+      );
 
   // ---- Permissions ----
 

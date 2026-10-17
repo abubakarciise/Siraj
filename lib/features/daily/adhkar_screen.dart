@@ -162,9 +162,17 @@ class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
   }
 
   void _tap(AdhkarCategory cat, int i) {
+    // While listening, a tap on another card plays that card; a tap on the
+    // card being recited counts it, and listening carries on from there.
+    if (_listening && _audio.playing && i != _audio.index) {
+      HapticFeedback.selectionClick();
+      _audio.jumpTo(i);
+      return;
+    }
     final left = _left(cat, i);
     if (left == 0) return;
     setState(() => _remaining[i] = left - 1);
+    if (_listening && _audio.playing) _audio.counted();
     if (left - 1 == 0) {
       HapticFeedback.mediumImpact();
       final next = i + 1;
@@ -406,8 +414,8 @@ class _ListenBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final i = audio.index;
-    final status = audio.loading
-        ? 'Loading…'
+    final status = audio.waitingForReader
+        ? 'Your turn: read, then tap'
         : audio.repetitions > 1
             ? 'Recitation ${(audio.repetition + (audio.playing ? 1 : 0)).clamp(1, audio.repetitions)} of ${audio.repetitions}'
             : audio.playing
@@ -456,11 +464,8 @@ class _ListenBar extends StatelessWidget {
                   child: SizedBox.square(
                     dimension: 52,
                     child: Center(
-                      child: audio.loading
-                          ? SizedBox.square(
-                              dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.4, color: c.onPrimary))
-                          : Icon(audio.playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                              color: c.onPrimary, size: 30),
+                      child: Icon(audio.playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                          color: c.onPrimary, size: 30),
                     ),
                   ),
                 ),

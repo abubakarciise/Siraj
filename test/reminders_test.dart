@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:quran_app/core/audio/ayah_estimate.dart';
-import 'package:quran_app/core/notifications/sounds.dart';
 import 'package:quran_app/core/quran/models.dart';
 import 'package:quran_app/core/reminders/reminders.dart';
 import 'package:quran_app/core/settings.dart';
@@ -102,37 +101,6 @@ void main() {
     test('Al-Fatihah has no separate basmala intro', () {
       final pace = SurahPace(1, [Ayah(id: 1, ref: const AyahRef(1, 1), page: 1, juz: 1, text: 'بسم الله الرحمن الرحيم')]);
       expect(pace.ayahAt(0), 1);
-    });
-  });
-
-  group('NotificationSound', () {
-    test('round-trips through its stored form', () {
-      for (final s in [
-        const NotificationSound.builtin('birds'),
-        NotificationSound.systemDefault,
-        NotificationSound.silent,
-        const NotificationSound.device('content://media/internal/audio/media/31', 'Pixie Dust'),
-      ]) {
-        final back = NotificationSound.decode(s.encode(), NotificationSound.silent);
-        expect(back, s);
-        expect(back.label, s.label);
-      }
-    });
-
-    test('sounds removed in 2.1 fall back to the default', () {
-      expect(NotificationSound.decode('builtin:tone', const NotificationSound.builtin('ocean')),
-          const NotificationSound.builtin('ocean'));
-    });
-
-    test('channel keys are stable and id-safe', () {
-      const s = NotificationSound.device('content://media/internal/audio/media/31', 'x');
-      expect(s.key, NotificationSound.decode(s.encode(), NotificationSound.silent).key);
-      expect(RegExp(r'^[a-z0-9]+$').hasMatch(s.key), isTrue);
-    });
-
-    test('unknown values fall back', () {
-      expect(NotificationSound.decode('builtin:nope', NotificationSound.silent), NotificationSound.silent);
-      expect(NotificationSound.decode(null, const NotificationSound.builtin('chime')).value, 'chime');
     });
   });
 

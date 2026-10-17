@@ -9,7 +9,7 @@ import '../../design/tokens.dart';
 import '../reader/reader_screen.dart' show PaperPicker, MushafPaperX;
 
 const kAppName = 'Siraj';
-const kAppVersion = '2.2.0';
+const kAppVersion = '2.3.0';
 const kRepoUrl = 'github.com/Abuubakar-Ciise/Siraj';
 
 class SettingsScreen extends ConsumerWidget {
@@ -54,7 +54,7 @@ class SettingsScreen extends ConsumerWidget {
           const _Header('Reminders'),
           ListTile(
             leading: Icon(Icons.notifications_active_outlined, color: c.primary),
-            title: const Text('Reminders & sounds'),
+            title: const Text('Reminders'),
             subtitle: Text(daily.enabled
                 ? 'Daily reminders every ${daily.everyHours == 1 ? 'hour' : '${daily.everyHours} hours'}'
                 : 'Adhkar, prayer and daily reminders'),
@@ -226,8 +226,8 @@ class _Sources extends StatelessWidget {
       ('Adhkar', "Hisn al-Muslim by Sa'id bin Ali bin Wahf Al-Qahtani; Quran passages from the KFGQPC text."),
       ('Hadith', 'Arabic texts, English translations and grades from the hadith-api project by Fawaz Ahmed (public domain).'),
       ('Hijri calendar', 'Umm al-Qura calculation, adjustable for local moon sighting.'),
-      ('Adhkar recordings', 'hisnmuslim.com (Hisn al-Muslim) and, for Quranic adhkar, Mishary Alafasy via everyayah.com. Streamed, then kept on your phone.'),
-      ('Reminder sounds', 'Ocean, birdsong, stream and rain recordings from Wikimedia Commons (CC0).'),
+      ('Adhkar recordings', 'hisnmuslim.com (Hisn al-Muslim) and, for Quranic adhkar, Mishary Alafasy via everyayah.com. Included in the app, so they play offline.'),
+      ('App icon', 'A 14th-century Mamluk glass mosque lamp, photographed by The Metropolitan Museum of Art (Open Access, CC0).'),
       ('Prayer times & Qibla', 'Calculated on your phone with the open-source Adhan library.'),
       ('UI font', 'IBM Plex Sans Arabic (SIL Open Font License).'),
     ];

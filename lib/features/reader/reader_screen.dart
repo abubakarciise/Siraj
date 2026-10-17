@@ -229,7 +229,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                         ? null
                         : () {
                             _scheduleHide();
-                            final a = pageData.firstAyah;
+                            // The surah shown in the dock, not the end of the one before it.
+                            final a = pageData.firstAyahOf(_surah);
                             playFromMushaf(context, ref, a.surah, ayah: a.ayah);
                           },
                   ),

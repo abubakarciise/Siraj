@@ -53,7 +53,7 @@ Future<void> main() async {
   await downloads.init();
   final player = PlayerController(handler, db, downloads, timing, user);
 
-  final notifications = NotificationService(prefs);
+  final notifications = NotificationService();
   await notifications.init();
   final prayer = PrayerService(prefs, notifications);
   final reminders = ReminderService(

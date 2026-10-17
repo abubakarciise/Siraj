@@ -6,14 +6,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'adhkar/adhkar.dart';
 import 'adhkar/adhkar_player.dart';
 import 'audio/player_controller.dart';
-import 'audio/speech.dart';
 import 'audio/timing.dart';
 import 'catalog/catalog.dart';
 import 'downloads/download_manager.dart';
 import 'hadith/hadith.dart';
-import 'hadith/hadith_reader.dart';
 import 'notifications/notifications.dart';
-import 'notifications/sounds.dart';
 import 'prayer/prayer.dart';
 import 'quran/models.dart';
 import 'quran/quran_db.dart';
@@ -96,7 +93,11 @@ final favoritesProvider = AsyncNotifierProvider<FavoritesNotifier, Set<int>>(Fav
 
 final bookmarksProvider = FutureProvider<List<Bookmark>>((ref) => ref.watch(userStoreProvider).bookmarks());
 final lastReadProvider = FutureProvider<LastRead?>((ref) => ref.watch(userStoreProvider).lastRead());
-final lastListeningProvider = FutureProvider<ListeningState?>((ref) => ref.watch(userStoreProvider).lastListening());
+final lastListeningProvider = FutureProvider<ListeningState?>((ref) {
+  // Read again whenever another recitation or surah starts playing.
+  ref.watch(nowPlayingProvider.select((v) => (v.value?.recitation.key, v.value?.surah)));
+  return ref.watch(userStoreProvider).lastListening();
+});
 
 // ---- Live streams ----
 final downloadsProvider = StreamProvider<DownloadsState>((ref) async* {
@@ -137,17 +138,8 @@ final clockProvider = StreamProvider.autoDispose<DateTime>(
 
 final adhkarProvider = FutureProvider<List<AdhkarCategory>>((ref) => AdhkarRepository.load());
 
-/// The phone's text-to-speech (hadith, and adhkar without a recording).
-final speechProvider = Provider<Speech>((ref) => Speech());
-
-final hadithReaderProvider = Provider<HadithReader>((ref) {
-  final reader = HadithReader(ref.watch(speechProvider), beforeStart: () => ref.read(playerProvider).pause());
-  ref.onDispose(reader.dispose);
-  return reader;
-});
-
 final adhkarPlayerProvider = Provider<AdhkarPlayer>((ref) {
-  final player = AdhkarPlayer(ref.watch(speechProvider), beforeStart: () => ref.read(playerProvider).pause());
+  final player = AdhkarPlayer(beforeStart: () => ref.read(playerProvider).pause());
   ref.onDispose(player.dispose);
   return player;
 });
@@ -186,14 +178,8 @@ final hadithBookmarksProvider = FutureProvider<List<Hadith>>((ref) => ref.watch(
 final hadithOfDayProvider =
     FutureProvider<Hadith?>((ref) => ref.watch(hadithRepoProvider).ofTheDay(DateTime.now()));
 
-// ---- Daily reminders & sounds ----
+// ---- Daily reminders ----
 final reminderServiceProvider = Provider<ReminderService>((ref) => throw UnimplementedError());
-final soundServiceProvider = Provider<SoundService>((ref) {
-  final s = SoundService();
-  ref.onDispose(s.dispose);
-  return s;
-});
-
 class DailyRemindersNotifier extends Notifier<DailyReminderSettings> {
   @override
   DailyReminderSettings build() => ref.watch(reminderServiceProvider).settings;

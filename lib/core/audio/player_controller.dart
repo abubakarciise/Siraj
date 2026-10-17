@@ -118,9 +118,15 @@ class PlayerController {
     _repeatDone = 0;
 
     Duration? start;
-    if (ayah != null && ayah > 1 && recitation.timingReadId != null && surahs.first == surah) {
-      final t = await _timing.get(recitation.timingReadId!, surah);
-      final ms = t?.startOf(ayah);
+    // Load the ayah timing before the first word plays, so the highlight is
+    // exact from the start instead of catching up once the timing arrives.
+    final t = recitation.timingReadId == null
+        ? null
+        : await _timing
+            .get(recitation.timingReadId!, surahs.first)
+            .timeout(const Duration(seconds: 4), onTimeout: () => null);
+    if (ayah != null && ayah > 1 && t != null && surahs.first == surah) {
+      final ms = t.startOf(ayah);
       if (ms != null) start = Duration(milliseconds: ms);
     } else if (resume) {
       final ms = await _user.savedPosition(recitation.key, surahs.first);
@@ -152,6 +158,8 @@ class PlayerController {
     }
     await _handler.load(items, sources, position: start);
     await _onItemChanged();
+    // Remember it at once (Home's "continue listening" reads this).
+    await _savePosition(force: true);
     unawaited(_handler.play());
   }
 
@@ -261,13 +269,18 @@ class PlayerController {
       _sleepEndOfSurah = false;
       await _handler.pause();
     }
-    _surahTiming = null;
     _ayah = null;
     currentAyah.value = null;
+    final readId = r.timingReadId;
+    // Prefetched timing is used at once; otherwise it loads while the basmala plays.
+    _surahTiming = readId == null ? null : _timing.cached(readId, surah);
     _emit();
-    if (r.timingReadId != null) {
-      _surahTiming = await _timing.get(r.timingReadId!, surah);
+    if (readId != null) {
+      _surahTiming ??= await _timing.get(readId, surah);
       _onPosition(player.position);
+      // The next surah's timing, ready before it starts.
+      final i = _surahs.indexOf(surah);
+      if (i >= 0 && i + 1 < _surahs.length) _timing.get(readId, _surahs[i + 1]).ignore();
     }
   }
 

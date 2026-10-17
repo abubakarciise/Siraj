@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/notifications/notifications.dart';
-import '../../core/notifications/sounds.dart';
 import '../../core/prayer/prayer.dart';
 import '../../core/providers.dart';
 import '../../core/reminders/reminders.dart';
@@ -13,7 +12,7 @@ import '../../design/dialogs.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
 
-/// Daily reminders (frequency, hours, content) and the sound of every reminder.
+/// Daily reminders (frequency, hours, content), adhkar reminders and prayer alerts.
 class RemindersScreen extends ConsumerWidget {
   const RemindersScreen({super.key});
 
@@ -45,7 +44,7 @@ class RemindersScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Reminders & sounds')),
+      appBar: AppBar(title: const Text('Reminders')),
       body: ListView(padding: const EdgeInsets.only(bottom: Space.xxxl), children: [
         _Hero(enabled: s.enabled),
         SwitchListTile(
@@ -157,28 +156,20 @@ class RemindersScreen extends ConsumerWidget {
             ),
           ]),
         ),
-        const _Label('Sounds'),
-        for (final kind in ReminderKind.values)
-          ListTile(
-            leading: Icon(
-              switch (kind) {
-                ReminderKind.prayer => Icons.mosque_outlined,
-                ReminderKind.adhkar => Icons.wb_twilight_rounded,
-                ReminderKind.daily => Icons.auto_awesome_outlined,
-              },
-              color: c.primary,
-            ),
-            title: Text(kind.title),
-            subtitle: Text(notifications.soundFor(kind).label),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => showSoundPicker(context, ref, kind),
-          ),
         ListTile(
           leading: Icon(Icons.access_time_rounded, color: c.primary),
           title: const Text('Prayer time alerts'),
           subtitle: const Text('Choose which prayers alert you'),
           trailing: const Icon(Icons.chevron_right_rounded),
           onTap: () => context.push('/prayer'),
+        ),
+        ListTile(
+          leading: Icon(Icons.notifications_active_outlined, color: c.primary),
+          title: const Text('Send a test notification'),
+          subtitle: const Text("Reminders use your phone's notification sound"),
+          onTap: () async {
+            if (await _ensurePermission(context, ref)) await notifications.showTest(ReminderKind.daily);
+          },
         ),
       ]),
     );
@@ -278,113 +269,6 @@ class _TimeBox extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-/// Sound choice for one kind of reminder: built-in sounds with preview, the
-/// phone's default, silent, or any sound on the phone (Android).
-Future<void> showSoundPicker(BuildContext context, WidgetRef ref, ReminderKind kind) => showAppSheet(
-      context,
-      title: '${kind.title} sound',
-      builder: (_) => _SoundPicker(kind: kind),
-    );
-
-class _SoundPicker extends ConsumerStatefulWidget {
-  const _SoundPicker({required this.kind});
-  final ReminderKind kind;
-
-  @override
-  ConsumerState<_SoundPicker> createState() => _SoundPickerState();
-}
-
-class _SoundPickerState extends ConsumerState<_SoundPicker> {
-  late NotificationSound _current = ref.read(notificationsProvider).soundFor(widget.kind);
-  NotificationSound? _device;
-  late final _sounds = ref.read(soundServiceProvider);
-
-  @override
-  void initState() {
-    super.initState();
-    if (_current.kind == SoundKind.device) _device = _current;
-  }
-
-  @override
-  void dispose() {
-    _sounds.stop();
-    super.dispose();
-  }
-
-  Future<void> _choose(NotificationSound s) async {
-    setState(() => _current = s);
-    try {
-      await _sounds.preview(s);
-    } catch (_) {}
-    await ref.read(notificationsProvider).setSound(widget.kind, s);
-    // Pending reminders move to the channel with the new sound.
-    switch (widget.kind) {
-      case ReminderKind.prayer || ReminderKind.adhkar:
-        await ref.read(prayerServiceProvider).reschedule();
-      case ReminderKind.daily:
-        await ref.read(reminderServiceProvider).reschedule();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    Widget tile(NotificationSound s, String title, String? subtitle, IconData icon) {
-      final selected = _current == s;
-      return ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: Icon(icon, color: selected ? c.primary : c.inkMuted),
-        title: Text(title, style: context.text.titleMedium?.copyWith(color: selected ? c.primary : null)),
-        subtitle: subtitle == null ? null : Text(subtitle),
-        trailing: selected ? Icon(Icons.check_circle_rounded, color: c.primary) : null,
-        onTap: () => _choose(s),
-      );
-    }
-
-    return Column(mainAxisSize: MainAxisSize.min, children: [
-      for (final b in kBuiltinSounds)
-        tile(NotificationSound.builtin(b.id), b.name, b.description, switch (b.id) {
-          'ocean' => Icons.waves_rounded,
-          'birds' => Icons.park_outlined,
-          'stream' => Icons.water_drop_outlined,
-          'rain' => Icons.grain_rounded,
-          _ => Icons.notifications_none_rounded,
-        }),
-      tile(NotificationSound.systemDefault, 'Phone default', 'Your phone\'s notification sound', Icons.phone_android_rounded),
-      if (_device != null) tile(_device!, _device!.label, 'From your phone', Icons.library_music_outlined),
-      tile(NotificationSound.silent, 'Vibration only', 'No sound, the phone vibrates', Icons.vibration_rounded),
-      if (SoundService.canPickDeviceSound)
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: Icon(Icons.add_circle_outline_rounded, color: c.primary),
-          title: Text('Choose from phone…', style: context.text.titleMedium?.copyWith(color: c.primary)),
-          subtitle: const Text('Any ringtone or notification sound on this phone'),
-          onTap: () async {
-            final s = await _sounds.pickDeviceSound(
-              title: '${widget.kind.title} sound',
-              current: _current.kind == SoundKind.device ? _current.value : null,
-            );
-            if (s == null) return;
-            setState(() => _device = s);
-            await _choose(s);
-          },
-        ),
-      const SizedBox(height: Space.md),
-      SizedBox(
-        width: double.infinity,
-        child: OutlinedButton.icon(
-          onPressed: () async {
-            if (!await ref.read(notificationsProvider).requestPermission()) return;
-            await ref.read(notificationsProvider).showTest(widget.kind);
-          },
-          icon: const Icon(Icons.notifications_active_outlined),
-          label: const Text('Send a test notification'),
-        ),
-      ),
-    ]);
   }
 }
 

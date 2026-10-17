@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -29,7 +30,8 @@ extension ReminderKindX on ReminderKind {
 
 /// Local (on-device) reminders: prayer times, adhkar, daily reminders. No server.
 class NotificationService {
-  NotificationService();
+  NotificationService(this._prefs);
+  final SharedPreferences _prefs;
   final _plugin = FlutterLocalNotificationsPlugin();
   final _taps = StreamController<String>.broadcast();
 
@@ -72,22 +74,40 @@ class NotificationService {
     }
   }
 
+  // ---- Sound ----
+
+  /// The reminder sound: 'siraj' (Pixie Dust, a soft chime that ships with
+  /// the app) or 'default' (the phone's own notification sound).
+  String get sound => _prefs.getString('reminder_sound') ?? 'siraj';
+
+  /// Saves the sound and moves every reminder to a channel with it. Callers
+  /// re-schedule afterwards so pending reminders use the new channel.
+  Future<void> setSound(String value) async {
+    await _prefs.setString('reminder_sound', value);
+    for (final k in ReminderKind.values) {
+      await _ensureChannel(k);
+    }
+  }
+
   // ---- Channels ----
 
-  /// A fresh id: an Android channel's sound can never change after it is
-  /// created, so earlier channels (with custom sounds) are replaced.
-  String _channelId(ReminderKind kind) => '${kind.name}_standard';
+  /// An Android channel's sound can never change after it is created, so each
+  /// sound has its own channel id and the other ones are removed.
+  String _channelId(ReminderKind kind) => '${kind.name}_${sound == 'siraj' ? 'siraj' : 'standard'}';
+
+  AndroidNotificationSound? get _androidSound =>
+      sound == 'siraj' ? const RawResourceAndroidNotificationSound('snd_siraj') : null;
 
   Future<void> _ensureChannel(ReminderKind kind) async {
     final android = _android;
     if (android == null) return;
     final id = _channelId(kind);
-    // No sound given: the phone's default notification sound and vibration.
     await android.createNotificationChannel(AndroidNotificationChannel(
       id,
       kind.title,
       description: kind.description,
       importance: Importance.high,
+      sound: _androidSound, // null: the phone's default sound
     ));
     final channels = await android.getNotificationChannels() ?? const [];
     for (final ch in channels) {
@@ -103,6 +123,7 @@ class NotificationService {
           channelDescription: kind.description,
           importance: Importance.high,
           priority: Priority.high,
+          sound: _androidSound,
           category: kind == ReminderKind.prayer ? AndroidNotificationCategory.alarm : AndroidNotificationCategory.reminder,
           styleInformation: body == null ? null : BigTextStyleInformation(body),
         ),

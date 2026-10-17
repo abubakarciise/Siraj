@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:just_audio/just_audio.dart';
 
 import '../../core/notifications/notifications.dart';
 import '../../core/prayer/prayer.dart';
@@ -163,10 +165,11 @@ class RemindersScreen extends ConsumerWidget {
           trailing: const Icon(Icons.chevron_right_rounded),
           onTap: () => context.push('/prayer'),
         ),
+        const _Label('Sound'),
+        const _SoundChoice(),
         ListTile(
           leading: Icon(Icons.notifications_active_outlined, color: c.primary),
           title: const Text('Send a test notification'),
-          subtitle: const Text("Reminders use your phone's notification sound"),
           onTap: () async {
             if (await _ensurePermission(context, ref)) await notifications.showTest(ReminderKind.daily);
           },
@@ -330,6 +333,56 @@ class AdhkarReminderTiles extends ConsumerWidget {
           onTap: () => _pick(context, ref, false),
         ),
       ],
+    ]);
+  }
+}
+
+/// Pixie Dust (a soft chime, the default) or the phone's own sound.
+class _SoundChoice extends ConsumerStatefulWidget {
+  const _SoundChoice();
+
+  @override
+  ConsumerState<_SoundChoice> createState() => _SoundChoiceState();
+}
+
+class _SoundChoiceState extends ConsumerState<_SoundChoice> {
+  AudioPlayer? _preview;
+
+  @override
+  void dispose() {
+    _preview?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _choose(String value) async {
+    final n = ref.read(notificationsProvider);
+    if (value == 'siraj') {
+      final p = _preview ??= AudioPlayer();
+      await p.setAsset('assets/sounds/siraj.ogg');
+      unawaited(p.play());
+    }
+    await n.setSound(value);
+    setState(() {});
+    // Scheduled reminders move to the channel with the new sound.
+    await ref.read(prayerServiceProvider).reschedule();
+    await ref.read(reminderServiceProvider).reschedule();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final current = ref.read(notificationsProvider).sound;
+    Widget tile(String value, IconData icon, String title, String subtitle) => RadioListTile<String>(
+          value: value,
+          groupValue: current,
+          onChanged: (v) => _choose(v!),
+          secondary: Icon(icon, color: c.primary),
+          title: Text(title),
+          subtitle: Text(subtitle),
+        );
+    return Column(children: [
+      tile('siraj', Icons.music_note_rounded, 'Pixie Dust', 'A soft, short chime · tap to hear it'),
+      tile('default', Icons.phone_android_rounded, 'Phone default', "Your phone's notification sound"),
     ]);
   }
 }

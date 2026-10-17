@@ -7,7 +7,7 @@ import '../quran/models.dart';
 /// hafiz recalls the Quran: what comes next, what came before, how an ayah
 /// ends, an exact word, the order of words, where an ayah belongs, and
 /// reciting from memory.
-enum QuizKind { nextAyah, previousAyah, completeAyah, missingWord, arrange, whichSurah, recite }
+enum QuizKind { nextAyah, previousAyah, completeAyah, missingWord, whichSurah, recite }
 
 extension QuizKindX on QuizKind {
   String get title => switch (this) {
@@ -15,7 +15,6 @@ extension QuizKindX on QuizKind {
         QuizKind.previousAyah => 'Previous ayah',
         QuizKind.completeAyah => 'Complete the ayah',
         QuizKind.missingWord => 'Missing word',
-        QuizKind.arrange => 'Arrange the words',
         QuizKind.whichSurah => 'Which surah?',
         QuizKind.recite => 'Recite from memory',
       };
@@ -25,7 +24,6 @@ extension QuizKindX on QuizKind {
         QuizKind.previousAyah => 'See an ayah and choose the one before it',
         QuizKind.completeAyah => 'Read the beginning and choose how the ayah ends',
         QuizKind.missingWord => 'One word is hidden; choose it from similar words',
-        QuizKind.arrange => 'Tap the words in the right order',
         QuizKind.whichSurah => 'Choose the surah an ayah belongs to',
         QuizKind.recite => 'Recite the next ayah yourself, then reveal and check',
       };
@@ -36,7 +34,6 @@ extension QuizKindX on QuizKind {
         QuizKind.previousAyah => 'Which ayah comes before this one?',
         QuizKind.completeAyah => 'How does this ayah end?',
         QuizKind.missingWord => 'Which word is missing?',
-        QuizKind.arrange => 'Put the words in order',
         QuizKind.whichSurah => 'Which surah is this ayah from?',
         QuizKind.recite => 'Recite the next ayah from memory',
       };
@@ -51,7 +48,6 @@ class QuizQuestion {
     this.options = const [],
     this.answer = 0,
     this.words = const [],
-    this.shuffled = const [],
   });
 
   final QuizKind kind;
@@ -67,10 +63,8 @@ class QuizQuestion {
   final List<String> options;
   final int answer;
 
-  /// Arrange: the words in order, and the order they are offered in.
   /// Recite: the words of the ayah to reveal.
   final List<String> words;
-  final List<int> shuffled;
 
   bool get isChoice => options.isNotEmpty;
 }
@@ -116,7 +110,11 @@ class QuizBuilder {
           if (_candidates(k).isNotEmpty) k,
       };
 
-  List<int> _candidates(QuizKind kind) {
+  final _cand = <QuizKind, List<int>>{};
+
+  List<int> _candidates(QuizKind kind) => _cand[kind] ??= _scan(kind);
+
+  List<int> _scan(QuizKind kind) {
     final out = <int>[];
     for (var i = 0; i < ayahs.length; i++) {
       final a = ayahs[i];
@@ -126,7 +124,6 @@ class QuizBuilder {
         QuizKind.previousAyah => i > 0 && ayahs[i - 1].ref.surah == a.ref.surah && _unique(a),
         QuizKind.completeAyah => w >= 6,
         QuizKind.missingWord => w >= 4,
-        QuizKind.arrange => w >= 3,
         QuizKind.whichSurah => ayahs.first.ref.surah != ayahs.last.ref.surah && w >= 4 && _unique(a),
         QuizKind.recite => i > 0 && ayahs[i - 1].ref.surah == a.ref.surah && _unique(ayahs[i - 1]),
       };
@@ -161,7 +158,6 @@ class QuizBuilder {
         QuizKind.previousAyah => _neighbour(i, i - 1, kind),
         QuizKind.completeAyah => _complete(i),
         QuizKind.missingWord => _missing(i),
-        QuizKind.arrange => _arrange(i),
         QuizKind.whichSurah => _surah(i),
         QuizKind.recite => _recite(i),
       };
@@ -260,35 +256,6 @@ class QuizBuilder {
     final prompt = [for (var m = 0; m < w.length; m++) m == k ? blank : w[m]].join(' ');
     return _choice(QuizKind.missingWord, a, prompt, a.ref, correct, pool);
   }
-
-  QuizQuestion? _arrange(int i) {
-    final a = ayahs[i];
-    final all = wordsOf(a);
-    // Long ayahs: arrange the first part only (up to 7 words).
-    final words = all.length <= 8 ? all : all.take(7).toList();
-    final order = List.generate(words.length, (k) => k);
-    for (var tries = 0; tries < 6; tries++) {
-      order.shuffle(rnd);
-      if (!_sameText(words, order)) break;
-    }
-    if (_sameText(words, order)) return null;
-    return QuizQuestion(
-      kind: QuizKind.arrange,
-      ayah: a,
-      prompt: words.length < all.length ? 'its first ${words.length} words' : '',
-      promptRef: a.ref,
-      words: words,
-      shuffled: List.of(order),
-    );
-  }
-
-  bool _sameText(List<String> words, List<int> order) =>
-      [for (final k in order) norm(words[k])].join(' ') == words.map(norm).join(' ');
-
-  /// Whether [picked] (indexes into [QuizQuestion.words]) spells the ayah;
-  /// repeated words may be picked in either order.
-  static bool arrangedRight(QuizQuestion q, List<int> picked) =>
-      picked.length == q.words.length && [for (final k in picked) norm(q.words[k])].join(' ') == q.words.map(norm).join(' ');
 
   QuizQuestion? _surah(int i) {
     final a = ayahs[i];

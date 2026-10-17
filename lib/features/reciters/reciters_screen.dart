@@ -9,13 +9,12 @@ import '../../design/tokens.dart';
 import '../../design/widgets.dart';
 import '../player/play_actions.dart';
 
-enum _Filter { all, favorites, downloaded, highlight, warsh, mujawwad }
+enum _Filter { all, favorites, downloaded, warsh, mujawwad }
 
 const _filterLabels = {
   _Filter.all: 'All',
   _Filter.favorites: 'Favorites',
   _Filter.downloaded: 'Downloaded',
-  _Filter.highlight: 'Ayah sync',
   _Filter.warsh: 'Other riwayat',
   _Filter.mujawwad: 'Mujawwad',
 };
@@ -46,7 +45,6 @@ class _RecitersScreenState extends ConsumerState<RecitersScreen> {
         _Filter.all => true,
         _Filter.favorites => favs.contains(r.id),
         _Filter.downloaded => r.recitations.any((m) => (downloaded[m.key]?.isNotEmpty ?? false)),
-        _Filter.highlight => r.hasTiming,
         _Filter.warsh => r.recitations.any((m) => !m.isHafs),
         _Filter.mujawwad => r.recitations.any((m) => m.isMujawwad),
       };
@@ -60,6 +58,7 @@ class _RecitersScreenState extends ConsumerState<RecitersScreen> {
     final downloaded = ref.watch(downloadsProvider).value?.downloaded ?? const {};
 
     return Scaffold(
+      backgroundColor: Colors.transparent, // the tab's art shows through (TabBackdrop)
       body: catalog.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Could not load reciters\n$e', textAlign: TextAlign.center)),
@@ -200,7 +199,6 @@ class _ReciterTile extends ConsumerWidget {
               const SizedBox(height: 4),
               Wrap(spacing: 6, runSpacing: 4, children: [
                 for (final r in reciter.riwayat.take(3)) Pill(r),
-                if (reciter.hasTiming) Pill('Ayah sync', color: c.primary, icon: Icons.graphic_eq_rounded),
                 if (downloadedSurahs > 0)
                   Pill(downloadedSurahs >= 114 ? 'Offline' : '$downloadedSurahs offline',
                       color: c.gold, icon: Icons.download_done_rounded),

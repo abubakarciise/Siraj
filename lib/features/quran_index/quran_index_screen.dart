@@ -28,6 +28,7 @@ class _QuranIndexScreenState extends ConsumerState<QuranIndexScreen> {
     final c = context.colors;
     final last = ref.watch(lastReadProvider).value;
     return Scaffold(
+      backgroundColor: Colors.transparent, // the tab's art shows through (TabBackdrop)
       body: CustomScrollView(slivers: [
         SliverAppBar(
           pinned: true,

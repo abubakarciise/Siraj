@@ -45,15 +45,15 @@ final appRouter = GoRouter(
       ),
       branches: [
         StatefulShellBranch(routes: [
-          GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
+          GoRoute(path: '/home', builder: (_, _) => const TabBackdrop(tab: AppTab.home, child: HomeScreen())),
         ]),
         StatefulShellBranch(routes: [
-          GoRoute(path: '/quran', builder: (_, _) => const QuranIndexScreen()),
+          GoRoute(path: '/quran', builder: (_, _) => const TabBackdrop(tab: AppTab.quran, child: QuranIndexScreen())),
         ]),
         StatefulShellBranch(routes: [
           GoRoute(
             path: '/listen',
-            builder: (_, _) => const RecitersScreen(),
+            builder: (_, _) => const TabBackdrop(tab: AppTab.listen, child: RecitersScreen()),
             routes: [
               GoRoute(
                 path: 'reciter/:id',
@@ -65,7 +65,7 @@ final appRouter = GoRouter(
         StatefulShellBranch(routes: [
           GoRoute(
             path: '/hadith',
-            builder: (_, _) => const HadithHomeScreen(),
+            builder: (_, _) => const TabBackdrop(tab: AppTab.hadith, child: HadithHomeScreen()),
             routes: [
               GoRoute(
                 path: ':book',
@@ -91,7 +91,7 @@ final appRouter = GoRouter(
           ),
         ]),
         StatefulShellBranch(routes: [
-          GoRoute(path: '/daily', builder: (_, _) => const DailyScreen()),
+          GoRoute(path: '/daily', builder: (_, _) => const TabBackdrop(tab: AppTab.daily, child: DailyScreen())),
         ]),
       ],
     ),

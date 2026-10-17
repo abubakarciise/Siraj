@@ -55,7 +55,7 @@ Future<void> main() async {
   await downloads.init();
   final player = PlayerController(handler, db, downloads, timing, user, artUri: Artwork.quran);
 
-  final notifications = NotificationService();
+  final notifications = NotificationService(prefs);
   await notifications.init();
   final prayer = PrayerService(prefs, notifications);
   final reminders = ReminderService(

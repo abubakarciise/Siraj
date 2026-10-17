@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/providers.dart';
 import '../design/tokens.dart';
+import '../features/daily/adhkar_mini_player.dart';
 import '../features/player/mini_player.dart';
 
 class AppShell extends ConsumerWidget {
@@ -20,6 +21,7 @@ class AppShell extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const MiniPlayer(),
+          const AdhkarMiniPlayer(),
           DecoratedBox(
             decoration: BoxDecoration(border: Border(top: BorderSide(color: c.divider))),
             child: NavigationBar(

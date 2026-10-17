@@ -111,7 +111,7 @@ class PlayerController {
   /// Plays [recitation] from [surah] (optionally from [ayah]) and continues
   /// through the following surahs. Offline, only downloaded surahs are queued.
   Future<void> play(Recitation recitation, Reciter reciter, int surah, {int? ayah, bool resume = false}) async {
-    final online = await _hasInternet();
+    final online = await hasInternet();
     var surahs = recitation.surahs.where((s) => s >= surah).toList();
     if (!online) surahs = surahs.where((s) => _downloads.localFile(recitation.key, s) != null).toList();
     if (surahs.isEmpty) throw const OfflineException();
@@ -395,7 +395,7 @@ class PlayerController {
     return ((player.position.inMilliseconds - start) / (end - start)).clamp(0.0, 1.0);
   }
 
-  static Future<bool> _hasInternet() async {
+  static Future<bool> hasInternet() async {
     try {
       final r = await InternetAddress.lookup('cdn.mp3quran.net').timeout(const Duration(seconds: 3));
       return r.isNotEmpty && r.first.rawAddress.isNotEmpty;

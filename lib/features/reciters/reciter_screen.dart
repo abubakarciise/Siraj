@@ -196,7 +196,6 @@ class _ReciterScreenState extends ConsumerState<ReciterScreen> {
               const SizedBox(height: Space.md),
               Wrap(spacing: 6, alignment: WrapAlignment.center, children: [
                 Pill(r.isComplete ? 'Complete Quran' : '${r.surahs.length} surahs'),
-                if (r.hasTiming) Pill('Ayah sync', color: c.primary, icon: Icons.graphic_eq_rounded),
                 if (isDefault) Pill('Default', color: c.gold, icon: Icons.star_rounded),
               ]),
               const SizedBox(height: Space.xl),

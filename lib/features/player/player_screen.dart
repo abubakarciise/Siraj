@@ -256,9 +256,14 @@ class _SurahFollowAlongState extends ConsumerState<SurahFollowAlong> {
     final timed = ref.watch(nowPlayingProvider.select((v) => v.value?.recitation.hasTiming ?? true));
 
     if (ayah != null && ayah != _shown) {
+      // A new ayah: follow the reciter again, even after scrolling away by hand
+      // (the "Back to ayah" button stays while reading elsewhere until then).
       final first = _shown == null;
       _shown = ayah;
-      if (_following) WidgetsBinding.instance.addPostFrameCallback((_) => _scrollTo(ayah, jump: first));
+      _following = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_userDragging) _scrollTo(ayah, jump: first);
+      });
     }
 
     final count = ayahs.length + (_hasBasmala ? 1 : 0);

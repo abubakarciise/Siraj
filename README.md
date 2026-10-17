@@ -5,7 +5,7 @@
 <h1 align="center">Siraj · سراج</h1>
 
 <p align="center">
-  <b>A free, open-source Muslim companion: Quran, 240+ reciters, hadith, prayer times and gentle reminders through the day.</b><br>
+  <b>A free, open-source Muslim companion: Quran, 100+ reciters, hadith, prayer times and gentle reminders through the day.</b><br>
   No ads. No account. No tracking. Works offline.
 </p>
 
@@ -24,22 +24,22 @@
 | <img src="docs/screenshots/04_hadith.png" width="260"> | <img src="docs/screenshots/05_hadith_detail.png" width="260"> | <img src="docs/screenshots/06_reminders.png" width="260"> |
 | **Listen to adhkar** | **Settings** | **Dark** |
 | <img src="docs/screenshots/10_adhkar_listen.png" width="260"> | <img src="docs/screenshots/08_appearance.png" width="260"> | <img src="docs/screenshots/09_home_dark.png" width="260"> |
-| **Memorization test** | | |
-| <img src="docs/screenshots/12_memorize.png" width="260"> | | |
+| **Memorization test** | **Tasbih** | |
+| <img src="docs/screenshots/12_memorize.png" width="260"> | <img src="docs/screenshots/13_tasbih.png" width="260"> | |
 
 ## Features
 
 - **Mushaf.** The complete Madani Mushaf: 604 pages in the exact KFGQPC 15-line layout, fully offline, with smooth page
   turns. Search in Arabic and English. Translations: English (Saheeh International) and Somali.
-- **Listen.** 243 reciters and 289 recitations (Hafs, Warsh, Qalun, Mujawwad…). Download one surah or the whole Quran,
+- **Listen.** 103 reciters and 111 recitations (Hafs, Warsh, Qalun, Mujawwad…), every one with exact ayah follow-along. Download one surah or the whole Quran,
   play in the background, and use ayah repeat for memorisation, a sleep timer and speed control.
 - **Follow the recitation.** The player shows the whole surah and keeps the ayah being recited in view, exactly, for the
   111 recitations with ayah timing ("Ayah sync"; each checked against its audio). Tap any ayah to jump to it.
 - **Hadith & Sunnah.** Sahih al-Bukhari, Sahih Muslim, Abu Dawud, at-Tirmidhi, an-Nasa'i, Ibn Majah, Muwatta Malik,
   40 Nawawi, 40 Qudsi: Arabic, English and grades, searchable and offline. Includes 41 Sunnah practices with their
   sources.
-- **Memorization test.** Test a surah, part of a surah or a juz: next ayah, previous ayah, complete the ayah, missing
-  word, arrange the words, which surah, and recite from memory. Mistakes are listed for revision and can be practised
+- **Memorization test.** Test one or more surahs (or part of one), one or more juz, or the whole Quran: next ayah,
+  previous ayah, complete the ayah, missing word, which surah, and recite from memory. Mistakes are listed for revision and can be practised
   again.
 - **Daily reminders.** An ayah, a surah, a hadith, a sunnah or a dhikr every 1, 2, 3, 4, 6 or 8 hours, only during
   the hours you choose. Reminders follow the day: al-Kahf and salawat on Friday, fasting on Mondays and Thursdays, the
@@ -50,7 +50,8 @@
 - **Adhkar & tasbih.** Hisn al-Muslim in 8 categories, with tap-to-count cards and a tasbih counter. Listen to a whole
   category: each dhikr is recited by a human voice, repeated as many times as prescribed while the counter counts
   down, then the next one begins. Quranic adhkar are recited by Mishary Alafasy. The recordings ship with the app,
-  so listening works offline. Tap any card to jump to it; tap the card being recited to count it.
+  so listening works offline, and keep playing while you use the rest of the app. Every recording is checked word by
+  word against the text; a dhikr without an exact recording is left for you to read.
 - **Appearance.** Light, Dark and true-black Midnight themes. The Mushaf page colour (Ivory, White, Sepia, Dark, Black)
   can differ, and everything on the reading screen takes the page colour.
 - **Private.** No account, no ads, no analytics. Bookmarks, history and downloads stay on the device.
@@ -104,7 +105,8 @@ shown comes from the source collections with its reference and grade.
   Mishary Alafasy via [everyayah.com](https://everyayah.com); cut to each dhikr and included for offline listening
   (`tool/build_adhkar_audio.py`, needs ffmpeg and faster-whisper). Prayer times: the open-source Adhan library. Hijri dates: Umm al-Qura.
 - Fonts: IBM Plex Sans Arabic and Amiri (SIL Open Font License).
-- Logo: a Mamluk enamelled glass mosque lamp, 14th century, photographed by The Metropolitan Museum of Art (Open
-  Access, CC0; "Mosque Lamp MET DP332337" on Wikimedia Commons). Lamps like it carry the Verse of Light (24:35).
+- Logo: the name سراج in Amiri Bold (SIL Open Font License). Adhkar notification art: a Mamluk glass mosque lamp,
+  photographed by The Metropolitan Museum of Art (Open Access, CC0).
+- Reminder sound "Pixie Dust" from the Android Open Source Project (Apache 2.0).
 
 The app code is released under the [MIT License](LICENSE). Bundled content keeps its own terms.

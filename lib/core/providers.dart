@@ -141,7 +141,15 @@ final adhkarProvider = FutureProvider<List<AdhkarCategory>>((ref) => AdhkarRepos
 
 final adhkarPlayerProvider = Provider<AdhkarPlayer>((ref) {
   final quran = ref.read(playerProvider);
-  final player = AdhkarPlayer(handler: quran.handler, beforeStart: quran.stop, artUri: Artwork.adhkar);
+  final player = AdhkarPlayer(
+    handler: quran.handler,
+    beforeStart: quran.stop,
+    artUri: Artwork.adhkar,
+    onCompleted: (cat) {
+      final d = DateTime.now();
+      ref.read(prefsProvider).setString('adhkar_done_${cat.id}', '${d.year}-${d.month}-${d.day}');
+    },
+  );
   ref.onDispose(player.dispose);
   return player;
 });

@@ -26,6 +26,7 @@ class DailyScreen extends ConsumerWidget {
     final suggestedDone = adhkarDoneToday(ref, suggested);
 
     return Scaffold(
+      backgroundColor: Colors.transparent, // the tab's art shows through (TabBackdrop)
       body: CustomScrollView(slivers: [
         SliverAppBar(
           pinned: true,

@@ -76,6 +76,7 @@ class HadithHomeScreen extends ConsumerWidget {
       ..sort((a, b) => (b.$2.tags.any(tags.contains) ? 1 : 0) - (a.$2.tags.any(tags.contains) ? 1 : 0));
 
     return Scaffold(
+      backgroundColor: Colors.transparent, // the tab's art shows through (TabBackdrop)
       body: CustomScrollView(slivers: [
         SliverAppBar(
           pinned: true,

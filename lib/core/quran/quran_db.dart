@@ -108,6 +108,8 @@ class QuranDb {
   Future<List<Ayah>> ayahsOfSurah(int surah) async =>
       (await _db.query('ayahs', where: 'surah = ?', whereArgs: [surah], orderBy: 'ayah')).map(_ayahFromRow).toList();
 
+  Future<List<Ayah>> allAyahs() async => (await _db.query('ayahs', orderBy: 'id')).map(_ayahFromRow).toList();
+
   Future<List<Ayah>> ayahsOfJuz(int juz) async =>
       (await _db.query('ayahs', where: 'juz = ?', whereArgs: [juz], orderBy: 'id')).map(_ayahFromRow).toList();
 

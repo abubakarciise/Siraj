@@ -7,9 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/shell.dart';
 import '../../core/memorize/quiz.dart';
 import '../../core/providers.dart';
-import '../../core/quran/arabic.dart';
 import '../../core/quran/models.dart';
-import '../../design/dialogs.dart';
 import '../../design/theme.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
@@ -48,9 +46,9 @@ class QuizHistory extends Notifier<List<QuizResult>> {
   }
 }
 
-enum _ScopeType { surah, juz }
+enum _ScopeType { surahs, juz, quran }
 
-/// Choose what to test, then start.
+/// Choose what to test (surahs, juz or the whole Quran), then start.
 class MemorizeScreen extends ConsumerStatefulWidget {
   const MemorizeScreen({super.key});
 
@@ -59,49 +57,53 @@ class MemorizeScreen extends ConsumerStatefulWidget {
 }
 
 class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
-  _ScopeType _type = _ScopeType.surah;
-  late int _surah = ref.read(lastReadProvider).value?.ref.surah ?? 67;
-  int _juz = 30;
+  _ScopeType _type = _ScopeType.surahs;
+  late final _surahs = <int>{ref.read(lastReadProvider).value?.ref.surah ?? 67};
+  final _juz = <int>{30};
   RangeValues? _range;
   int _count = 10;
-  final _kinds = {
-    QuizKind.nextAyah,
-    QuizKind.completeAyah,
-    QuizKind.missingWord,
-    QuizKind.arrange,
-    QuizKind.recite,
-  };
+  final _kinds = {QuizKind.nextAyah, QuizKind.completeAyah, QuizKind.missingWord, QuizKind.recite};
   bool _busy = false;
 
-  Future<void> _pickSurah() async {
-    final db = ref.read(quranDbProvider);
-    final id = await showAppSheet<int>(
-      context,
-      title: 'Choose a surah',
-      builder: (ctx) => SizedBox(
-        height: MediaQuery.sizeOf(ctx).height * 0.6,
-        child: ListView.builder(
-          itemCount: 114,
-          itemBuilder: (_, i) {
-            final s = db.surahs[i];
-            return ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: SizedBox(width: 32, child: Text('${s.id}', style: ctx.text.bodySmall)),
-              title: Text(s.nameEn),
-              subtitle: Text('${s.ayahCount} ayahs'),
-              trailing: Text(s.nameAr, style: TextStyle(fontFamily: kQuranFont, fontSize: 20, color: ctx.colors.ink)),
-              selected: s.id == _surah,
-              onTap: () => Navigator.pop(ctx, s.id),
-            );
-          },
-        ),
-      ),
+  static const _gold = Color(0xFFE2C27F);
+  static const _ink = Color(0xFF3B2A12);
+
+  Future<void> _pickSurahs() async {
+    final picked = await showModalBottomSheet<Set<int>>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (_) => _SurahPicker(initial: _surahs),
     );
-    if (id != null) {
+    if (picked != null && picked.isNotEmpty) {
       setState(() {
-        _surah = id;
+        _surahs
+          ..clear()
+          ..addAll(picked);
         _range = null;
       });
+    }
+  }
+
+  String _scopeLabel() {
+    final db = ref.read(quranDbProvider);
+    switch (_type) {
+      case _ScopeType.quran:
+        return 'Whole Quran';
+      case _ScopeType.juz:
+        final j = _juz.toList()..sort();
+        return j.length == 1 ? 'Juz ${j.first}' : (j.length <= 3 ? 'Juz ${j.join(', ')}' : '${j.length} juz');
+      case _ScopeType.surahs:
+        final s = _surahs.toList()..sort();
+        if (s.length == 1) {
+          final surah = db.surah(s.first);
+          final r = _range;
+          return r == null || (r.start.round() == 1 && r.end.round() == surah.ayahCount)
+              ? surah.nameEn
+              : '${surah.nameEn} ${r.start.round()}–${r.end.round()}';
+        }
+        return s.length <= 2 ? s.map((x) => db.surah(x).nameEn).join(', ') : '${s.length} surahs';
     }
   }
 
@@ -109,18 +111,16 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
     setState(() => _busy = true);
     final db = ref.read(quranDbProvider);
     List<Ayah> ayahs;
-    String scope;
-    if (_type == _ScopeType.surah) {
-      final all = await db.ayahsOfSurah(_surah);
-      final r = _range ?? RangeValues(1, all.length.toDouble());
-      ayahs = all.sublist(r.start.round() - 1, r.end.round());
-      final s = db.surah(_surah);
-      scope = r.start.round() == 1 && r.end.round() == all.length
-          ? s.nameEn
-          : '${s.nameEn} ${r.start.round()}–${r.end.round()}';
-    } else {
-      ayahs = await db.ayahsOfJuz(_juz);
-      scope = 'Juz $_juz';
+    switch (_type) {
+      case _ScopeType.quran:
+        ayahs = await db.allAyahs();
+      case _ScopeType.juz:
+        ayahs = [for (final j in _juz.toList()..sort()) ...await db.ayahsOfJuz(j)];
+      case _ScopeType.surahs:
+        final ids = _surahs.toList()..sort();
+        ayahs = [for (final s in ids) ...await db.ayahsOfSurah(s)];
+        final r = _range;
+        if (ids.length == 1 && r != null) ayahs = ayahs.sublist(r.start.round() - 1, r.end.round());
     }
     final builder = QuizBuilder(ayahs, surahName: (s) => db.surah(s).nameEn);
     final questions = builder.build(_count, _kinds);
@@ -130,135 +130,187 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
       showToast(context, 'Choose more ayahs or another question type');
       return;
     }
-    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => QuizScreen(scope: scope, questions: questions)));
+    await Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => QuizScreen(scope: _scopeLabel(), questions: questions)));
   }
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final db = ref.watch(quranDbProvider);
-    final surah = db.surah(_surah);
-    final range = _range ?? RangeValues(1, surah.ayahCount.toDouble());
     final history = ref.watch(quizHistoryProvider);
-    final kinds = _type == _ScopeType.surah ? QuizKind.values.where((k) => k != QuizKind.whichSurah) : QuizKind.values;
+    final single = _type == _ScopeType.surahs && _surahs.length == 1 ? db.surah(_surahs.first) : null;
+    final range = single == null ? null : (_range ?? RangeValues(1, single.ayahCount.toDouble()));
+    final multi = _type != _ScopeType.surahs || _surahs.length > 1;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Memorization test')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, 120),
-        children: [
-          Text('Test what you have memorized, one question at a time.', style: context.text.bodyMedium?.copyWith(color: c.inkMuted)),
-          const SizedBox(height: Space.xl),
-          SegmentedButton<_ScopeType>(
-            showSelectedIcon: false,
-            segments: const [
-              ButtonSegment(value: _ScopeType.surah, label: Text('Surah')),
-              ButtonSegment(value: _ScopeType.juz, label: Text('Juz')),
-            ],
-            selected: {_type},
-            onSelectionChanged: (v) => setState(() {
-              _type = v.first;
-              _kinds.remove(QuizKind.whichSurah);
-            }),
-          ),
-          const SizedBox(height: Space.md),
-          if (_type == _ScopeType.surah) ...[
-            _Box(
-              onTap: _pickSurah,
-              child: Row(children: [
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(surah.nameEn, style: context.text.titleMedium),
-                    Text('${surah.ayahCount} ayahs', style: context.text.bodySmall),
-                  ]),
+      body: CustomScrollView(slivers: [
+        SliverAppBar(
+          pinned: true,
+          expandedHeight: 170,
+          backgroundColor: _gold,
+          foregroundColor: _ink,
+          flexibleSpace: FlexibleSpaceBar(
+            titlePadding: const EdgeInsetsDirectional.only(start: 56, bottom: 14),
+            title: const Text('Memorization test', style: TextStyle(color: _ink, fontWeight: FontWeight.w700)),
+            background: DecoratedBox(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFF4E3BC), _gold],
                 ),
-                Text(surah.nameAr, style: TextStyle(fontFamily: kQuranFont, fontSize: 24, color: c.ink)),
-                const SizedBox(width: Space.sm),
-                Icon(Icons.expand_more_rounded, color: c.inkMuted),
-              ]),
-            ),
-            if (surah.ayahCount > 3) ...[
-              const SizedBox(height: Space.md),
-              Text('Ayahs ${range.start.round()} – ${range.end.round()}', style: context.text.titleMedium),
-              RangeSlider(
-                values: range,
-                min: 1,
-                max: surah.ayahCount.toDouble(),
-                divisions: surah.ayahCount - 1,
-                labels: RangeLabels('${range.start.round()}', '${range.end.round()}'),
-                onChanged: (v) {
-                  if (v.end - v.start >= 2) setState(() => _range = v);
-                },
               ),
-            ],
-          ] else
-            _Box(
-              onTap: () async {
-                final j = await showAppSheet<int>(
-                  context,
-                  title: 'Choose a juz',
-                  builder: (ctx) => Wrap(spacing: 8, runSpacing: 8, children: [
-                    for (var i = 1; i <= 30; i++)
-                      ChoiceChip(label: Text('$i'), selected: i == _juz, onSelected: (_) => Navigator.pop(ctx, i)),
-                  ]),
-                );
-                if (j != null) setState(() => _juz = j);
-              },
-              child: Row(children: [
-                Expanded(child: Text('Juz $_juz', style: context.text.titleMedium)),
-                Text('الجزء ${toArabicDigits(_juz)}', style: TextStyle(fontFamily: kNaskhFont, fontSize: 18, color: c.ink)),
-                const SizedBox(width: Space.sm),
-                Icon(Icons.expand_more_rounded, color: c.inkMuted),
+              child: Stack(children: [
+                const Positioned.fill(child: GirihPattern(color: _ink, cell: 40, opacity: 0.07)),
+                Positioned(
+                  right: Space.gutter,
+                  top: 56,
+                  child: Text('اختبار الحفظ',
+                      style: TextStyle(fontFamily: kNaskhFont, fontSize: 26, color: _ink.withValues(alpha: 0.75))),
+                ),
               ]),
             ),
-          const SizedBox(height: Space.xl),
-          Text('Questions', style: context.text.titleMedium),
-          const SizedBox(height: Space.sm),
-          for (final k in kinds)
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              controlAffinity: ListTileControlAffinity.leading,
-              value: _kinds.contains(k),
-              title: Text(k.title),
-              subtitle: Text(k.description),
-              onChanged: (v) => setState(() {
-                if (v == true) {
-                  _kinds.add(k);
-                } else if (_kinds.length > 1) {
-                  _kinds.remove(k);
-                }
-              }),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, 120),
+          sliver: SliverList.list(children: [
+            const _Label('What to test'),
+            Row(children: [
+              for (final (t, icon, label) in const [
+                (_ScopeType.surahs, Icons.list_alt_rounded, 'Surahs'),
+                (_ScopeType.juz, Icons.grid_view_rounded, 'Juz'),
+                (_ScopeType.quran, Icons.menu_book_rounded, 'Whole Quran'),
+              ]) ...[
+                if (t != _ScopeType.surahs) const SizedBox(width: Space.sm),
+                Expanded(
+                  child: _ScopeCard(
+                    icon: icon,
+                    label: label,
+                    selected: _type == t,
+                    onTap: () => setState(() {
+                      _type = t;
+                      if (!multi) _kinds.remove(QuizKind.whichSurah);
+                    }),
+                  ),
+                ),
+              ],
+            ]),
+            const SizedBox(height: Space.md),
+            if (_type == _ScopeType.surahs) ...[
+              _Box(
+                onTap: _pickSurahs,
+                child: Row(children: [
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(single?.nameEn ?? '${_surahs.length} surahs', style: context.text.titleMedium),
+                      Text(
+                        single != null
+                            ? '${single.ayahCount} ayahs · tap to choose more surahs'
+                            : (_surahs.toList()..sort()).map((s) => db.surah(s).nameEn).join(', '),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.bodySmall,
+                      ),
+                    ]),
+                  ),
+                  if (single != null)
+                    Text(single.nameAr, style: TextStyle(fontFamily: kQuranFont, fontSize: 24, color: c.ink)),
+                  const SizedBox(width: Space.sm),
+                  Icon(Icons.edit_rounded, color: c.inkMuted, size: 20),
+                ]),
+              ),
+              if (single != null && single.ayahCount > 3) ...[
+                const SizedBox(height: Space.md),
+                Text('Ayahs ${range!.start.round()} – ${range.end.round()}', style: context.text.titleSmall),
+                RangeSlider(
+                  values: range,
+                  min: 1,
+                  max: single.ayahCount.toDouble(),
+                  divisions: single.ayahCount - 1,
+                  labels: RangeLabels('${range.start.round()}', '${range.end.round()}'),
+                  onChanged: (v) {
+                    if (v.end - v.start >= 2) setState(() => _range = v);
+                  },
+                ),
+              ],
+            ],
+            if (_type == _ScopeType.juz)
+              Wrap(spacing: 8, runSpacing: 8, children: [
+                for (var i = 1; i <= 30; i++)
+                  SizedBox(
+                    width: 52,
+                    child: FilterChip(
+                      showCheckmark: false,
+                      label: SizedBox(width: double.infinity, child: Text('$i', textAlign: TextAlign.center)),
+                      selected: _juz.contains(i),
+                      onSelected: (on) => setState(() {
+                        if (on) {
+                          _juz.add(i);
+                        } else if (_juz.length > 1) {
+                          _juz.remove(i);
+                        }
+                      }),
+                    ),
+                  ),
+              ]),
+            if (_type == _ScopeType.quran)
+              Text('Questions from anywhere in the Quran: for those who have memorized all of it, or to see how much stays.',
+                  style: context.text.bodyMedium?.copyWith(color: c.inkMuted)),
+            const _Label('Questions'),
+            for (final k in QuizKind.values)
+              if (k != QuizKind.whichSurah || multi)
+                _KindTile(
+                  kind: k,
+                  selected: _kinds.contains(k),
+                  onTap: () => setState(() {
+                    if (_kinds.contains(k)) {
+                      if (_kinds.length > 1) _kinds.remove(k);
+                    } else {
+                      _kinds.add(k);
+                    }
+                  }),
+                ),
+            const _Label('How many'),
+            SegmentedButton<int>(
+              showSelectedIcon: false,
+              segments: const [
+                ButtonSegment(value: 10, label: Text('10')),
+                ButtonSegment(value: 20, label: Text('20')),
+                ButtonSegment(value: 30, label: Text('30')),
+              ],
+              selected: {_count},
+              onSelectionChanged: (v) => setState(() => _count = v.first),
             ),
-          const SizedBox(height: Space.md),
-          Row(children: [
-            Expanded(child: Text('How many', style: context.text.titleMedium)),
-            for (final n in const [10, 20, 30]) ...[
-              const SizedBox(width: Space.sm),
-              ChoiceChip(label: Text('$n'), selected: _count == n, onSelected: (_) => setState(() => _count = n)),
+            if (history.isNotEmpty) ...[
+              const _Label('Recent'),
+              for (final r in history.take(5))
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    backgroundColor: r.score * 10 >= r.total * 8 ? c.primarySoft : c.surfaceAlt,
+                    child: Text('${(100 * r.score / r.total).round()}',
+                        style: context.text.labelLarge?.copyWith(color: c.primary)),
+                  ),
+                  title: Text(r.scope),
+                  subtitle: Text(_ago(r.at)),
+                  trailing: Text('${r.score} / ${r.total}', style: context.text.titleMedium),
+                ),
             ],
           ]),
-          if (history.isNotEmpty) ...[
-            const SizedBox(height: Space.xxl),
-            Text('Recent', style: context.text.titleMedium),
-            for (final r in history.take(5))
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(r.scope),
-                subtitle: Text(_ago(r.at)),
-                trailing: Text('${r.score} / ${r.total}',
-                    style: context.text.titleMedium?.copyWith(color: r.score * 10 >= r.total * 8 ? c.primary : c.ink)),
-              ),
-          ],
-        ],
-      ),
+        ),
+      ]),
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.md),
           child: FilledButton.icon(
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54)),
             onPressed: _busy ? null : _start,
-            icon: const Icon(Icons.play_arrow_rounded),
-            label: const Text('Start test'),
+            icon: _busy
+                ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.play_arrow_rounded),
+            label: Text('Start · ${_scopeLabel()}', maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
         ),
       ),
@@ -272,6 +324,169 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
     if (d.inDays < 1) return '${d.inHours} hours ago';
     if (d.inDays == 1) return 'Yesterday';
     return '${d.inDays} days ago';
+  }
+}
+
+class _Label extends StatelessWidget {
+  const _Label(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: Space.xl, bottom: Space.sm),
+        child: Text(text.toUpperCase(), style: context.text.labelSmall?.copyWith(color: context.colors.primary)),
+      );
+}
+
+class _ScopeCard extends StatelessWidget {
+  const _ScopeCard({required this.icon, required this.label, required this.selected, required this.onTap});
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Material(
+      color: selected ? c.primary : c.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Radii.lg),
+        side: BorderSide(color: selected ? c.primary : c.divider),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(Radii.lg),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: Space.md),
+          child: Column(children: [
+            Icon(icon, color: selected ? c.onPrimary : c.primary),
+            const SizedBox(height: 4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(label, style: context.text.labelLarge?.copyWith(color: selected ? c.onPrimary : c.ink)),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _KindTile extends StatelessWidget {
+  const _KindTile({required this.kind, required this.selected, required this.onTap});
+  final QuizKind kind;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final icon = switch (kind) {
+      QuizKind.nextAyah => Icons.arrow_back_rounded, // Arabic reads right to left: next is to the left
+      QuizKind.previousAyah => Icons.arrow_forward_rounded,
+      QuizKind.completeAyah => Icons.short_text_rounded,
+      QuizKind.missingWord => Icons.space_bar_rounded,
+      QuizKind.whichSurah => Icons.travel_explore_rounded,
+      QuizKind.recite => Icons.record_voice_over_rounded,
+    };
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Space.sm),
+      child: Material(
+        color: selected ? c.primarySoft : c.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Radii.lg),
+          side: BorderSide(color: selected ? c.primary.withValues(alpha: 0.4) : c.divider),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(Radii.lg),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(Space.md),
+            child: Row(children: [
+              Icon(icon, color: selected ? c.primary : c.inkMuted),
+              const SizedBox(width: Space.md),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(kind.title, style: context.text.titleMedium),
+                  Text(kind.description, style: context.text.bodySmall),
+                ]),
+              ),
+              Icon(selected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                  color: selected ? c.primary : c.inkFaint),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Choose one or more surahs, with search.
+class _SurahPicker extends ConsumerStatefulWidget {
+  const _SurahPicker({required this.initial});
+  final Set<int> initial;
+
+  @override
+  ConsumerState<_SurahPicker> createState() => _SurahPickerState();
+}
+
+class _SurahPickerState extends ConsumerState<_SurahPicker> {
+  late final _picked = {...widget.initial};
+  String _q = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final surahs = ref.watch(quranDbProvider).surahs.where((s) {
+      if (_q.isEmpty) return true;
+      return s.nameEn.toLowerCase().contains(_q.toLowerCase()) || s.nameAr.contains(_q) || '${s.id}' == _q;
+    }).toList();
+    return SizedBox(
+      height: MediaQuery.sizeOf(context).height * 0.85,
+      child: Column(children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.sm),
+          child: Row(children: [
+            Expanded(child: Text('Choose surahs', style: context.text.titleLarge)),
+            TextButton(onPressed: () => setState(_picked.clear), child: const Text('Clear')),
+          ]),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+          child: TextField(
+            onChanged: (v) => setState(() => _q = v.trim()),
+            decoration: const InputDecoration(prefixIcon: Icon(Icons.search_rounded), hintText: 'Search'),
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: surahs.length,
+            itemBuilder: (_, i) {
+              final s = surahs[i];
+              return CheckboxListTile(
+                value: _picked.contains(s.id),
+                onChanged: (on) => setState(() => on == true ? _picked.add(s.id) : _picked.remove(s.id)),
+                secondary: SizedBox(width: 30, child: Text('${s.id}', style: context.text.bodySmall)),
+                title: Text(s.nameEn),
+                subtitle: Text('${s.ayahCount} ayahs'),
+              );
+            },
+          ),
+        ),
+        SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.md),
+            child: FilledButton(
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50), backgroundColor: c.primary),
+              onPressed: _picked.isEmpty ? null : () => Navigator.pop(context, _picked),
+              child: Text(_picked.isEmpty ? 'Choose at least one' : 'Done · ${_picked.length} selected'),
+            ),
+          ),
+        ),
+      ]),
+    );
   }
 }
 
@@ -312,7 +527,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   int _index = 0;
   final _correct = <int, bool>{};
   int? _chosen;
-  final _picked = <int>[];
   int _revealed = 0;
   bool _finished = false;
 
@@ -329,7 +543,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       setState(() {
         _index++;
         _chosen = null;
-        _picked.clear();
         _revealed = 0;
       });
       return;
@@ -376,11 +589,9 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                   _QuranCard(
                     text: _q.prompt,
                     label: _q.promptRef == null ? null : '${db.surah(_q.promptRef!.surah).nameEn} ${_q.promptRef}',
-                    plain: _q.kind == QuizKind.arrange,
                   ),
                 const SizedBox(height: Space.lg),
                 if (_q.isChoice) ..._choices(context),
-                if (_q.kind == QuizKind.arrange) _arrange(context),
                 if (_q.kind == QuizKind.recite) _recite(context),
               ],
             ),
@@ -401,13 +612,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
         onPressed: _next,
         child: Text(last ? 'See results' : 'Next'),
-      );
-    }
-    if (_q.kind == QuizKind.arrange) {
-      return FilledButton(
-        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-        onPressed: _picked.length == _q.words.length ? () => _answer(QuizBuilder.arrangedRight(_q, _picked)) : null,
-        child: const Text('Check'),
       );
     }
     if (_q.kind == QuizKind.recite) {
@@ -485,65 +689,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     ];
   }
 
-  Widget _arrange(BuildContext context) {
-    final c = context.colors;
-    final q = _q;
-    Widget chip(int k, {required bool picked}) => Padding(
-          padding: const EdgeInsets.all(4),
-          child: Material(
-            color: picked ? c.primarySoft : c.surface,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.md), side: BorderSide(color: c.divider)),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(Radii.md),
-              onTap: _answered
-                  ? null
-                  : () => setState(() => picked ? _picked.remove(k) : _picked.add(k)),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: Text(q.words[k], style: TextStyle(fontFamily: kQuranFont, fontSize: 24, height: 1.6, color: c.ink)),
-              ),
-            ),
-          ),
-        );
-    final right = _answered && _correct[_index]!;
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Container(
-        constraints: const BoxConstraints(minHeight: 96),
-        padding: const EdgeInsets.all(Space.sm),
-        decoration: BoxDecoration(
-          color: c.surfaceAlt,
-          borderRadius: BorderRadius.circular(Radii.lg),
-          border: Border.all(color: !_answered ? c.divider : (right ? c.primary : c.danger), width: _answered ? 2 : 1),
-        ),
-        child: _picked.isEmpty
-            ? Center(child: Text('Tap the words below in order', style: context.text.bodySmall))
-            : Directionality(
-                textDirection: TextDirection.rtl,
-                child: Wrap(children: [for (final k in _picked) chip(k, picked: true)]),
-              ),
-      ),
-      const SizedBox(height: Space.lg),
-      Directionality(
-        textDirection: TextDirection.rtl,
-        child: Wrap(
-          alignment: WrapAlignment.center,
-          children: [for (final k in q.shuffled) if (!_picked.contains(k)) chip(k, picked: false)],
-        ),
-      ),
-      if (_answered && !right) ...[
-        const SizedBox(height: Space.lg),
-        Text('The ayah', style: context.text.labelSmall),
-        const SizedBox(height: Space.xs),
-        _QuranCard(text: q.words.join(' ')),
-      ],
-      if (_answered && right)
-        Padding(
-          padding: const EdgeInsets.only(top: Space.lg),
-          child: Text('Correct', textAlign: TextAlign.center, style: context.text.titleMedium?.copyWith(color: c.primary)),
-        ),
-    ]);
-  }
-
   Widget _recite(BuildContext context) {
     final c = context.colors;
     final q = _q;
@@ -581,21 +726,13 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
 }
 
 class _QuranCard extends StatelessWidget {
-  const _QuranCard({required this.text, this.label, this.plain = false});
+  const _QuranCard({required this.text, this.label});
   final String text;
   final String? label;
-
-  /// Arrange questions show a short instruction, not Quran text.
-  final bool plain;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    if (plain) {
-      // Arrange: which ayah, and whether only its beginning is asked.
-      final parts = [if (label != null) label!, if (text.isNotEmpty) text];
-      return Text(parts.join(' · '), style: context.text.bodyMedium?.copyWith(color: c.inkMuted));
-    }
     final parts = text.split(QuizBuilder.blank);
     final style = TextStyle(fontFamily: kQuranFont, fontSize: 25, height: 1.9, color: c.ink);
     return Container(

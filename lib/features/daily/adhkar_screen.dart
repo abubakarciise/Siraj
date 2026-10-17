@@ -96,14 +96,13 @@ class AdhkarScreen extends ConsumerStatefulWidget {
 }
 
 class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
-  final _remaining = <int, int>{};
   final _keys = <int, GlobalKey>{};
-  bool _celebrated = false;
+  bool? _celebrated; // null until the category loads: already done then = no toast
   late final AdhkarPlayer _audio = ref.read(adhkarPlayerProvider);
   int? _followed;
   late bool _autoListen = widget.autoListen;
 
-  int _left(AdhkarCategory cat, int i) => _remaining[i] ?? cat.items[i].count;
+  int _left(AdhkarCategory cat, int i) => _audio.left(cat, i);
 
   bool get _listening => _audio.category?.id == widget.categoryId;
 
@@ -115,15 +114,16 @@ class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
 
   @override
   void dispose() {
+    // Listening carries on in the background (mini player, notification).
     _audio.removeListener(_onAudio);
-    // Adhkar are listened to on this screen; leaving it ends the session.
-    if (_listening) _audio.stop();
     super.dispose();
   }
 
   void _onAudio() {
     if (!mounted) return;
     setState(() {});
+    final cat = ref.read(adhkarProvider).value?.where((x) => x.id == widget.categoryId).firstOrNull;
+    if (cat != null) _checkComplete(cat);
     if (_listening && _audio.index != _followed) {
       _followed = _audio.index;
       _scrollTo(_audio.index);
@@ -138,27 +138,13 @@ class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
   }
 
   void _listen(AdhkarCategory cat) {
-    var from = List.generate(cat.items.length, (i) => i).firstWhere((i) => _left(cat, i) > 0, orElse: () => -1);
-    if (from < 0) {
-      // Everything was already counted: listen again from the start.
-      setState(() {
-        _remaining.clear();
-        _celebrated = false;
-      });
-      from = 0;
-    }
+    if (_audio.allDone(cat)) _celebrated = false;
+    _celebrated ??= false;
     _followed = null;
-    _audio
-      ..onRepetition = (i) {
-        final left = _left(cat, i);
-        if (left == 0 || !mounted) return;
-        setState(() => _remaining[i] = left - 1);
-        if (left - 1 == 0) _checkComplete(cat);
-      }
-      ..onError = (e) {
-        if (mounted) showToast(context, '$e');
-      };
-    _audio.start(cat, from, remaining: (i) => _left(cat, i));
+    _audio.onError = (e) {
+      if (mounted) showToast(context, '$e');
+    };
+    _audio.start(cat);
   }
 
   void _tap(AdhkarCategory cat, int i) {
@@ -170,8 +156,7 @@ class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
       return;
     }
     final left = _left(cat, i);
-    if (left == 0) return;
-    setState(() => _remaining[i] = left - 1);
+    if (!_audio.countOne(cat, i)) return;
     if (_listening && _audio.playing) _audio.counted();
     if (left - 1 == 0) {
       HapticFeedback.mediumImpact();
@@ -187,9 +172,9 @@ class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
 
   void _checkComplete(AdhkarCategory cat) {
     final all = List.generate(cat.items.length, (i) => _left(cat, i)).every((n) => n == 0);
-    if (all && !_celebrated) {
+    _celebrated ??= all;
+    if (all && _celebrated == false) {
       _celebrated = true;
-      ref.read(prefsProvider).setString('adhkar_done_${cat.id}', _today());
       HapticFeedback.heavyImpact();
       showToast(context, 'Completed · تقبّل الله منا ومنكم');
     }
@@ -207,6 +192,7 @@ class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
     }
     final cat = async.value?.where((x) => x.id == widget.categoryId).firstOrNull;
     if (cat == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    _celebrated ??= _audio.allDone(cat);
     if (_autoListen) {
       _autoListen = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -226,10 +212,10 @@ class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
           IconButton(
             tooltip: 'Start again',
             icon: const Icon(Icons.restart_alt_rounded),
-            onPressed: () => setState(() {
-              _remaining.clear();
-              _celebrated = false;
-            }),
+            onPressed: () {
+              _audio.reset(cat);
+              setState(() => _celebrated = false);
+            },
           ),
         ],
         bottom: PreferredSize(

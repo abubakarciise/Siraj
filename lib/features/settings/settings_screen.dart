@@ -9,7 +9,7 @@ import '../../design/tokens.dart';
 import '../reader/reader_screen.dart' show PaperPicker, MushafPaperX;
 
 const kAppName = 'Siraj';
-const kAppVersion = '2.4.0';
+const kAppVersion = '2.5.0';
 const kRepoUrl = 'github.com/Abuubakar-Ciise/Siraj';
 
 class SettingsScreen extends ConsumerWidget {
@@ -19,109 +19,228 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(settingsProvider);
     final n = ref.read(settingsProvider.notifier);
-    final c = context.colors;
     final daily = ref.watch(dailyRemindersProvider);
+    final translation = switch (s.translation) {
+      'en_sahih' => 'English · Saheeh International',
+      'so_abduh' => 'Soomaali · Mahmud Muhammad Abduh',
+      _ => 'Off',
+    };
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
-        padding: const EdgeInsets.only(bottom: 32),
+        padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, 40),
         children: [
+          // ---- Appearance: what the app looks like, at a glance ----
           const _Header('Appearance'),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-            child: Row(children: [
-              for (final t in ThemePref.values) ...[
-                if (t != ThemePref.values.first) const SizedBox(width: Space.sm),
-                Expanded(
-                  child: _ThemeCard(
-                    pref: t,
-                    selected: s.theme == t,
-                    onTap: () => n.update((x) => x.copyWith(theme: t)),
-                  ),
-                ),
-              ],
-            ]),
-          ),
-          const SizedBox(height: Space.sm),
-          ListTile(
-            leading: Icon(Icons.palette_outlined, color: c.primary),
-            title: const Text('Mushaf page colour'),
-            subtitle: Text(s.paper == MushafPaper.auto ? 'Same as the appearance' : s.paper.label),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => showAppSheet(context, title: 'Mushaf page colour', builder: (_) => const PaperPicker()),
-          ),
-          const _Header('Reminders'),
-          ListTile(
-            leading: Icon(Icons.notifications_active_outlined, color: c.primary),
-            title: const Text('Reminders'),
-            subtitle: Text(daily.enabled
-                ? 'Daily reminders every ${daily.everyHours == 1 ? 'hour' : '${daily.everyHours} hours'}'
-                : 'Adhkar, prayer and daily reminders'),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => context.push('/reminders'),
-          ),
-          const _Header('Reading'),
-          ListTile(
-            leading: Icon(Icons.translate_rounded, color: c.primary),
-            title: const Text('Translation'),
-            subtitle: Text(switch (s.translation) {
-              'en_sahih' => 'English · Saheeh International',
-              'so_abduh' => 'Soomaali · Mahmud Muhammad Abduh',
-              _ => 'Off',
-            }),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => showAppSheet(
-              context,
-              title: 'Translation',
-              builder: (ctx) => Column(mainAxisSize: MainAxisSize.min, children: [
-                for (final (slug, label) in const [
-                  ('en_sahih', 'English · Saheeh International'),
-                  ('so_abduh', 'Soomaali · Mahmud Muhammad Abduh'),
-                  ('', 'Off'),
-                ])
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(label),
-                    trailing: s.translation == slug ? Icon(Icons.check_rounded, color: c.primary) : null,
-                    onTap: () {
-                      n.update((x) => x.copyWith(translation: slug));
-                      Navigator.pop(ctx);
-                    },
-                  ),
-              ]),
+          Row(children: [
+            for (final t in ThemePref.values) ...[
+              if (t != ThemePref.values.first) const SizedBox(width: Space.sm),
+              Expanded(
+                child: _ThemeCard(pref: t, selected: s.theme == t, onTap: () => n.update((x) => x.copyWith(theme: t))),
+              ),
+            ],
+          ]),
+          const SizedBox(height: Space.md),
+          _Group(children: [
+            _Row(
+              icon: Icons.palette_rounded,
+              color: const Color(0xFFB8892F),
+              title: 'Mushaf page colour',
+              value: s.paper == MushafPaper.auto ? 'Same as the app' : s.paper.label,
+              onTap: () => showAppSheet(context, title: 'Mushaf page colour', builder: (_) => const PaperPicker()),
             ),
-          ),
-          SwitchListTile(
-            secondary: Icon(Icons.auto_stories_outlined, color: c.primary),
-            title: const Text('Turn pages with the recitation'),
-            value: s.followAudio,
-            onChanged: (v) => n.update((x) => x.copyWith(followAudio: v)),
-          ),
-          SwitchListTile(
-            secondary: Icon(Icons.light_mode_outlined, color: c.primary),
-            title: const Text('Keep the screen on while reading'),
-            value: s.keepScreenOn,
-            onChanged: (v) => n.update((x) => x.copyWith(keepScreenOn: v)),
-          ),
-          SwitchListTile(
-            secondary: Icon(Icons.wifi_rounded, color: c.primary),
-            title: const Text('Download on Wi-Fi only'),
-            value: s.wifiOnly,
-            onChanged: (v) => n.update((x) => x.copyWith(wifiOnly: v)),
-          ),
+          ]),
+
+          // ---- Reading ----
+          const _Header('Reading'),
+          _Group(children: [
+            _Row(
+              icon: Icons.translate_rounded,
+              color: const Color(0xFF2F7FA3),
+              title: 'Translation',
+              value: translation,
+              onTap: () => showAppSheet(
+                context,
+                title: 'Translation',
+                builder: (ctx) => Column(mainAxisSize: MainAxisSize.min, children: [
+                  for (final (slug, label) in const [
+                    ('en_sahih', 'English · Saheeh International'),
+                    ('so_abduh', 'Soomaali · Mahmud Muhammad Abduh'),
+                    ('', 'Off'),
+                  ])
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(label),
+                      trailing: s.translation == slug ? Icon(Icons.check_rounded, color: ctx.colors.primary) : null,
+                      onTap: () {
+                        n.update((x) => x.copyWith(translation: slug));
+                        Navigator.pop(ctx);
+                      },
+                    ),
+                ]),
+              ),
+            ),
+            _Switch(
+              icon: Icons.auto_stories_rounded,
+              color: const Color(0xFF0F6B56),
+              title: 'Turn pages with the recitation',
+              value: s.followAudio,
+              onChanged: (v) => n.update((x) => x.copyWith(followAudio: v)),
+            ),
+            _Switch(
+              icon: Icons.light_mode_rounded,
+              color: const Color(0xFFC98A1A),
+              title: 'Keep the screen on while reading',
+              value: s.keepScreenOn,
+              onChanged: (v) => n.update((x) => x.copyWith(keepScreenOn: v)),
+            ),
+          ]),
+
+          // ---- Listening ----
+          const _Header('Listening & downloads'),
+          _Group(children: [
+            _Switch(
+              icon: Icons.wifi_rounded,
+              color: const Color(0xFF5B5BA6),
+              title: 'Download on Wi-Fi only',
+              value: s.wifiOnly,
+              onChanged: (v) => n.update((x) => x.copyWith(wifiOnly: v)),
+            ),
+            _Row(
+              icon: Icons.download_done_rounded,
+              color: const Color(0xFF3E7C59),
+              title: 'Downloads & bookmarks',
+              onTap: () => context.push('/library'),
+            ),
+          ]),
+
+          // ---- Reminders ----
+          const _Header('Reminders'),
+          _Group(children: [
+            _Row(
+              icon: Icons.notifications_active_rounded,
+              color: const Color(0xFFB5653B),
+              title: 'Reminders & sound',
+              value: daily.enabled
+                  ? 'Daily reminders every ${daily.everyHours == 1 ? 'hour' : '${daily.everyHours} hours'}'
+                  : 'Adhkar, prayer and daily reminders',
+              onTap: () => context.push('/reminders'),
+            ),
+            _Row(
+              icon: Icons.mosque_rounded,
+              color: const Color(0xFF0E5A49),
+              title: 'Prayer times',
+              onTap: () => context.push('/prayer'),
+            ),
+          ]),
+
+          // ---- About ----
           const _Header('About'),
-          ListTile(
-            leading: Icon(Icons.info_outline_rounded, color: c.primary),
-            title: const Text('About $kAppName'),
-            subtitle: const Text('Version $kAppVersion · free and open source'),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => showAppSheet(context, title: kAppName, builder: (_) => const _About()),
-          ),
+          _Group(children: [
+            _Row(
+              icon: Icons.info_rounded,
+              color: const Color(0xFF6B6B6B),
+              title: 'About $kAppName',
+              value: 'Version $kAppVersion · free and open source',
+              onTap: () => showAppSheet(context, title: kAppName, builder: (_) => const _About()),
+            ),
+          ]),
         ],
       ),
     );
   }
+}
+
+/// A rounded card holding rows, separated by hairlines.
+class _Group extends StatelessWidget {
+  const _Group({required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Material(
+      color: c.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.lg), side: BorderSide(color: c.divider)),
+      clipBehavior: Clip.antiAlias,
+      child: Column(children: [
+        for (var i = 0; i < children.length; i++) ...[
+          if (i > 0) Divider(height: 1, indent: 60, color: c.divider),
+          children[i],
+        ],
+      ]),
+    );
+  }
+}
+
+class _Icon extends StatelessWidget {
+  const _Icon(this.icon, this.color);
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(9)),
+        child: Icon(icon, size: 19, color: Colors.white),
+      );
+}
+
+class _Row extends StatelessWidget {
+  const _Row({required this.icon, required this.color, required this.title, this.value, required this.onTap});
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String? value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(Space.md, Space.md, Space.sm, Space.md),
+        child: Row(children: [
+          _Icon(icon, color),
+          const SizedBox(width: Space.md),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title, style: context.text.titleMedium),
+              if (value != null)
+                Text(value!, maxLines: 2, overflow: TextOverflow.ellipsis, style: context.text.bodySmall),
+            ]),
+          ),
+          Icon(Icons.chevron_right_rounded, color: c.inkFaint),
+        ]),
+      ),
+    );
+  }
+}
+
+class _Switch extends StatelessWidget {
+  const _Switch({required this.icon, required this.color, required this.title, required this.value, required this.onChanged});
+  final IconData icon;
+  final Color color;
+  final String title;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        onTap: () => onChanged(!value),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(Space.md, Space.sm, Space.sm, Space.sm),
+          child: Row(children: [
+            _Icon(icon, color),
+            const SizedBox(width: Space.md),
+            Expanded(child: Text(title, style: context.text.titleMedium)),
+            Switch(value: value, onChanged: onChanged),
+          ]),
+        ),
+      );
 }
 
 /// A miniature of the app in each appearance.
@@ -208,7 +327,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xxl, Space.gutter, Space.sm),
+        padding: const EdgeInsets.fromLTRB(Space.xs, Space.xl, Space.xs, Space.sm),
         child: Text(text.toUpperCase(), style: context.text.labelSmall?.copyWith(color: context.colors.primary)),
       );
 }
@@ -227,7 +346,8 @@ class _Sources extends StatelessWidget {
       ('Hadith', 'Arabic texts, English translations and grades from the hadith-api project by Fawaz Ahmed (public domain).'),
       ('Hijri calendar', 'Umm al-Qura calculation, adjustable for local moon sighting.'),
       ('Adhkar recordings', 'hisnmuslim.com (Hisn al-Muslim) and, for Quranic adhkar, Mishary Alafasy via everyayah.com. Included in the app, so they play offline.'),
-      ('App icon', 'A 14th-century Mamluk glass mosque lamp, photographed by The Metropolitan Museum of Art (Open Access, CC0).'),
+      ('App icon', 'The name سراج in Amiri Bold (SIL Open Font License).'),
+      ('Reminder sound', 'Pixie Dust, from the Android Open Source Project (Apache 2.0).'),
       ('Prayer times & Qibla', 'Calculated on your phone with the open-source Adhan library.'),
       ('UI font', 'IBM Plex Sans Arabic (SIL Open Font License).'),
     ];

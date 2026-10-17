@@ -64,14 +64,6 @@ void main() {
     }
   });
 
-  test('arrange: shuffled order differs, the right order is accepted', () {
-    final b = QuizBuilder(_scope(), random: Random(4), surahName: (_) => 'Ar-Rahman');
-    for (final q in b.build(20, {QuizKind.arrange})) {
-      expect(QuizBuilder.arrangedRight(q, q.shuffled), isFalse);
-      expect(QuizBuilder.arrangedRight(q, List.generate(q.words.length, (i) => i)), isTrue);
-    }
-  });
-
   test('which surah needs more than one surah in scope', () {
     final b = QuizBuilder(_scope(), surahName: (_) => 'Ar-Rahman');
     expect(b.available(), isNot(contains(QuizKind.whichSurah)));

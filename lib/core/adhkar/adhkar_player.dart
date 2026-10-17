@@ -16,7 +16,44 @@ import 'adhkar.dart';
 /// each recitation. A dhikr without a recording is the listener's turn:
 /// playback waits until they have counted it on screen, then continues.
 class AdhkarPlayer extends ChangeNotifier implements ExternalPlayback {
-  AdhkarPlayer({required this.handler, this.beforeStart, this.artUri});
+  AdhkarPlayer({required this.handler, this.beforeStart, this.artUri, this.onCompleted});
+
+  /// A category was counted to the end today (saved as done).
+  final void Function(AdhkarCategory category)? onCompleted;
+
+  // ---- Counters: how many recitations are left today, per category ----
+  final _counts = <String, Map<int, int>>{};
+  String _day = '';
+
+  Map<int, int> _of(String id) {
+    final now = DateTime.now();
+    final d = '${now.year}-${now.month}-${now.day}';
+    if (d != _day) {
+      _day = d;
+      _counts.clear();
+    }
+    return _counts.putIfAbsent(id, () => {});
+  }
+
+  int left(AdhkarCategory cat, int i) => _of(cat.id)[i] ?? cat.items[i].count;
+
+  bool allDone(AdhkarCategory cat) => List.generate(cat.items.length, (i) => left(cat, i)).every((n) => n == 0);
+
+  /// Counts one recitation of dhikr [i]; false when it was already done.
+  bool countOne(AdhkarCategory cat, int i) {
+    final l = left(cat, i);
+    if (l == 0) return false;
+    _of(cat.id)[i] = l - 1;
+    if (l == 1 && allDone(cat)) onCompleted?.call(cat);
+    notifyListeners();
+    return true;
+  }
+
+  /// Starts the category's count again.
+  void reset(AdhkarCategory cat) {
+    _of(cat.id).clear();
+    notifyListeners();
+  }
 
   final QuranAudioHandler handler;
 
@@ -45,16 +82,21 @@ class AdhkarPlayer extends ChangeNotifier implements ExternalPlayback {
   /// Recite each dhikr once instead of its prescribed count.
   bool once = false;
 
-  void Function(int index)? onRepetition;
   void Function(Object error)? onError;
-  int Function(int index)? _remaining;
 
   AudioPlayer get _p => handler.player;
 
   bool isActive(String categoryId) => category?.id == categoryId;
 
-  /// Starts at [from]; [remaining] gives how many recitations are left for a dhikr.
-  Future<void> start(AdhkarCategory cat, int from, {required int Function(int index) remaining}) async {
+  /// Starts listening at dhikr [from] (the first one not yet counted when null).
+  Future<void> start(AdhkarCategory cat, [int? from]) async {
+    if (from == null) {
+      from = List.generate(cat.items.length, (i) => i).firstWhere((i) => left(cat, i) > 0, orElse: () => -1);
+      if (from < 0) {
+        reset(cat); // everything was counted: listen again from the start
+        from = 0;
+      }
+    }
     final session = ++_session;
     if (category == null) await beforeStart?.call();
     _art ??= await artUri?.call();
@@ -63,7 +105,6 @@ class AdhkarPlayer extends ChangeNotifier implements ExternalPlayback {
     handler.external = this;
     category = cat;
     index = from.clamp(0, cat.items.length - 1);
-    _remaining = remaining;
     playing = true;
     _publish();
     notifyListeners();
@@ -82,8 +123,8 @@ class AdhkarPlayer extends ChangeNotifier implements ExternalPlayback {
   }
 
   Future<void> resume() async {
-    final cat = category, rem = _remaining;
-    if (cat == null || rem == null || playing) return;
+    final cat = category;
+    if (cat == null || playing) return;
     playing = true;
     notifyListeners();
     final r = _resumed;
@@ -102,9 +143,9 @@ class AdhkarPlayer extends ChangeNotifier implements ExternalPlayback {
 
   /// Plays [i] now (the listener tapped another card).
   Future<void> jumpTo(int i) async {
-    final cat = category, rem = _remaining;
-    if (cat == null || rem == null) return;
-    await start(cat, i, remaining: rem);
+    final cat = category;
+    if (cat == null) return;
+    await start(cat, i);
   }
 
   Future<void> skip(int delta) async {
@@ -116,18 +157,18 @@ class AdhkarPlayer extends ChangeNotifier implements ExternalPlayback {
   /// The listener counted the current dhikr themselves: carry on with what is
   /// left of it, or with the next dhikr when it is done.
   Future<void> counted() async {
-    final cat = category, rem = _remaining;
-    if (cat == null || rem == null) return;
+    final cat = category;
+    if (cat == null) return;
     final turn = _turn;
     if (turn != null && !turn.isCompleted) {
-      if (rem(index) == 0) turn.complete();
+      if (left(cat, index) == 0) turn.complete();
       return;
     }
-    if (rem(index) == 0 && index == cat.items.length - 1) {
+    if (left(cat, index) == 0 && index == cat.items.length - 1) {
       await stop();
       return;
     }
-    await start(cat, rem(index) == 0 ? index + 1 : index, remaining: rem);
+    await start(cat, left(cat, index) == 0 ? index + 1 : index);
   }
 
   @override
@@ -188,12 +229,12 @@ class AdhkarPlayer extends ChangeNotifier implements ExternalPlayback {
     try {
       while (session == _session && index < cat.items.length) {
         final d = cat.items[index];
-        final left = _remaining!(index);
-        final times = once ? (left > 0 ? 1 : 0) : left;
+        final remaining = left(cat, index);
+        final times = once ? (remaining > 0 ? 1 : 0) : remaining;
         repetitions = times;
         repetition = 0;
         if (d.audioFile == null) {
-          if (left > 0) {
+          if (remaining > 0) {
             // No recording: the listener reads this one and taps to count it.
             waitingForReader = true;
             _publish();
@@ -216,8 +257,7 @@ class AdhkarPlayer extends ChangeNotifier implements ExternalPlayback {
             );
             if (session != _session) return;
             repetition = r + 1;
-            onRepetition?.call(index);
-            notifyListeners();
+            countOne(cat, index);
             await Future<void>.delayed(Duration(milliseconds: r < times - 1 ? 450 : 1000));
           }
         }

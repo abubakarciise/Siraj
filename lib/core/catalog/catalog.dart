@@ -212,8 +212,18 @@ class CatalogRepository {
     return jsonEncode({'reciters': out});
   }
 
+  /// Only recitations with ayah timing are offered: every one follows along
+  /// exactly. Reciters left without any recitation are dropped.
   static Catalog _parse(String raw) {
     final j = jsonDecode(raw) as Map<String, dynamic>;
-    return Catalog([for (final r in j['reciters'] as List) Reciter.fromJson(r as Map<String, dynamic>)]);
+    final out = <Reciter>[];
+    for (final r in j['reciters'] as List) {
+      final full = Reciter.fromJson(r as Map<String, dynamic>);
+      final timed = full.recitations.where((m) => m.hasTiming).toList();
+      if (timed.isNotEmpty) {
+        out.add(Reciter(id: full.id, name: full.name, nameAr: full.nameAr, recitations: timed));
+      }
+    }
+    return Catalog(out);
   }
 }

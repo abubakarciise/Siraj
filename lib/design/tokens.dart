@@ -208,7 +208,7 @@ extension AppThemeX on BuildContext {
   AppColors get colors => Theme.of(this).extension<AppColors>()!;
   TextTheme get text => Theme.of(this).textTheme;
 
-  /// Title and subtitle on a header (the emerald app bar).
-  TextStyle? get headerTitle => text.titleMedium?.copyWith(color: colors.onBrand);
-  TextStyle? get headerSub => text.bodySmall?.copyWith(color: colors.onBrand.withValues(alpha: 0.75));
+  /// Title and subtitle in a header.
+  TextStyle? get headerTitle => text.titleMedium;
+  TextStyle? get headerSub => text.bodySmall;
 }

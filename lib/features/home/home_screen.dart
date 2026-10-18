@@ -7,7 +7,6 @@ import '../../app/shell.dart';
 import '../../core/adhkar/adhkar.dart';
 import '../../core/adhkar/adhkar_time.dart';
 import '../../core/providers.dart';
-import '../../design/hero.dart';
 import '../../design/tab_theme.dart';
 import '../../design/theme.dart';
 import '../../design/tokens.dart';
@@ -29,7 +28,7 @@ class HomeScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Colors.transparent, // the tab's art shows through (TabBackdrop)
       body: AnnotatedRegion(
-        value: SystemUiOverlayStyle.light,
+        value: c.isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
         child: Stack(
           children: [
             CustomScrollView(
@@ -66,13 +65,13 @@ class HomeScreen extends ConsumerWidget {
                 const SliverToBoxAdapter(child: SizedBox(height: 40)),
               ],
             ),
-            // The status bar keeps the header's colour while the page scrolls under it.
+            // A quiet status bar over the page while it scrolls under it.
             Positioned(
               top: 0,
               left: 0,
               right: 0,
               height: MediaQuery.paddingOf(context).top,
-              child: ColoredBox(color: c.brand),
+              child: ColoredBox(color: c.bg),
             ),
           ],
         ),
@@ -101,16 +100,14 @@ class _Header extends ConsumerWidget {
     final hijri = ref.watch(hijriTodayProvider);
     final now = DateTime.now();
     // In Home's own header colour.
-    // Home's own scene: a mosque at dusk, behind the greeting.
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(Radii.xl)),
       child: Stack(
         children: [
-          const Positioned.fill(child: HeroBackground(art: HeroArt.home)),
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.xs, 76),
+              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.xs, Space.sm),
               child: Row(
                 children: [
                   Expanded(
@@ -121,36 +118,28 @@ class _Header extends ConsumerWidget {
                           '${_weekdays[now.weekday - 1]} · ${hijri.day} ${hijri.monthName} ${hijri.year}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: context.text.bodySmall?.copyWith(color: Color.lerp(c.gold, Colors.white, 0.3)),
+                          style: context.text.bodySmall?.copyWith(color: c.gold),
                         ),
                         FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: AlignmentDirectional.centerStart,
-                          child: Text(
-                            _greeting(),
-                            maxLines: 1,
-                            style: context.text.headlineSmall?.copyWith(color: c.onBrand),
-                          ),
+                          child: Text(_greeting(), maxLines: 1, style: context.text.headlineSmall),
                         ),
                         Text(
                           'السلام عليكم ورحمة الله',
-                          style: TextStyle(
-                            fontFamily: kNaskhFont,
-                            fontSize: 15,
-                            color: c.onBrand.withValues(alpha: 0.75),
-                          ),
+                          style: TextStyle(fontFamily: kNaskhFont, fontSize: 15, color: c.inkMuted),
                         ),
                       ],
                     ),
                   ),
                   IconButton(
                     tooltip: 'Search',
-                    icon: Icon(Icons.search_rounded, color: c.onBrand),
+                    icon: Icon(Icons.search_rounded, color: c.ink),
                     onPressed: () => context.push('/search'),
                   ),
                   IconButton(
                     tooltip: 'Settings',
-                    icon: Icon(Icons.settings_outlined, color: c.onBrand),
+                    icon: Icon(Icons.settings_outlined, color: c.ink),
                     onPressed: () => context.push('/settings'),
                   ),
                 ],

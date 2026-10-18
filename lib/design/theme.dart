@@ -83,32 +83,30 @@ ThemeData buildThemeFrom(AppColors c) {
       ),
     ),
     progressIndicatorTheme: ProgressIndicatorThemeData(color: c.primary, linearTrackColor: c.divider),
-    // Every header and the bottom bar share one colour: the logo's emerald,
-    // with cream text and gold for what is selected.
+    // Clean headers: part of the page (its colour, a little see-through over
+    // the background), dark text and icons. A plain bottom bar.
     appBarTheme: AppBarTheme(
-      backgroundColor: c.brand,
+      backgroundColor: c.bg,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
-      foregroundColor: c.onBrand,
-      iconTheme: IconThemeData(color: c.onBrand),
-      actionsIconTheme: IconThemeData(color: c.onBrand),
-      titleTextStyle: textTheme.titleLarge?.copyWith(color: c.onBrand),
-      systemOverlayStyle: SystemUiOverlayStyle.light,
+      foregroundColor: c.ink,
+      iconTheme: IconThemeData(color: c.ink),
+      actionsIconTheme: IconThemeData(color: c.ink),
+      titleTextStyle: textTheme.titleLarge,
+      systemOverlayStyle: c.isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
     ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: c.brand,
+      backgroundColor: c.surface,
       surfaceTintColor: Colors.transparent,
-      indicatorColor: c.gold.withValues(alpha: 0.28),
+      indicatorColor: c.primarySoft,
       height: 68,
       labelTextStyle: WidgetStateProperty.resolveWith(
-        (st) => s(12, 16, FontWeight.w600,
-            st.contains(WidgetState.selected) ? c.onBrand : c.onBrand.withValues(alpha: 0.72)),
+        (st) => s(12, 16, FontWeight.w600, st.contains(WidgetState.selected) ? c.primary : c.inkMuted),
       ),
       iconTheme: WidgetStateProperty.resolveWith(
-        (st) => IconThemeData(
-            color: st.contains(WidgetState.selected) ? Color.lerp(c.gold, Colors.white, 0.35) : c.onBrand.withValues(alpha: 0.72)),
+        (st) => IconThemeData(color: st.contains(WidgetState.selected) ? c.primary : c.inkMuted),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(

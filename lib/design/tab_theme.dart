@@ -43,21 +43,28 @@ class TabTheme extends StatelessWidget {
   }
 }
 
-/// The tab's first page, on the app's background.
+/// The tab's first page, on its own background.
 class TabBackdrop extends StatelessWidget {
   const TabBackdrop({super.key, required this.tab, required this.child});
   final AppTab tab;
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => PageBackground(child: child);
+  Widget build(BuildContext context) => PageBackground(look: PageLook.values[tab.index], child: child);
 }
 
-/// The background of every page: the page colour with a very faint star
-/// lattice, like a watermark. Still (drawn once, in its own layer). Scaffolds
-/// inside are made transparent so it shows through; cards stay solid.
+/// Which background a page has: one for each main screen, and a lighter one
+/// for every other page.
+enum PageLook { home, quran, listen, hadith, daily, page }
+
+/// The background of a page: soft washes of emerald, gold and mint across the
+/// whole screen, placed differently for each screen, and one large faint
+/// ornament of its own (a rosette, an arch, rings, stars, the sun's arc).
+/// Still: drawn once, in its own layer. Scaffolds inside are made
+/// transparent so it shows through; cards stay solid.
 class PageBackground extends StatelessWidget {
-  const PageBackground({super.key, required this.child});
+  const PageBackground({super.key, this.look = PageLook.page, required this.child});
+  final PageLook look;
   final Widget child;
 
   @override
@@ -66,7 +73,7 @@ class PageBackground extends StatelessWidget {
     final theme = Theme.of(context);
     return Stack(children: [
       Positioned.fill(
-        child: RepaintBoundary(child: CustomPaint(painter: _PagePainter(c))),
+        child: RepaintBoundary(child: CustomPaint(painter: _PagePainter(c, look))),
       ),
       Theme(
         data: theme.copyWith(scaffoldBackgroundColor: Colors.transparent),
@@ -77,24 +84,92 @@ class PageBackground extends StatelessWidget {
 }
 
 class _PagePainter extends CustomPainter {
-  _PagePainter(this.c);
+  _PagePainter(this.c, this.look);
   final AppColors c;
+  final PageLook look;
+
+  static const _mint = Color(0xFF7FC8A9);
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Calm under the content: the page colour and a very faint lattice; each
-    // screen's own design is in its header.
+    final w = size.width, h = size.height;
     canvas.drawRect(Offset.zero & size, Paint()..color = c.bg);
-    final lattice = Paint()
-      ..color = c.primary.withValues(alpha: c.isDark ? 0.05 : 0.045)
+    final emerald = c.primary, gold = c.gold;
+    // (where, radius as a share of the width, colour, strength)
+    final washes = switch (look) {
+      PageLook.home => [(const Offset(0.95, 0.02), 0.95, emerald, 0.20), (const Offset(0.0, 0.55), 0.80, gold, 0.18),
+          (const Offset(0.85, 1.0), 0.85, _mint, 0.20)],
+      PageLook.quran => [(const Offset(0.05, 0.05), 0.95, gold, 0.22), (const Offset(1.0, 0.55), 0.85, emerald, 0.18),
+          (const Offset(0.3, 1.0), 0.80, _mint, 0.16)],
+      PageLook.listen => [(const Offset(0.5, -0.05), 1.0, emerald, 0.20), (const Offset(1.0, 0.85), 0.85, gold, 0.18),
+          (const Offset(0.0, 0.7), 0.70, _mint, 0.18)],
+      PageLook.hadith => [(const Offset(0.95, 0.12), 0.90, gold, 0.22), (const Offset(0.0, 0.75), 0.90, emerald, 0.16),
+          (const Offset(0.7, 1.0), 0.70, gold, 0.12)],
+      PageLook.daily => [(const Offset(0.5, -0.08), 1.05, gold, 0.24), (const Offset(0.1, 1.0), 0.90, emerald, 0.18),
+          (const Offset(1.0, 0.6), 0.70, _mint, 0.16)],
+      PageLook.page => [(const Offset(1.0, 0.0), 0.85, emerald, 0.13), (const Offset(0.0, 1.0), 0.85, gold, 0.12)],
+    };
+    final k = c.isDark ? 0.8 : 1.0;
+    for (final (at, r, color, strength) in washes) {
+      final centre = Offset(at.dx * w, at.dy * h);
+      final radius = r * w;
+      canvas.drawCircle(
+        centre,
+        radius,
+        Paint()
+          ..shader = RadialGradient(colors: [
+            color.withValues(alpha: strength * k),
+            color.withValues(alpha: strength * k * 0.45),
+            color.withValues(alpha: 0),
+          ], stops: const [0, 0.5, 1])
+              .createShader(Rect.fromCircle(center: centre, radius: radius)),
+      );
+    }
+    // The screen's own ornament, large and faint.
+    final line = Paint()
+      ..color = (c.isDark ? c.gold : c.primary).withValues(alpha: c.isDark ? 0.12 : 0.10)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-    const cell = 64.0;
-    for (var y = -cell / 2, row = 0; y < size.height + cell; y += cell, row++) {
-      for (var x = (row.isOdd ? cell / 2 : 0.0) - cell / 2; x < size.width + cell; x += cell) {
-        _star(canvas, Offset(x, y), cell * 0.30, lattice);
-        canvas.drawCircle(Offset(x + cell / 2, y), cell * 0.07, lattice);
-      }
+      ..strokeWidth = 1.4;
+    switch (look) {
+      case PageLook.home:
+        final o = Offset(w * 0.86, h * 0.30);
+        for (final f in [1.0, 0.74, 0.48]) {
+          _star(canvas, o, w * 0.42 * f, line);
+          canvas.drawCircle(o, w * 0.42 * f * 0.72, line);
+        }
+      case PageLook.quran:
+        for (final f in [1.0, 0.88]) {
+          final r = Rect.fromCenter(center: Offset(w * 0.5, h * 0.78), width: w * 0.86 * f, height: h * 0.56 * f);
+          final spring = r.top + r.height * 0.38;
+          canvas.drawPath(
+              Path()
+                ..moveTo(r.left, h + 4)
+                ..lineTo(r.left, spring)
+                ..quadraticBezierTo(r.left, r.top + r.height * 0.06, r.center.dx, r.top)
+                ..quadraticBezierTo(r.right, r.top + r.height * 0.06, r.right, spring)
+                ..lineTo(r.right, h + 4),
+              line);
+        }
+      case PageLook.listen:
+        for (var i = 1; i <= 7; i++) {
+          canvas.drawCircle(Offset(0, h), w * 0.16 * i, line);
+        }
+      case PageLook.hadith:
+        for (var i = 0; i < 4; i++) {
+          final o = Offset(w * 0.12, h * (0.28 + i * 0.22));
+          _star(canvas, o, w * 0.13, line);
+          canvas.drawCircle(o, w * 0.13 * 0.6, line);
+        }
+      case PageLook.daily:
+        final o = Offset(w * 0.5, h * 0.42);
+        canvas.drawArc(Rect.fromCircle(center: o, radius: w * 0.62), math.pi, math.pi, false, line);
+        for (var i = 0; i < 12; i++) {
+          final a = math.pi + math.pi * i / 11;
+          final d = Offset(math.cos(a), math.sin(a));
+          canvas.drawLine(o + d * w * 0.68, o + d * w * 0.76, line);
+        }
+      case PageLook.page:
+        break;
     }
   }
 
@@ -112,5 +187,5 @@ class _PagePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_PagePainter old) => old.c != c;
+  bool shouldRepaint(_PagePainter old) => old.c != c || old.look != look;
 }

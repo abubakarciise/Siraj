@@ -62,47 +62,47 @@ class AppColors extends ThemeExtension<AppColors> {
   Color get ayahMark => Color.lerp(ink, gold, 0.55)!;
 
   static const light = AppColors(
-    bg: Color(0xFFF6F2E9),
-    surface: Color(0xFFFFFCF6),
-    surfaceAlt: Color(0xFFEEE8DB),
+    bg: Color(0xFFF1F5F3), // a cool off-white, faintly green
+    surface: Color(0xFFFFFFFF),
+    surfaceAlt: Color(0xFFE7EEEA),
     pageBg: Color(0xFFFBF7EE),
-    ink: Color(0xFF1F1C17),
-    inkMuted: Color(0xFF645E53),
-    inkFaint: Color(0xFFA49D8F),
+    ink: Color(0xFF14201B),
+    inkMuted: Color(0xFF56635D),
+    inkFaint: Color(0xFF96A39D),
     primary: Color(0xFF0F6B56),
     primarySoft: Color(0xFFDFEDE6),
     onPrimary: Color(0xFFFFFFFF),
     brand: Color(0xFF0E5A49),
     onBrand: Color(0xFFFFFCF6),
     gold: Color(0xFFA8813A),
-    divider: Color(0xFFE5DECF),
+    divider: Color(0xFFDDE6E1),
     danger: Color(0xFFB3402F),
     isDark: false,
   );
 
   static const dark = AppColors(
-    bg: Color(0xFF131416),
-    surface: Color(0xFF1B1D20),
-    surfaceAlt: Color(0xFF25282C),
+    bg: Color(0xFF0D1412), // green-black
+    surface: Color(0xFF16201C),
+    surfaceAlt: Color(0xFF1F2B26),
     pageBg: Color(0xFF17181B),
-    ink: Color(0xFFEAE5DA),
-    inkMuted: Color(0xFFA9A498),
-    inkFaint: Color(0xFF6F6B63),
+    ink: Color(0xFFE6ECE9),
+    inkMuted: Color(0xFFA0ACA7),
+    inkFaint: Color(0xFF66736D),
     primary: Color(0xFF7CC6AC),
     primarySoft: Color(0xFF203530),
     onPrimary: Color(0xFF0B1D17),
     brand: Color(0xFF1C3A32),
     onBrand: Color(0xFFEDE8DC),
     gold: Color(0xFFD5B26C),
-    divider: Color(0xFF2C2F34),
+    divider: Color(0xFF26332E),
     danger: Color(0xFFEF7B6B),
     isDark: true,
   );
 
   static const midnight = AppColors(
     bg: Color(0xFF000000),
-    surface: Color(0xFF0E0E10),
-    surfaceAlt: Color(0xFF19191C),
+    surface: Color(0xFF0B100E),
+    surfaceAlt: Color(0xFF141B18),
     pageBg: Color(0xFF000000),
     ink: Color(0xFFD8D3C7),
     inkMuted: Color(0xFF99948A),
@@ -113,7 +113,7 @@ class AppColors extends ThemeExtension<AppColors> {
     brand: Color(0xFF112620),
     onBrand: Color(0xFFDCD7CB),
     gold: Color(0xFFC6A45E),
-    divider: Color(0xFF202024),
+    divider: Color(0xFF1A2320),
     danger: Color(0xFFE8705F),
     isDark: true,
   );

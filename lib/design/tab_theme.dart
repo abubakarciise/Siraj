@@ -18,8 +18,8 @@ extension AppTabX on AppTab {
         AppTab.daily => const Color(0xFF3C8D6B), // sea green
       };
 
-  Color background(AppColors c) =>
-      Color.lerp(c.bg, accent, c.isDark ? (c.bg.computeLuminance() < 0.005 ? 0.07 : 0.10) : 0.085)!;
+  /// Every tab shares one background: the accent only colours its icons.
+  Color background(AppColors c) => c.bg;
 }
 
 /// Gives a tab (and the pages opened inside it) its own colours.
@@ -41,13 +41,41 @@ class TabTheme extends StatelessWidget {
   }
 }
 
-/// The tab's first page on its plain background colour. The page's
-/// Scaffold must be transparent.
+/// The tab's first page: the shared background, with the emerald header's
+/// light fading softly down into it, so header and page read as one piece.
+/// The page's Scaffold must be transparent.
 class TabBackdrop extends StatelessWidget {
   const TabBackdrop({super.key, required this.tab, required this.child});
   final AppTab tab;
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => ColoredBox(color: context.colors.bg, child: child);
+  Widget build(BuildContext context) => HeaderGlow(child: child);
+}
+
+/// The background with a soft emerald glow under the header.
+class HeaderGlow extends StatelessWidget {
+  const HeaderGlow({super.key, required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: c.bg,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          stops: const [0, 0.32, 1],
+          colors: [
+            Color.lerp(c.bg, c.brand, c.isDark ? 0.35 : 0.14)!,
+            c.bg,
+            c.bg,
+          ],
+        ),
+      ),
+      child: child,
+    );
+  }
 }

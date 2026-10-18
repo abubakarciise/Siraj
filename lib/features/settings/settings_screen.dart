@@ -9,7 +9,7 @@ import '../../design/tokens.dart';
 import '../reader/reader_screen.dart' show PaperPicker, MushafPaperX;
 
 const kAppName = 'Siraj';
-const kAppVersion = '2.9.0';
+const kAppVersion = '2.10.0';
 const kRepoUrl = 'github.com/Abuubakar-Ciise/Siraj';
 
 class SettingsScreen extends ConsumerWidget {

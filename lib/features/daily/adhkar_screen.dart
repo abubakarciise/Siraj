@@ -56,7 +56,8 @@ class AdhkarListScreen extends ConsumerWidget {
                 child: Container(
                   padding: const EdgeInsets.all(Space.lg),
                   decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(Radii.lg), border: Border.all(color: c.divider)),
+                      borderRadius: BorderRadius.circular(Radii.lg), border: cardBorder(c),
+            boxShadow: cardShadow(c)),
                   child: Row(children: [
                     Container(
                       padding: const EdgeInsets.all(10),
@@ -440,7 +441,7 @@ class _ListenBar extends StatelessWidget {
           color: c.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(Radii.xl),
-            side: BorderSide(color: c.divider),
+            side: cardSide(c),
           ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(Space.lg, Space.sm, Space.sm, Space.sm),

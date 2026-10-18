@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/providers.dart';
 import '../../design/theme.dart';
 import '../../design/tokens.dart';
+import '../../design/widgets.dart';
 
 const _phrases = [
   ('سُبْحَانَ اللَّهِ', 'SubhanAllah'),
@@ -306,7 +307,8 @@ class _Stat extends StatelessWidget {
         decoration: BoxDecoration(
           color: c.surface.withValues(alpha: 0.92),
           borderRadius: BorderRadius.circular(Radii.lg),
-          border: Border.all(color: c.divider),
+          border: cardBorder(c),
+            boxShadow: cardShadow(c),
         ),
         child: Column(
           children: [
@@ -409,7 +411,8 @@ class TasbihStatsScreen extends StatelessWidget {
             decoration: BoxDecoration(
               color: c.surface,
               borderRadius: BorderRadius.circular(Radii.lg),
-              border: Border.all(color: c.divider),
+              border: cardBorder(c),
+            boxShadow: cardShadow(c),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,

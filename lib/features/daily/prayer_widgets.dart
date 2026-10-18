@@ -141,7 +141,8 @@ class _Shell extends StatelessWidget {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.all(Space.lg),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(Radii.lg), border: Border.all(color: c.divider)),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(Radii.lg), border: cardBorder(c),
+            boxShadow: cardShadow(c)),
           child: child,
         ),
       ),

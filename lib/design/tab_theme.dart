@@ -15,9 +15,9 @@ extension AppTabX on AppTab {
   Color get accent => switch (this) {
         AppTab.home => const Color(0xFF0F6B56), // emerald
         AppTab.quran => const Color(0xFFB8892F), // parchment gold
-        AppTab.listen => const Color(0xFF2A8F7F), // teal
-        AppTab.hadith => const Color(0xFFA8733A), // bronze
-        AppTab.daily => const Color(0xFF3C8D6B), // sea green
+        AppTab.listen => const Color(0xFF0F6B56), // emerald
+        AppTab.hadith => const Color(0xFFA8813A), // gold
+        AppTab.daily => const Color(0xFF0F6B56), // emerald
       };
 
   /// Every tab shares one background: the accent only colours its icons.
@@ -53,11 +53,9 @@ class TabBackdrop extends StatelessWidget {
   Widget build(BuildContext context) => PageBackground(child: child);
 }
 
-/// The background of every page: a soft gradient from the header's emerald
-/// into the page colour, warming with gold at the bottom; a fine star
-/// lattice over all of it, like a watermark; and a large gold rosette in the
-/// lower corner. Still (drawn once, in its own layer). Scaffolds inside are
-/// made transparent so it shows through; cards stay solid.
+/// The background of every page: the page colour with a very faint star
+/// lattice, like a watermark. Still (drawn once, in its own layer). Scaffolds
+/// inside are made transparent so it shows through; cards stay solid.
 class PageBackground extends StatelessWidget {
   const PageBackground({super.key, required this.child});
   final Widget child;
@@ -84,26 +82,11 @@ class _PagePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    // The gradient: emerald under the header, the page colour, a touch of gold.
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          stops: const [0, 0.28, 0.75, 1],
-          colors: [
-            Color.lerp(c.bg, c.brand, c.isDark ? 0.42 : 0.16)!,
-            c.bg,
-            c.bg,
-            Color.lerp(c.bg, c.gold, c.isDark ? 0.10 : 0.09)!,
-          ],
-        ).createShader(rect),
-    );
-    // The lattice: eight-point stars with small rings between, edge to edge.
+    // Calm under the content: the page colour and a very faint lattice; each
+    // screen's own design is in its header.
+    canvas.drawRect(Offset.zero & size, Paint()..color = c.bg);
     final lattice = Paint()
-      ..color = c.primary.withValues(alpha: c.isDark ? 0.07 : 0.065)
+      ..color = c.primary.withValues(alpha: c.isDark ? 0.05 : 0.045)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
     const cell = 64.0;
@@ -112,21 +95,6 @@ class _PagePainter extends CustomPainter {
         _star(canvas, Offset(x, y), cell * 0.30, lattice);
         canvas.drawCircle(Offset(x + cell / 2, y), cell * 0.07, lattice);
       }
-    }
-    // The rosette: rings of stars, large and faint, in the lower corner.
-    final rosette = Paint()
-      ..color = c.gold.withValues(alpha: c.isDark ? 0.16 : 0.18)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.4;
-    final centre = Offset(size.width * 0.92, size.height * 0.86);
-    final r = size.width * 0.42;
-    for (final k in [1.0, 0.78, 0.56, 0.34]) {
-      _star(canvas, centre, r * k, rosette);
-      canvas.drawCircle(centre, r * k * 0.72, rosette);
-    }
-    for (var i = 0; i < 16; i++) {
-      final a = i * math.pi / 8;
-      canvas.drawCircle(centre + Offset(math.cos(a), math.sin(a)) * r * 1.12, 4, rosette);
     }
   }
 

@@ -7,6 +7,7 @@ import '../../app/shell.dart';
 import '../../core/adhkar/adhkar.dart';
 import '../../core/adhkar/adhkar_time.dart';
 import '../../core/providers.dart';
+import '../../design/hero.dart';
 import '../../design/tab_theme.dart';
 import '../../design/theme.dart';
 import '../../design/tokens.dart';
@@ -100,52 +101,63 @@ class _Header extends ConsumerWidget {
     final hijri = ref.watch(hijriTodayProvider);
     final now = DateTime.now();
     // In Home's own header colour.
-    return Container(
-      decoration: BoxDecoration(
-        color: c.brand,
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(Radii.xl)),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.xs, Space.lg),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${_weekdays[now.weekday - 1]} · ${hijri.day} ${hijri.monthName} ${hijri.year}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.text.bodySmall?.copyWith(color: Color.lerp(c.gold, Colors.white, 0.3)),
+    // Home's own scene: a mosque at dusk, behind the greeting.
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(Radii.xl)),
+      child: Stack(
+        children: [
+          const Positioned.fill(child: HeroBackground(art: HeroArt.home)),
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.xs, 76),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${_weekdays[now.weekday - 1]} · ${hijri.day} ${hijri.monthName} ${hijri.year}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.text.bodySmall?.copyWith(color: Color.lerp(c.gold, Colors.white, 0.3)),
+                        ),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: AlignmentDirectional.centerStart,
+                          child: Text(
+                            _greeting(),
+                            maxLines: 1,
+                            style: context.text.headlineSmall?.copyWith(color: c.onBrand),
+                          ),
+                        ),
+                        Text(
+                          'السلام عليكم ورحمة الله',
+                          style: TextStyle(
+                            fontFamily: kNaskhFont,
+                            fontSize: 15,
+                            color: c.onBrand.withValues(alpha: 0.75),
+                          ),
+                        ),
+                      ],
                     ),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: AlignmentDirectional.centerStart,
-                      child: Text(_greeting(), maxLines: 1, style: context.text.headlineSmall?.copyWith(color: c.onBrand)),
-                    ),
-                    Text(
-                      'السلام عليكم ورحمة الله',
-                      style: TextStyle(fontFamily: kNaskhFont, fontSize: 15, color: c.onBrand.withValues(alpha: 0.75)),
-                    ),
-                  ],
-                ),
+                  ),
+                  IconButton(
+                    tooltip: 'Search',
+                    icon: Icon(Icons.search_rounded, color: c.onBrand),
+                    onPressed: () => context.push('/search'),
+                  ),
+                  IconButton(
+                    tooltip: 'Settings',
+                    icon: Icon(Icons.settings_outlined, color: c.onBrand),
+                    onPressed: () => context.push('/settings'),
+                  ),
+                ],
               ),
-              IconButton(
-                tooltip: 'Search',
-                icon: Icon(Icons.search_rounded, color: c.onBrand),
-                onPressed: () => context.push('/search'),
-              ),
-              IconButton(
-                tooltip: 'Settings',
-                icon: Icon(Icons.settings_outlined, color: c.onBrand),
-                onPressed: () => context.push('/settings'),
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -187,10 +199,7 @@ class _AdhkarNow extends ConsumerWidget {
     final page = tasbih ? '/tasbih' : '/adhkar/$id';
     return Material(
       color: c.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(Radii.xl),
-        side: BorderSide(color: c.divider),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.xl), side: cardSide(c)),
       child: Padding(
         padding: const EdgeInsets.all(Space.md),
         child: Column(
@@ -343,14 +352,14 @@ class _Explore extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = <(IconData, String, String, Color, VoidCallback)>[
-      (Icons.menu_book_rounded, 'Quran', 'المصحف', AppTab.quran.accent, () => context.go('/quran')),
-      (Icons.graphic_eq_rounded, 'Listen', 'التلاوات', AppTab.listen.accent, () => context.go('/listen')),
-      (Icons.history_edu_rounded, 'Hadith', 'الحديث', AppTab.hadith.accent, () => context.go('/hadith')),
-      (Icons.auto_awesome_rounded, 'Adhkar', 'الأذكار', AppTab.home.accent, () => context.push('/adhkar')),
-      (Icons.mosque_rounded, 'Prayer times', 'مواقيت الصلاة', AppTab.daily.accent, () => context.push('/prayer')),
-      (Icons.explore_rounded, 'Qibla', 'القبلة', const Color(0xFF2F6F5E), () => context.push('/qibla')),
-      (Icons.blur_circular_rounded, 'Tasbih', 'التسبيح', const Color(0xFF9A7B3A), () => context.push('/tasbih')),
-      (Icons.bookmarks_rounded, 'Saved', 'المحفوظات', const Color(0xFF7A6A3A), () => context.push('/library')),
+      (Icons.menu_book_rounded, 'Quran', 'المصحف', const Color(0xFFA8813A), () => context.go('/quran')),
+      (Icons.graphic_eq_rounded, 'Listen', 'التلاوات', const Color(0xFF0F6B56), () => context.go('/listen')),
+      (Icons.history_edu_rounded, 'Hadith', 'الحديث', const Color(0xFF0F6B56), () => context.go('/hadith')),
+      (Icons.auto_awesome_rounded, 'Adhkar', 'الأذكار', const Color(0xFFA8813A), () => context.push('/adhkar')),
+      (Icons.mosque_rounded, 'Prayer times', 'مواقيت الصلاة', const Color(0xFFA8813A), () => context.push('/prayer')),
+      (Icons.explore_rounded, 'Qibla', 'القبلة', const Color(0xFF0F6B56), () => context.push('/qibla')),
+      (Icons.blur_circular_rounded, 'Tasbih', 'التسبيح', const Color(0xFF0F6B56), () => context.push('/tasbih')),
+      (Icons.bookmarks_rounded, 'Saved', 'المحفوظات', const Color(0xFFA8813A), () => context.push('/library')),
     ];
     return LayoutBuilder(
       builder: (context, box) {
@@ -402,7 +411,8 @@ class _ExploreTile extends StatelessWidget {
               end: Alignment.bottomRight,
               colors: [Color.lerp(c.surface, tint, c.isDark ? 0.16 : 0.10)!, c.surface],
             ),
-            border: Border.all(color: Color.lerp(c.divider, tint, 0.25)!),
+            border: c.isDark ? Border.all(color: Color.lerp(c.divider, tint, 0.25)!) : null,
+            boxShadow: cardShadow(c),
             borderRadius: BorderRadius.circular(Radii.lg),
           ),
           child: Padding(
@@ -462,10 +472,7 @@ class _WideTile extends StatelessWidget {
     final c = context.colors;
     return Material(
       color: c.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(Radii.lg),
-        side: BorderSide(color: c.divider),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.lg), side: cardSide(c)),
       child: InkWell(
         borderRadius: BorderRadius.circular(Radii.lg),
         onTap: onTap,

@@ -186,7 +186,8 @@ class _PrayerRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: isNext ? c.primarySoft : c.surface,
         borderRadius: BorderRadius.circular(Radii.md),
-        border: Border.all(color: isNext ? c.primary.withValues(alpha: 0.4) : c.divider),
+        border: isNext ? Border.all(color: c.primary.withValues(alpha: 0.4)) : cardBorder(c),
+        boxShadow: cardShadow(c),
       ),
       child: Row(children: [
         Expanded(

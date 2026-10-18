@@ -123,7 +123,8 @@ class ReciterAvatar extends StatelessWidget {
   final String nameAr;
   final double size;
 
-  static const _hues = [160.0, 172.0, 190.0, 205.0, 28.0, 38.0, 145.0, 220.0, 12.0, 265.0];
+  // Within the logo's family: emeralds, teals and golds.
+  static const _hues = [160.0, 168.0, 176.0, 152.0, 40.0, 34.0, 145.0, 184.0, 46.0, 138.0];
 
   @override
   Widget build(BuildContext context) {
@@ -312,3 +313,17 @@ class TabTitle extends StatelessWidget {
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Theme.of(context).appBarTheme.foregroundColor)),
       );
 }
+
+/// Cards: in light, a white surface lifted by a soft shadow (no outline); in
+/// dark, where shadows do not show, a fine outline on a lifted surface.
+Border? cardBorder(AppColors c) => c.isDark ? Border.all(color: c.divider) : null;
+
+List<BoxShadow>? cardShadow(AppColors c) => c.isDark
+    ? null
+    : const [
+        BoxShadow(color: Color(0x14103A2F), blurRadius: 18, offset: Offset(0, 6)),
+        BoxShadow(color: Color(0x0A103A2F), blurRadius: 3, offset: Offset(0, 1)),
+      ];
+
+BorderSide cardSide(AppColors c) =>
+    c.isDark ? BorderSide(color: c.divider) : BorderSide(color: Color.lerp(c.divider, c.surface, 0.5)!);

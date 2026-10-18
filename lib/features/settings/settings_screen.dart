@@ -6,10 +6,11 @@ import '../../core/providers.dart';
 import '../../core/settings.dart';
 import '../../design/dialogs.dart';
 import '../../design/tokens.dart';
+import '../../design/widgets.dart';
 import '../reader/reader_screen.dart' show PaperPicker, MushafPaperX;
 
 const kAppName = 'Siraj';
-const kAppVersion = '2.11.0';
+const kAppVersion = '2.12.0';
 const kRepoUrl = 'github.com/Abuubakar-Ciise/Siraj';
 
 class SettingsScreen extends ConsumerWidget {
@@ -45,7 +46,7 @@ class SettingsScreen extends ConsumerWidget {
           _Group(children: [
             _Row(
               icon: Icons.palette_rounded,
-              color: const Color(0xFFB8892F),
+              color: const Color(0xFFA8813A),
               title: 'Mushaf page colour',
               value: s.paper == MushafPaper.auto ? 'Same as the app' : s.paper.label,
               onTap: () => showAppSheet(context, title: 'Mushaf page colour', builder: (_) => const PaperPicker()),
@@ -57,7 +58,7 @@ class SettingsScreen extends ConsumerWidget {
           _Group(children: [
             _Row(
               icon: Icons.translate_rounded,
-              color: const Color(0xFF2F7FA3),
+              color: const Color(0xFF0F6B56),
               title: 'Translation',
               value: translation,
               onTap: () => showAppSheet(
@@ -83,14 +84,14 @@ class SettingsScreen extends ConsumerWidget {
             ),
             _Switch(
               icon: Icons.auto_stories_rounded,
-              color: const Color(0xFF0F6B56),
+              color: const Color(0xFFA8813A),
               title: 'Turn pages with the recitation',
               value: s.followAudio,
               onChanged: (v) => n.update((x) => x.copyWith(followAudio: v)),
             ),
             _Switch(
               icon: Icons.light_mode_rounded,
-              color: const Color(0xFFC98A1A),
+              color: const Color(0xFF0F6B56),
               title: 'Keep the screen on while reading',
               value: s.keepScreenOn,
               onChanged: (v) => n.update((x) => x.copyWith(keepScreenOn: v)),
@@ -102,14 +103,14 @@ class SettingsScreen extends ConsumerWidget {
           _Group(children: [
             _Switch(
               icon: Icons.wifi_rounded,
-              color: const Color(0xFF5B5BA6),
+              color: const Color(0xFFA8813A),
               title: 'Download on Wi-Fi only',
               value: s.wifiOnly,
               onChanged: (v) => n.update((x) => x.copyWith(wifiOnly: v)),
             ),
             _Row(
               icon: Icons.download_done_rounded,
-              color: const Color(0xFF3E7C59),
+              color: const Color(0xFF0F6B56),
               title: 'Downloads & bookmarks',
               onTap: () => context.push('/library'),
             ),
@@ -120,7 +121,7 @@ class SettingsScreen extends ConsumerWidget {
           _Group(children: [
             _Row(
               icon: Icons.notifications_active_rounded,
-              color: const Color(0xFFB5653B),
+              color: const Color(0xFFA8813A),
               title: 'Reminders & sound',
               value: daily.enabled
                   ? 'Daily reminders every ${daily.everyHours == 1 ? 'hour' : '${daily.everyHours} hours'}'
@@ -129,7 +130,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
             _Row(
               icon: Icons.mosque_rounded,
-              color: const Color(0xFF0E5A49),
+              color: const Color(0xFF0F6B56),
               title: 'Prayer times',
               onTap: () => context.push('/prayer'),
             ),
@@ -140,7 +141,7 @@ class SettingsScreen extends ConsumerWidget {
           _Group(children: [
             _Row(
               icon: Icons.info_rounded,
-              color: const Color(0xFF6B6B6B),
+              color: const Color(0xFF56635D),
               title: 'About $kAppName',
               value: 'Version $kAppVersion · free and open source',
               onTap: () => showAppSheet(context, title: kAppName, builder: (_) => const _About()),
@@ -162,7 +163,7 @@ class _Group extends StatelessWidget {
     final c = context.colors;
     return Material(
       color: c.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.lg), side: BorderSide(color: c.divider)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.lg), side: cardSide(c)),
       clipBehavior: Clip.antiAlias,
       child: Column(children: [
         for (var i = 0; i < children.length; i++) ...[

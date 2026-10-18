@@ -11,19 +11,12 @@ import '../../core/quran/arabic.dart';
 import '../../core/reminders/reminders.dart';
 import '../../design/dialogs.dart';
 import '../../design/theme.dart';
+import '../../design/hero.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
 
 /// Approximate download size (Arabic + English) per collection.
-const _sizeMb = {
-  'bukhari': 15,
-  'muslim': 13,
-  'abudawud': 11,
-  'tirmidhi': 9,
-  'nasai': 10,
-  'ibnmajah': 8,
-  'malik': 4,
-};
+const _sizeMb = {'bukhari': 15, 'muslim': 13, 'abudawud': 11, 'tirmidhi': 9, 'nasai': 10, 'ibnmajah': 8, 'malik': 4};
 
 /// Classical sigla used by hadith scholars (e.g. Ibn Hajar's Taqrib).
 const _sigla = {
@@ -56,8 +49,7 @@ const _tagLabels = {
 };
 
 extension _BookName on WidgetRef {
-  String bookName(String id) =>
-      watch(hadithBooksProvider).value?.where((b) => b.id == id).firstOrNull?.nameEn ?? id;
+  String bookName(String id) => watch(hadithBooksProvider).value?.where((b) => b.id == id).firstOrNull?.nameEn ?? id;
 }
 
 // =============================================================================
@@ -78,67 +70,68 @@ class HadithHomeScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.transparent, // the tab's art shows through (TabBackdrop)
-      body: CustomScrollView(slivers: [
-        SliverAppBar(
-          pinned: true,
-          expandedHeight: 104,
-          actions: [
-            IconButton(
-              tooltip: 'Search hadith',
-              icon: const Icon(Icons.search_rounded),
-              onPressed: () => context.push('/hadith/search'),
-            ),
-            IconButton(
-              tooltip: 'Saved hadith',
-              icon: const Icon(Icons.bookmarks_outlined),
-              onPressed: () => context.push('/hadith/saved'),
-            ),
-          ],
-          flexibleSpace: FlexibleSpaceBar(
-            titlePadding: const EdgeInsetsDirectional.only(start: Space.gutter, bottom: 14),
-            title: TabTitle('Hadith & Sunnah'),
+      body: CustomScrollView(
+        slivers: [
+          HeroSliverAppBar(
+            title: 'Hadith & Sunnah',
+            subtitle: 'الحديث والسنة',
+            art: HeroArt.hadith,
+            actions: [
+              IconButton(
+                tooltip: 'Search hadith',
+                icon: const Icon(Icons.search_rounded),
+                onPressed: () => context.push('/hadith/search'),
+              ),
+              IconButton(
+                tooltip: 'Saved hadith',
+                icon: const Icon(Icons.bookmarks_outlined),
+                onPressed: () => context.push('/hadith/saved'),
+              ),
+            ],
           ),
-        ),
-        SliverToBoxAdapter(
-          child: SectionTitle('Sunnah to practise',
-              trailing: TextButton(onPressed: () => context.push('/sunnah'), child: const Text('See all'))),
-        ),
-        SliverToBoxAdapter(
-          child: SizedBox(
-            height: 42 + context.ts(90),
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
+          SliverToBoxAdapter(
+            child: SectionTitle(
+              'Sunnah to practise',
+              trailing: TextButton(onPressed: () => context.push('/sunnah'), child: const Text('See all')),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 42 + context.ts(90),
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+                itemCount: 12,
+                separatorBuilder: (_, _) => const SizedBox(width: Space.md),
+                itemBuilder: (_, i) {
+                  final (index, item) = sunnah[i];
+                  final now = item.tags.any(tags.contains) && !item.tags.contains('general');
+                  return _SunnahChip(index: index, item: item, highlight: now);
+                },
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SectionTitle('Collections')),
+          SliverList.separated(
+            itemCount: books.length,
+            separatorBuilder: (_, _) => const SizedBox(height: Space.sm),
+            itemBuilder: (_, i) => Padding(
               padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-              itemCount: 12,
-              separatorBuilder: (_, _) => const SizedBox(width: Space.md),
-              itemBuilder: (_, i) {
-                final (index, item) = sunnah[i];
-                final now = item.tags.any(tags.contains) && !item.tags.contains('general');
-                return _SunnahChip(index: index, item: item, highlight: now);
-              },
+              child: _BookTile(book: books[i]),
             ),
           ),
-        ),
-        const SliverToBoxAdapter(child: SectionTitle('Collections')),
-        SliverList.separated(
-          itemCount: books.length,
-          separatorBuilder: (_, _) => const SizedBox(height: Space.sm),
-          itemBuilder: (_, i) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-            child: _BookTile(book: books[i]),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, Space.xxxl),
-            child: Text(
-              'Texts and grades from the open hadith-api project (public domain). Large collections download '
-              'once and then work offline.',
-              style: context.text.bodySmall?.copyWith(color: c.inkFaint),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, Space.xxxl),
+              child: Text(
+                'Texts and grades from the open hadith-api project (public domain). Large collections download '
+                'once and then work offline.',
+                style: context.text.bodySmall?.copyWith(color: c.inkFaint),
+              ),
             ),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 }
@@ -164,24 +157,30 @@ class _SunnahChip extends StatelessWidget {
           padding: const EdgeInsets.all(Space.lg),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(Radii.lg),
-            border: Border.all(color: highlight ? c.primary.withValues(alpha: 0.3) : c.divider),
+            border: highlight ? Border.all(color: c.primary.withValues(alpha: 0.3)) : cardBorder(c),
+            boxShadow: cardShadow(c),
           ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Icon(highlight ? Icons.event_available_rounded : Icons.spa_outlined, size: 18, color: c.primary),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  highlight && tag != null ? 'TODAY · ${_tagLabels[tag]!.toUpperCase()}' : 'SUNNAH',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.text.labelSmall?.copyWith(color: c.primary),
-                ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(highlight ? Icons.event_available_rounded : Icons.spa_outlined, size: 18, color: c.primary),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      highlight && tag != null ? 'TODAY · ${_tagLabels[tag]!.toUpperCase()}' : 'SUNNAH',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.labelSmall?.copyWith(color: c.primary),
+                    ),
+                  ),
+                ],
               ),
-            ]),
-            const Spacer(),
-            Text(item.title, maxLines: 3, overflow: TextOverflow.ellipsis, style: context.text.titleMedium),
-          ]),
+              const Spacer(),
+              Text(item.title, maxLines: 3, overflow: TextOverflow.ellipsis, style: context.text.titleMedium),
+            ],
+          ),
         ),
       ),
     );
@@ -209,11 +208,14 @@ class _BookTile extends ConsumerWidget {
         ),
       );
     } else {
-      trailing = Row(mainAxisSize: MainAxisSize.min, children: [
-        Text('${_sizeMb[book.id] ?? 5} MB', style: context.text.bodySmall),
-        const SizedBox(width: Space.xs),
-        Icon(Icons.download_rounded, color: c.primary),
-      ]);
+      trailing = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('${_sizeMb[book.id] ?? 5} MB', style: context.text.bodySmall),
+          const SizedBox(width: Space.xs),
+          Icon(Icons.download_rounded, color: c.primary),
+        ],
+      );
     }
 
     Future<void> download() async {
@@ -233,8 +235,8 @@ class _BookTile extends ConsumerWidget {
         onTap: book.available
             ? () => context.push('/hadith/${book.id}')
             : dl != null
-                ? null
-                : download,
+            ? null
+            : download,
         onLongPress: book.available && !book.bundled
             ? () async {
                 final ok = await showAppDialog(
@@ -253,43 +255,56 @@ class _BookTile extends ConsumerWidget {
             : null,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.md),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(Radii.lg), border: Border.all(color: c.divider)),
-          child: Row(children: [
-            Container(
-              width: 48,
-              height: 48,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: book.available ? c.primarySoft : c.surfaceAlt,
-                borderRadius: BorderRadius.circular(Radii.md),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(Radii.lg),
+            border: cardBorder(c),
+            boxShadow: cardShadow(c),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: book.available ? c.primarySoft : c.surfaceAlt,
+                  borderRadius: BorderRadius.circular(Radii.md),
+                ),
+                child: Text(
+                  _sigla[book.id] ?? book.nameAr.substring(0, 1),
+                  style: TextStyle(
+                    fontFamily: kNaskhFont,
+                    fontSize: 24,
+                    color: book.available ? c.primary : c.inkMuted,
+                  ),
+                ),
               ),
-              child: Text(
-                _sigla[book.id] ?? book.nameAr.substring(0, 1),
-                style: TextStyle(fontFamily: kNaskhFont, fontSize: 24, color: book.available ? c.primary : c.inkMuted),
-              ),
-            ),
-            const SizedBox(width: Space.lg),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(book.nameEn, style: context.text.titleMedium),
-                const SizedBox(height: 2),
-                Text(
-                  dl == null
-                      ? '${book.count} hadith · ${book.nameAr}'
-                      : dl.stage == HadithDlStage.saving
+              const SizedBox(width: Space.lg),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(book.nameEn, style: context.text.titleMedium),
+                    const SizedBox(height: 2),
+                    Text(
+                      dl == null
+                          ? '${book.count} hadith · ${book.nameAr}'
+                          : dl.stage == HadithDlStage.saving
                           ? 'Saving…'
                           : dl.progress == 0
-                              ? 'Downloading…'
-                              : 'Downloading ${(dl.progress * 100).round()}%',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.text.bodySmall,
+                          ? 'Downloading…'
+                          : 'Downloading ${(dl.progress * 100).round()}%',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.bodySmall,
+                    ),
+                  ],
                 ),
-              ]),
-            ),
-            const SizedBox(width: Space.sm),
-            trailing,
-          ]),
+              ),
+              const SizedBox(width: Space.sm),
+              trailing,
+            ],
+          ),
         ),
       ),
     );
@@ -351,10 +366,13 @@ class _HadithBookScreenState extends ConsumerState<HadithBookScreen> {
     final found = _found;
     return Scaffold(
       appBar: AppBar(
-        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(book.nameEn, style: context.headerTitle),
-          Text('${sections.length} books · ${book.nameAr}', style: context.headerSub),
-        ]),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(book.nameEn, style: context.headerTitle),
+            Text('${sections.length} books · ${book.nameAr}', style: context.headerSub),
+          ],
+        ),
         bottom: CollectionSearchBar(hint: 'Search ${book.nameEn}', onChanged: _search, busy: _searching),
       ),
       body: AnimatedSwitcher(
@@ -431,11 +449,18 @@ class _HadithListScreenState extends ConsumerState<HadithListScreen> {
     final searching = _q.trim().isNotEmpty;
     return Scaffold(
       appBar: AppBar(
-        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title == null || title == bookName ? bookName : title,
-              maxLines: 1, overflow: TextOverflow.ellipsis, style: context.headerTitle),
-          if (title != null && title != bookName) Text(bookName, style: context.headerSub),
-        ]),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title == null || title == bookName ? bookName : title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.headerTitle,
+            ),
+            if (title != null && title != bookName) Text(bookName, style: context.headerSub),
+          ],
+        ),
         bottom: CollectionSearchBar(
           hint: all == null ? 'Search' : 'Search ${all.length} hadith · word or number',
           onChanged: (v) => setState(() => _q = v),
@@ -482,8 +507,10 @@ class _CollectionSearchBarState extends State<CollectionSearchBar> {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    OutlineInputBorder border(Color color) =>
-        OutlineInputBorder(borderRadius: BorderRadius.circular(99), borderSide: BorderSide(color: color));
+    OutlineInputBorder border(Color color) => OutlineInputBorder(
+      borderRadius: BorderRadius.circular(99),
+      borderSide: BorderSide(color: color),
+    );
     return Padding(
       padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.sm),
       child: SizedBox(
@@ -539,8 +566,11 @@ class _Results extends StatelessWidget {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(Space.xxl),
-          child: Text(empty,
-              textAlign: TextAlign.center, style: context.text.bodyMedium?.copyWith(color: context.colors.inkMuted)),
+          child: Text(
+            empty,
+            textAlign: TextAlign.center,
+            style: context.text.bodyMedium?.copyWith(color: context.colors.inkMuted),
+          ),
         ),
       );
     }
@@ -578,28 +608,47 @@ class HadithCard extends StatelessWidget {
         onTap: () => context.push('/hadith/${hadith.book}/n/${hadith.numberLabel}'),
         child: Container(
           padding: const EdgeInsets.all(Space.lg),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(Radii.lg), border: Border.all(color: c.divider)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Row(children: [
-              Pill('${showBook ?? 'Hadith'} ${hadith.numberLabel}', color: c.primary),
-              const Spacer(),
-              if (grade != null) Pill(grade.grade, color: _gradeColor(c, grade.grade)),
-            ]),
-            if (hadith.arabic.isNotEmpty) ...[
-              const SizedBox(height: Space.md),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(Radii.lg),
+            border: cardBorder(c),
+            boxShadow: cardShadow(c),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Pill('${showBook ?? 'Hadith'} ${hadith.numberLabel}', color: c.primary),
+                  const Spacer(),
+                  if (grade != null) Pill(grade.grade, color: _gradeColor(c, grade.grade)),
+                ],
+              ),
+              if (hadith.arabic.isNotEmpty) ...[
+                const SizedBox(height: Space.md),
+                Text(
+                  hadith.arabic,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textDirection: TextDirection.rtl,
+                  style: TextStyle(fontFamily: kNaskhFont, fontSize: 18, height: 1.7, color: c.ink),
+                ),
+              ],
+              const SizedBox(height: Space.sm),
+              if (narrator != null)
+                Text(
+                  narrator,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.bodySmall?.copyWith(color: c.gold),
+                ),
               Text(
-                hadith.arabic,
-                maxLines: 2,
+                body,
+                maxLines: 4,
                 overflow: TextOverflow.ellipsis,
-                textDirection: TextDirection.rtl,
-                style: TextStyle(fontFamily: kNaskhFont, fontSize: 18, height: 1.7, color: c.ink),
+                style: context.text.bodyMedium?.copyWith(height: 1.5),
               ),
             ],
-            const SizedBox(height: Space.sm),
-            if (narrator != null)
-              Text(narrator, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.bodySmall?.copyWith(color: c.gold)),
-            Text(body, maxLines: 4, overflow: TextOverflow.ellipsis, style: context.text.bodyMedium?.copyWith(height: 1.5)),
-          ]),
+          ),
         ),
       ),
     );
@@ -640,8 +689,11 @@ class _HadithDetailScreenState extends ConsumerState<HadithDetailScreen> {
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(Space.xxl),
-            child: Text('Download $bookName in the Hadith tab to read this hadith offline.',
-                textAlign: TextAlign.center, style: context.text.bodyLarge),
+            child: Text(
+              'Download $bookName in the Hadith tab to read this hadith offline.',
+              textAlign: TextAlign.center,
+              style: context.text.bodyLarge,
+            ),
           ),
         ),
       );
@@ -652,16 +704,21 @@ class _HadithDetailScreenState extends ConsumerState<HadithDetailScreen> {
     final section = sections.where((s) => s.number == h.section).firstOrNull?.title;
     return Scaffold(
       appBar: AppBar(
-        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('$bookName ${h.numberLabel}', style: context.headerTitle),
-          if (section != null && section != bookName)
-            Text(section, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.headerSub),
-        ]),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('$bookName ${h.numberLabel}', style: context.headerTitle),
+            if (section != null && section != bookName)
+              Text(section, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.headerSub),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: _saved == true ? 'Remove from saved' : 'Save',
-            icon: Icon(_saved == true ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                color: _saved == true ? c.primary : null),
+            icon: Icon(
+              _saved == true ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+              color: _saved == true ? c.primary : null,
+            ),
             onPressed: () async {
               final on = !(_saved ?? false);
               await repo.setBookmark(h, on);
@@ -674,7 +731,9 @@ class _HadithDetailScreenState extends ConsumerState<HadithDetailScreen> {
             tooltip: 'Copy',
             icon: const Icon(Icons.copy_rounded),
             onPressed: () {
-              Clipboard.setData(ClipboardData(text: '${h.arabic}\n\n${h.english}\n— $bookName ${h.numberLabel}'.trim()));
+              Clipboard.setData(
+                ClipboardData(text: '${h.arabic}\n\n${h.english}\n— $bookName ${h.numberLabel}'.trim()),
+              );
               showToast(context, 'Hadith copied');
             },
           ),
@@ -697,13 +756,23 @@ class HadithBody extends StatelessWidget {
     final c = context.colors;
     final (narrator, body) = hadith.narratorAndBody;
     return ListView(
-      padding: EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xxxl + MediaQuery.paddingOf(context).bottom),
+      padding: EdgeInsets.fromLTRB(
+        Space.gutter,
+        Space.sm,
+        Space.gutter,
+        Space.xxxl + MediaQuery.paddingOf(context).bottom,
+      ),
       children: [
         ?header,
         if (hadith.arabic.isNotEmpty)
           Container(
             padding: const EdgeInsets.all(Space.xl),
-            decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(Radii.lg), border: Border.all(color: c.divider)),
+            decoration: BoxDecoration(
+              color: c.surface,
+              borderRadius: BorderRadius.circular(Radii.lg),
+              border: cardBorder(c),
+              boxShadow: cardShadow(c),
+            ),
             child: SelectableText(
               hadith.arabic,
               textDirection: TextDirection.rtl,
@@ -726,10 +795,14 @@ class HadithBody extends StatelessWidget {
           for (final g in hadith.grades)
             Padding(
               padding: const EdgeInsets.only(bottom: Space.xs),
-              child: Row(children: [
-                Expanded(child: Text(g.by, style: context.text.bodyMedium?.copyWith(color: c.inkMuted))),
-                Pill(g.grade, color: _gradeColor(c, g.grade)),
-              ]),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(g.by, style: context.text.bodyMedium?.copyWith(color: c.inkMuted)),
+                  ),
+                  Pill(g.grade, color: _gradeColor(c, g.grade)),
+                ],
+              ),
             ),
         ],
       ],
@@ -796,7 +869,9 @@ class SunnahDetailScreen extends ConsumerWidget {
             tooltip: 'Copy',
             icon: const Icon(Icons.copy_rounded),
             onPressed: () {
-              Clipboard.setData(ClipboardData(text: '${s.title}\n\n${s.english}\n— ${ref.bookName(s.book)} ${s.number}'));
+              Clipboard.setData(
+                ClipboardData(text: '${s.title}\n\n${s.english}\n— ${ref.bookName(s.book)} ${s.number}'),
+              );
               showToast(context, 'Copied');
             },
           ),
@@ -807,15 +882,20 @@ class SunnahDetailScreen extends ConsumerWidget {
         bookName: ref.bookName(s.book),
         header: Padding(
           padding: const EdgeInsets.only(bottom: Space.xl),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(s.title, style: context.text.headlineSmall),
-            if (tags.isNotEmpty) ...[
-              const SizedBox(height: Space.sm),
-              Wrap(spacing: 6, runSpacing: 6, children: [
-                for (final t in tags) Pill(_tagLabels[t]!, color: c.primary, icon: Icons.event_rounded),
-              ]),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(s.title, style: context.text.headlineSmall),
+              if (tags.isNotEmpty) ...[
+                const SizedBox(height: Space.sm),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [for (final t in tags) Pill(_tagLabels[t]!, color: c.primary, icon: Icons.event_rounded)],
+                ),
+              ],
             ],
-          ]),
+          ),
         ),
       ),
     );
@@ -879,58 +959,60 @@ class _HadithSearchScreenState extends ConsumerState<HadithSearchScreen> {
           ),
         ),
       ),
-      body: Column(children: [
-        SizedBox(
-          height: 48,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: Space.gutter, vertical: 6),
-            children: [
-              ChoiceChip(
-                label: const Text('All'),
-                selected: _book == null,
-                onSelected: (_) {
-                  setState(() => _book = null);
-                  _run();
-                },
-              ),
-              for (final b in books) ...[
-                const SizedBox(width: Space.sm),
+      body: Column(
+        children: [
+          SizedBox(
+            height: 48,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: Space.gutter, vertical: 6),
+              children: [
                 ChoiceChip(
-                  label: Text(b.nameEn),
-                  selected: _book == b.id,
+                  label: const Text('All'),
+                  selected: _book == null,
                   onSelected: (_) {
-                    setState(() => _book = b.id);
+                    setState(() => _book = null);
                     _run();
                   },
                 ),
-              ],
-            ],
-          ),
-        ),
-        if (_searching) const LinearProgressIndicator(minHeight: 2),
-        Expanded(
-          child: _results.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(Space.xxl),
-                    child: Text(
-                      _query.text.trim().length < 2
-                          ? 'Searches every collection on this device. Download more collections in the Hadith tab.'
-                          : 'No hadith found',
-                      textAlign: TextAlign.center,
-                      style: context.text.bodyMedium?.copyWith(color: c.inkMuted),
-                    ),
+                for (final b in books) ...[
+                  const SizedBox(width: Space.sm),
+                  ChoiceChip(
+                    label: Text(b.nameEn),
+                    selected: _book == b.id,
+                    onSelected: (_) {
+                      setState(() => _book = b.id);
+                      _run();
+                    },
                   ),
-                )
-              : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xxxl),
-                  itemCount: _results.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: Space.md),
-                  itemBuilder: (_, i) => HadithCard(hadith: _results[i], showBook: names[_results[i].book]),
-                ),
-        ),
-      ]),
+                ],
+              ],
+            ),
+          ),
+          if (_searching) const LinearProgressIndicator(minHeight: 2),
+          Expanded(
+            child: _results.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(Space.xxl),
+                      child: Text(
+                        _query.text.trim().length < 2
+                            ? 'Searches every collection on this device. Download more collections in the Hadith tab.'
+                            : 'No hadith found',
+                        textAlign: TextAlign.center,
+                        style: context.text.bodyMedium?.copyWith(color: c.inkMuted),
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xxxl),
+                    itemCount: _results.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: Space.md),
+                    itemBuilder: (_, i) => HadithCard(hadith: _results[i], showBook: names[_results[i].book]),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -946,16 +1028,18 @@ class SavedHadithScreen extends ConsumerWidget {
       body: list == null
           ? const Center(child: CircularProgressIndicator())
           : list.isEmpty
-              ? Center(
-                  child: Text('Tap the bookmark on any hadith to save it here.',
-                      style: context.text.bodyMedium?.copyWith(color: context.colors.inkMuted)),
-                )
-              : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xxxl),
-                  itemCount: list.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: Space.md),
-                  itemBuilder: (_, i) => HadithCard(hadith: list[i], showBook: ref.bookName(list[i].book)),
-                ),
+          ? Center(
+              child: Text(
+                'Tap the bookmark on any hadith to save it here.',
+                style: context.text.bodyMedium?.copyWith(color: context.colors.inkMuted),
+              ),
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xxxl),
+              itemCount: list.length,
+              separatorBuilder: (_, _) => const SizedBox(height: Space.md),
+              itemBuilder: (_, i) => HadithCard(hadith: list[i], showBook: ref.bookName(list[i].book)),
+            ),
     );
   }
 }

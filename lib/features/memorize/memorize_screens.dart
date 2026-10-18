@@ -500,7 +500,7 @@ class _Box extends StatelessWidget {
     final c = context.colors;
     return Material(
       color: c.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.lg), side: BorderSide(color: c.divider)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.lg), side: cardSide(c)),
       child: InkWell(
         borderRadius: BorderRadius.circular(Radii.lg),
         onTap: onTap,
@@ -701,7 +701,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         decoration: BoxDecoration(
           color: c.surfaceAlt,
           borderRadius: BorderRadius.circular(Radii.lg),
-          border: Border.all(color: c.divider),
+          border: cardBorder(c),
+            boxShadow: cardShadow(c),
         ),
         child: _revealed == 0
             ? Center(child: Icon(Icons.visibility_off_outlined, color: c.inkFaint))
@@ -740,7 +741,8 @@ class _QuranCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(Radii.lg),
-        border: Border.all(color: c.divider),
+        border: cardBorder(c),
+            boxShadow: cardShadow(c),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Text.rich(
@@ -878,7 +880,7 @@ class _Results extends ConsumerWidget {
                 child: Material(
                   color: c.surface,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(Radii.lg), side: BorderSide(color: c.divider)),
+                      borderRadius: BorderRadius.circular(Radii.lg), side: cardSide(c)),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(Radii.lg),
                     onTap: () async {

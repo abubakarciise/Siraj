@@ -31,7 +31,7 @@ final appRouter = GoRouter(
   initialLocation: '/home',
   routes: [
     StatefulShellRoute(
-      builder: (context, state, shell) => AppShell(shell: shell),
+      builder: (context, state, shell) => AppShell(shell: shell, location: state.uri.path),
       // Each tab keeps its own stack, and its own background colour.
       navigatorContainerBuilder: (context, shell, children) => IndexedStack(
         index: shell.currentIndex,

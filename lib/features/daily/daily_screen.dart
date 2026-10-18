@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/adhkar/adhkar_time.dart';
 import '../../core/providers.dart';
 import '../../design/hero.dart';
+import '../../design/theme.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
 import 'adhkar_screen.dart';
@@ -101,12 +102,12 @@ class DailyScreen extends ConsumerWidget {
                 mainAxisExtent: 82 + context.ts(46),
               ),
               delegate: SliverChildListDelegate([
-                _Tile(Icons.auto_stories_outlined, 'Adhkar', 'الأذكار', () => context.push('/adhkar')),
-                _Tile(Icons.blur_circular_rounded, 'Tasbih', 'التسبيح', () => context.push('/tasbih')),
-                _Tile(Icons.access_time_rounded, 'Prayer times', 'مواقيت الصلاة', () => context.push('/prayer')),
-                _Tile(Icons.explore_outlined, 'Qibla', 'القبلة', () => context.push('/qibla')),
-                _Tile(Icons.bedtime_outlined, 'Before sleep', 'أذكار النوم', () => context.push('/adhkar/sleep')),
-                _Tile(Icons.mosque_outlined, 'After prayer', 'بعد الصلاة', () => context.push('/adhkar/after_salah')),
+                _Tile(Icons.auto_stories_rounded, 'Adhkar', 'الأذكار', const Color(0xFF0F6B56), () => context.push('/adhkar')),
+                _Tile(Icons.blur_circular_rounded, 'Tasbih', 'التسبيح', const Color(0xFFA8813A), () => context.push('/tasbih')),
+                _Tile(Icons.access_time_filled_rounded, 'Prayer times', 'مواقيت الصلاة', const Color(0xFFA8813A), () => context.push('/prayer')),
+                _Tile(Icons.explore_rounded, 'Qibla', 'القبلة', const Color(0xFF0F6B56), () => context.push('/qibla')),
+                _Tile(Icons.bedtime_rounded, 'Before sleep', 'أذكار النوم', const Color(0xFF0F6B56), () => context.push('/adhkar/sleep')),
+                _Tile(Icons.mosque_rounded, 'After prayer', 'بعد الصلاة', const Color(0xFFA8813A), () => context.push('/adhkar/after_salah')),
               ]),
             ),
           ),
@@ -120,41 +121,29 @@ class DailyScreen extends ConsumerWidget {
 }
 
 class _Tile extends StatelessWidget {
-  const _Tile(this.icon, this.title, this.arabic, this.onTap);
+  const _Tile(this.icon, this.title, this.arabic, this.color, this.onTap);
   final IconData icon;
   final String title, arabic;
+  final Color color;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    return Material(
-      color: c.surface,
-      borderRadius: BorderRadius.circular(Radii.lg),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(Radii.lg),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(Space.lg),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(Radii.lg),
-            border: cardBorder(c),
-            boxShadow: cardShadow(c),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: c.primarySoft, borderRadius: BorderRadius.circular(Radii.sm)),
-                child: Icon(icon, color: c.primary, size: 22),
-              ),
-              const Spacer(),
-              Text(title, style: context.text.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
-              Text(arabic, style: context.text.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
-            ],
-          ),
-        ),
+    return AppCard(
+      onTap: onTap,
+      tint: color,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          IconBadge(icon, color: color, size: 40),
+          const Spacer(),
+          Text(title, style: context.text.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(arabic,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontFamily: kNaskhFont, fontSize: 14, height: 1.4, color: c.inkMuted)),
+        ],
       ),
     );
   }
@@ -167,13 +156,23 @@ class _Reminders extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     // Everything about reminders lives on one screen; this is the way in.
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-      leading: Icon(Icons.notifications_active_outlined, color: c.primary),
-      title: const Text('Reminders'),
-      subtitle: const Text('Morning and evening adhkar, prayer times, daily reminders'),
-      trailing: const Icon(Icons.chevron_right_rounded),
-      onTap: () => context.push('/reminders'),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+      child: AppCard(
+        onTap: () => context.push('/reminders'),
+        tint: c.gold,
+        child: Row(children: [
+          IconBadge(Icons.notifications_active_rounded, color: c.gold, size: 44),
+          const SizedBox(width: Space.lg),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Reminders', style: context.text.titleMedium),
+              Text('Adhkar, prayer times and daily reminders', style: context.text.bodySmall),
+            ]),
+          ),
+          Icon(Icons.chevron_right_rounded, color: c.inkMuted),
+        ]),
+      ),
     );
   }
 }

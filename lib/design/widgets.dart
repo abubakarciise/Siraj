@@ -327,3 +327,93 @@ List<BoxShadow>? cardShadow(AppColors c) => c.isDark
 
 BorderSide cardSide(AppColors c) =>
     c.isDark ? BorderSide(color: c.divider) : BorderSide(color: Color.lerp(c.divider, c.surface, 0.5)!);
+
+/// The app's card: a solid surface lifted by a soft shadow (drawn outside the
+/// card, so it shows), a ripple when tapped, and optionally a gradient tint
+/// and an accent stripe down the leading edge.
+class AppCard extends StatelessWidget {
+  const AppCard({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.onLongPress,
+    this.padding = const EdgeInsets.all(Space.lg),
+    this.radius = Radii.lg,
+    this.tint,
+    this.accent,
+    this.width,
+  });
+
+  final Widget child;
+  final VoidCallback? onTap, onLongPress;
+  final EdgeInsetsGeometry padding;
+  final double radius;
+
+  /// A colour the card fades into from its top-left corner.
+  final Color? tint;
+
+  /// A stripe down the leading edge.
+  final Color? accent;
+  final double? width;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final shape = BorderRadius.circular(radius);
+    Widget body = Padding(padding: padding, child: child);
+    if (accent != null) {
+      body = Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Container(width: 4, color: accent),
+        Expanded(child: body),
+      ]);
+      body = IntrinsicHeight(child: body);
+    }
+    return Container(
+      width: width,
+      decoration: BoxDecoration(
+        color: c.surface,
+        gradient: tint == null
+            ? null
+            : LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color.lerp(c.surface, tint, c.isDark ? 0.22 : 0.16)!, c.surface],
+              ),
+        borderRadius: shape,
+        border: cardBorder(c),
+        boxShadow: cardShadow(c),
+      ),
+      child: ClipRRect(
+        borderRadius: shape,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(onTap: onTap, onLongPress: onLongPress, child: body),
+        ),
+      ),
+    );
+  }
+}
+
+/// An icon in a filled circle, for cards and lists.
+class IconBadge extends StatelessWidget {
+  const IconBadge(this.icon, {super.key, required this.color, this.size = 44});
+  final IconData icon;
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color.lerp(color, Colors.white, 0.18)!, color],
+          ),
+          boxShadow: [BoxShadow(color: color.withValues(alpha: 0.30), blurRadius: 8, offset: const Offset(0, 3))],
+        ),
+        child: Icon(icon, color: Colors.white, size: size * 0.5),
+      );
+}

@@ -87,7 +87,7 @@ ThemeData buildThemeFrom(AppColors c) {
     // apart from the page's background; dark text and icons.
     appBarTheme: AppBarTheme(
       backgroundColor: c.bar,
-      shape: Border(bottom: BorderSide(color: c.divider)),
+      shape: Border(bottom: BorderSide(color: c.barLine)),
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,

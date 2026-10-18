@@ -131,23 +131,7 @@ class _Shell extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Material(
-      color: c.surface,
-      borderRadius: BorderRadius.circular(Radii.lg),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(Radii.lg),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(Space.lg),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(Radii.lg), border: cardBorder(c),
-            boxShadow: cardShadow(c)),
-          child: child,
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => AppCard(onTap: onTap, tint: context.colors.primary, child: child);
 }
 
 /// Location picker. Defaults to the prayer-times location; the Qibla passes

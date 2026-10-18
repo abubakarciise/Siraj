@@ -146,42 +146,32 @@ class _SunnahChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final tag = item.tags.where(_tagLabels.containsKey).firstOrNull;
-    return Material(
-      color: highlight ? c.primarySoft : c.surface,
-      borderRadius: BorderRadius.circular(Radii.lg),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(Radii.lg),
-        onTap: () => context.push('/sunnah/$index'),
-        child: Container(
-          width: 200,
-          padding: const EdgeInsets.all(Space.lg),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(Radii.lg),
-            border: highlight ? Border.all(color: c.primary.withValues(alpha: 0.3)) : cardBorder(c),
-            boxShadow: cardShadow(c),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final accent = highlight ? c.primary : c.gold;
+    return AppCard(
+      width: 210,
+      onTap: () => context.push('/sunnah/$index'),
+      tint: accent,
+      accent: accent,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Icon(highlight ? Icons.event_available_rounded : Icons.spa_outlined, size: 18, color: c.primary),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      highlight && tag != null ? 'TODAY · ${_tagLabels[tag]!.toUpperCase()}' : 'SUNNAH',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.text.labelSmall?.copyWith(color: c.primary),
-                    ),
-                  ),
-                ],
+              IconBadge(highlight ? Icons.event_available_rounded : Icons.spa_rounded, color: accent, size: 30),
+              const SizedBox(width: Space.sm),
+              Expanded(
+                child: Text(
+                  highlight && tag != null ? 'TODAY · ${_tagLabels[tag]!.toUpperCase()}' : 'SUNNAH',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.labelSmall?.copyWith(color: accent),
+                ),
               ),
-              const Spacer(),
-              Text(item.title, maxLines: 3, overflow: TextOverflow.ellipsis, style: context.text.titleMedium),
             ],
           ),
-        ),
+          const Spacer(),
+          Text(item.title, maxLines: 3, overflow: TextOverflow.ellipsis, style: context.text.titleMedium),
+        ],
       ),
     );
   }
@@ -227,85 +217,77 @@ class _BookTile extends ConsumerWidget {
       await sub.cancel();
     }
 
-    return Material(
-      color: c.surface,
-      borderRadius: BorderRadius.circular(Radii.lg),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(Radii.lg),
-        onTap: book.available
-            ? () => context.push('/hadith/${book.id}')
-            : dl != null
-            ? null
-            : download,
-        onLongPress: book.available && !book.bundled
-            ? () async {
-                final ok = await showAppDialog(
-                  context,
-                  icon: Icons.delete_outline_rounded,
-                  title: 'Remove ${book.nameEn}?',
-                  message: 'It will be deleted from this device. You can download it again any time.',
-                  confirmLabel: 'Remove',
-                  destructive: true,
-                );
-                if (ok) {
-                  await repo.remove(book.id);
-                  ref.invalidate(hadithBooksProvider);
-                }
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.md),
+      onTap: book.available
+          ? () => context.push('/hadith/${book.id}')
+          : dl != null
+          ? null
+          : download,
+      onLongPress: book.available && !book.bundled
+          ? () async {
+              final ok = await showAppDialog(
+                context,
+                icon: Icons.delete_outline_rounded,
+                title: 'Remove ${book.nameEn}?',
+                message: 'It will be deleted from this device. You can download it again any time.',
+                confirmLabel: 'Remove',
+                destructive: true,
+              );
+              if (ok) {
+                await repo.remove(book.id);
+                ref.invalidate(hadithBooksProvider);
               }
-            : null,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.md),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(Radii.lg),
-            border: cardBorder(c),
-            boxShadow: cardShadow(c),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: book.available ? c.primarySoft : c.surfaceAlt,
-                  borderRadius: BorderRadius.circular(Radii.md),
-                ),
-                child: Text(
-                  _sigla[book.id] ?? book.nameAr.substring(0, 1),
-                  style: TextStyle(
-                    fontFamily: kNaskhFont,
-                    fontSize: 24,
-                    color: book.available ? c.primary : c.inkMuted,
-                  ),
-                ),
+            }
+          : null,
+      child: Row(
+        children: [
+          // A medallion: emerald ringed with gold (grey until downloaded).
+          Container(
+            width: 50,
+            height: 50,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: book.available
+                    ? [Color.lerp(c.primary, Colors.white, 0.15)!, c.primary]
+                    : [c.surfaceAlt, Color.lerp(c.surfaceAlt, c.ink, 0.08)!],
               ),
-              const SizedBox(width: Space.lg),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(book.nameEn, style: context.text.titleMedium),
-                    const SizedBox(height: 2),
-                    Text(
-                      dl == null
-                          ? '${book.count} hadith · ${book.nameAr}'
-                          : dl.stage == HadithDlStage.saving
-                          ? 'Saving…'
-                          : dl.progress == 0
-                          ? 'Downloading…'
-                          : 'Downloading ${(dl.progress * 100).round()}%',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.text.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: Space.sm),
-              trailing,
-            ],
+              border: Border.all(color: book.available ? c.gold : c.divider, width: 2),
+            ),
+            child: Text(
+              _sigla[book.id] ?? book.nameAr.substring(0, 1),
+              style: TextStyle(fontFamily: kNaskhFont, fontSize: 22, color: book.available ? Colors.white : c.inkMuted),
+            ),
           ),
-        ),
+          const SizedBox(width: Space.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(book.nameEn, style: context.text.titleMedium),
+                const SizedBox(height: 2),
+                Text(
+                  dl == null
+                      ? '${book.count} hadith · ${book.nameAr}'
+                      : dl.stage == HadithDlStage.saving
+                      ? 'Saving…'
+                      : dl.progress == 0
+                      ? 'Downloading…'
+                      : 'Downloading ${(dl.progress * 100).round()}%',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: Space.sm),
+          trailing,
+        ],
       ),
     );
   }
@@ -600,56 +582,44 @@ class HadithCard extends StatelessWidget {
     final c = context.colors;
     final (narrator, body) = hadith.narratorAndBody;
     final grade = hadith.grades.firstOrNull;
-    return Material(
-      color: c.surface,
-      borderRadius: BorderRadius.circular(Radii.lg),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(Radii.lg),
-        onTap: () => context.push('/hadith/${hadith.book}/n/${hadith.numberLabel}'),
-        child: Container(
-          padding: const EdgeInsets.all(Space.lg),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(Radii.lg),
-            border: cardBorder(c),
-            boxShadow: cardShadow(c),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    return AppCard(
+      onTap: () => context.push('/hadith/${hadith.book}/n/${hadith.numberLabel}'),
+      accent: c.primary,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Pill('${showBook ?? 'Hadith'} ${hadith.numberLabel}', color: c.primary),
-                  const Spacer(),
-                  if (grade != null) Pill(grade.grade, color: _gradeColor(c, grade.grade)),
-                ],
-              ),
-              if (hadith.arabic.isNotEmpty) ...[
-                const SizedBox(height: Space.md),
-                Text(
-                  hadith.arabic,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textDirection: TextDirection.rtl,
-                  style: TextStyle(fontFamily: kNaskhFont, fontSize: 18, height: 1.7, color: c.ink),
-                ),
-              ],
-              const SizedBox(height: Space.sm),
-              if (narrator != null)
-                Text(
-                  narrator,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.text.bodySmall?.copyWith(color: c.gold),
-                ),
-              Text(
-                body,
-                maxLines: 4,
-                overflow: TextOverflow.ellipsis,
-                style: context.text.bodyMedium?.copyWith(height: 1.5),
-              ),
+              Pill('${showBook ?? 'Hadith'} ${hadith.numberLabel}', color: c.primary),
+              const Spacer(),
+              if (grade != null) Pill(grade.grade, color: _gradeColor(c, grade.grade)),
             ],
           ),
-        ),
+          if (hadith.arabic.isNotEmpty) ...[
+            const SizedBox(height: Space.md),
+            Text(
+              hadith.arabic,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textDirection: TextDirection.rtl,
+              style: TextStyle(fontFamily: kNaskhFont, fontSize: 18, height: 1.7, color: c.ink),
+            ),
+          ],
+          const SizedBox(height: Space.sm),
+          if (narrator != null)
+            Text(
+              narrator,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.text.bodySmall?.copyWith(color: c.gold),
+            ),
+          Text(
+            body,
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
+            style: context.text.bodyMedium?.copyWith(height: 1.5),
+          ),
+        ],
       ),
     );
   }

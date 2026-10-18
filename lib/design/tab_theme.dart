@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' show PointMode;
 
 
 import 'package:flutter/material.dart';
@@ -93,7 +94,8 @@ class _PagePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width, h = size.height;
-    canvas.drawRect(Offset.zero & size, Paint()..color = c.bg);
+    _base(canvas, size);
+    _texture(canvas, size);
     final emerald = c.primary, gold = c.gold;
     // (where, radius as a share of the width, colour, strength): every corner
     // has colour, so no part of the screen is left plain.
@@ -226,6 +228,103 @@ class _PagePainter extends CustomPainter {
         }
       case PageLook.page:
         rings(Offset(w, h), w * 0.15, 6);
+    }
+  }
+
+  /// Each screen's own base colour, warm and close to the logo's gold and
+  /// emerald (never grey); in dark, the dark page tinted the same way.
+  void _base(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final (top, bottom) = switch (look) {
+      PageLook.home => (const Color(0xFFFBF6EC), const Color(0xFFF3EEDF)),
+      PageLook.quran => (const Color(0xFFF8F0DD), const Color(0xFFF1E6CB)),
+      PageLook.listen => (const Color(0xFFEFF7F2), const Color(0xFFE8F2EC)),
+      PageLook.hadith => (const Color(0xFFF7EEDF), const Color(0xFFEFE3CE)),
+      PageLook.daily => (const Color(0xFFE6F3F0), const Color(0xFFFBEEE0)),
+      PageLook.tasbih => (const Color(0xFFEEF4EC), const Color(0xFFE6EEE3)),
+      PageLook.page => (const Color(0xFFFAF7F0), const Color(0xFFF4F1E8)),
+    };
+    final colors = c.isDark
+        ? [Color.lerp(c.bg, top, 0.05)!, Color.lerp(c.bg, bottom, 0.03)!]
+        : [top, bottom];
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: colors)
+            .createShader(rect),
+    );
+  }
+
+  /// Each screen's own texture, fine and faint, over the whole page.
+  void _texture(Canvas canvas, Size size) {
+    final w = size.width, h = size.height;
+    final ink = c.isDark ? c.gold : c.primary;
+    final fine = Paint()
+      ..color = ink.withValues(alpha: c.isDark ? 0.07 : 0.06)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    switch (look) {
+      case PageLook.home:
+        // Zellige: eight-point stars with crosses between them.
+        const cell = 46.0;
+        for (var y = 0.0; y < h + cell; y += cell) {
+          for (var x = 0.0; x < w + cell; x += cell) {
+            _star(canvas, Offset(x, y), cell * 0.34, fine);
+            final m = Offset(x + cell / 2, y + cell / 2);
+            canvas.drawLine(m - const Offset(5, 0), m + const Offset(5, 0), fine);
+            canvas.drawLine(m - const Offset(0, 5), m + const Offset(0, 5), fine);
+          }
+        }
+      case PageLook.quran:
+        // Paper: a fine grain and faint ruled lines.
+        final rnd = math.Random(4);
+        final grain = <Offset>[for (var i = 0; i < (w * h / 90).round(); i++) Offset(rnd.nextDouble() * w, rnd.nextDouble() * h)];
+        canvas.drawPoints(PointMode.points, grain,
+            Paint()
+              ..color = const Color(0xFF7A5A2A).withValues(alpha: c.isDark ? 0.10 : 0.08)
+              ..strokeWidth = 1.2);
+        for (var y = 34.0; y < h; y += 34) {
+          canvas.drawLine(Offset(0, y), Offset(w, y), fine..color = ink.withValues(alpha: 0.035));
+        }
+      case PageLook.listen:
+        // A fine dotted grid, like a speaker's mesh.
+        final dots = <Offset>[for (var y = 9.0; y < h; y += 18) for (var x = 9.0; x < w; x += 18) Offset(x, y)];
+        canvas.drawPoints(PointMode.points, dots,
+            Paint()
+              ..color = ink.withValues(alpha: 0.07)
+              ..strokeWidth = 2
+              ..strokeCap = StrokeCap.round);
+      case PageLook.hadith:
+        // A woven crosshatch, like the cloth of a manuscript's binding.
+        for (var d = -h; d < w + h; d += 16) {
+          canvas.drawLine(Offset(d, 0), Offset(d + h, h), fine..color = ink.withValues(alpha: 0.045));
+          canvas.drawLine(Offset(d + h, 0), Offset(d, h), fine);
+        }
+      case PageLook.daily:
+        // A sky of tiny stars.
+        final rnd = math.Random(8);
+        for (var i = 0; i < 90; i++) {
+          final p = Offset(rnd.nextDouble() * w, rnd.nextDouble() * h);
+          final r = 1.5 + rnd.nextDouble() * 2.5;
+          final star = fine..color = ink.withValues(alpha: 0.10 + rnd.nextDouble() * 0.06);
+          canvas.drawLine(p - Offset(r, 0), p + Offset(r, 0), star);
+          canvas.drawLine(p - Offset(0, r), p + Offset(0, r), star);
+        }
+      case PageLook.tasbih:
+        // Small beads in rows.
+        final bead = Paint()..color = ink.withValues(alpha: c.isDark ? 0.08 : 0.07);
+        for (var y = 14.0, row = 0; y < h; y += 28, row++) {
+          for (var x = row.isOdd ? 28.0 : 14.0; x < w; x += 28) {
+            canvas.drawCircle(Offset(x, y), 3, bead);
+          }
+        }
+      case PageLook.page:
+        final dots = <Offset>[for (var y = 12.0; y < h; y += 24) for (var x = 12.0; x < w; x += 24) Offset(x, y)];
+        canvas.drawPoints(PointMode.points, dots,
+            Paint()
+              ..color = ink.withValues(alpha: 0.08)
+              ..strokeWidth = 2
+              ..strokeCap = StrokeCap.round);
     }
   }
 

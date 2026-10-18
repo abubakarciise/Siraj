@@ -103,7 +103,7 @@ class _Header extends ConsumerWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: c.bar,
-        border: Border(bottom: BorderSide(color: c.divider)),
+        border: Border(bottom: BorderSide(color: c.barLine)),
       ),
       child: Stack(
         children: [

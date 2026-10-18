@@ -69,7 +69,7 @@ final appRouter = GoRouter(
                 GoRoute(
                   path: 'reciter/:id',
                   builder: (_, s) =>
-                      PageBackground(child: ReciterScreen(reciterId: int.parse(s.pathParameters['id']!))),
+                      PageBackground(look: PageLook.listen, child: ReciterScreen(reciterId: int.parse(s.pathParameters['id']!))),
                 ),
               ],
             ),
@@ -84,19 +84,20 @@ final appRouter = GoRouter(
                 // In the Hadith tab, so a hadith opened from them comes back to them.
                 GoRoute(
                   path: 'search',
-                  builder: (_, _) => PageBackground(child: const HadithSearchScreen()),
+                  builder: (_, _) => PageBackground(look: PageLook.hadith, child: const HadithSearchScreen()),
                 ),
                 GoRoute(
                   path: 'saved',
-                  builder: (_, _) => PageBackground(child: const SavedHadithScreen()),
+                  builder: (_, _) => PageBackground(look: PageLook.hadith, child: const SavedHadithScreen()),
                 ),
                 GoRoute(
                   path: ':book',
-                  builder: (_, s) => PageBackground(child: HadithBookScreen(bookId: s.pathParameters['book']!)),
+                  builder: (_, s) => PageBackground(look: PageLook.hadith, child: HadithBookScreen(bookId: s.pathParameters['book']!)),
                   routes: [
                     GoRoute(
                       path: 's/:section',
                       builder: (_, s) => PageBackground(
+                        look: PageLook.hadith,
                         child: HadithListScreen(
                           bookId: s.pathParameters['book']!,
                           section: int.tryParse(s.pathParameters['section']!),
@@ -106,6 +107,7 @@ final appRouter = GoRouter(
                     GoRoute(
                       path: 'n/:number',
                       builder: (_, s) => PageBackground(
+                        look: PageLook.hadith,
                         child: HadithDetailScreen(
                           bookId: s.pathParameters['book']!,
                           number: num.tryParse(s.pathParameters['number']!) ?? 1,
@@ -175,27 +177,28 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/prayer',
       parentNavigatorKey: _rootKey,
-      builder: (_, _) => PageBackground(child: const PrayerScreen()),
+      builder: (_, _) => PageBackground(look: PageLook.daily, child: const PrayerScreen()),
     ),
     GoRoute(
       path: '/qibla',
       parentNavigatorKey: _rootKey,
-      builder: (_, _) => PageBackground(child: const QiblaScreen()),
+      builder: (_, _) => PageBackground(look: PageLook.daily, child: const QiblaScreen()),
     ),
     GoRoute(
       path: '/tasbih',
       parentNavigatorKey: _rootKey,
-      builder: (_, _) => PageBackground(child: const TasbihScreen()),
+      builder: (_, _) => PageBackground(look: PageLook.tasbih, child: const TasbihScreen()),
     ),
     GoRoute(
       path: '/adhkar',
       parentNavigatorKey: _rootKey,
-      builder: (_, _) => PageBackground(child: const AdhkarListScreen()),
+      builder: (_, _) => PageBackground(look: PageLook.daily, child: const AdhkarListScreen()),
       routes: [
         GoRoute(
           path: ':id',
           parentNavigatorKey: _rootKey,
           builder: (_, s) => PageBackground(
+            look: PageLook.daily,
             child: AdhkarScreen(
               categoryId: s.pathParameters['id']!,
               autoListen: s.uri.queryParameters['listen'] == '1',
@@ -227,13 +230,13 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/sunnah',
       parentNavigatorKey: _rootKey,
-      builder: (_, _) => PageBackground(child: const SunnahListScreen()),
+      builder: (_, _) => PageBackground(look: PageLook.hadith, child: const SunnahListScreen()),
       routes: [
         GoRoute(
           path: ':index',
           parentNavigatorKey: _rootKey,
           builder: (_, s) =>
-              PageBackground(child: SunnahDetailScreen(index: int.tryParse(s.pathParameters['index']!) ?? -1)),
+              PageBackground(look: PageLook.hadith, child: SunnahDetailScreen(index: int.tryParse(s.pathParameters['index']!) ?? -1)),
         ),
       ],
     ),

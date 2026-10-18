@@ -58,6 +58,10 @@ class AppColors extends ThemeExtension<AppColors> {
   Color get ayahHighlight => primary.withValues(alpha: isDark ? 0.20 : 0.13);
   Color get selection => gold.withValues(alpha: isDark ? 0.24 : 0.18);
 
+  /// Headers and the bottom bar: a surface lightly tinted with emerald, so
+  /// they stand apart from the page's background.
+  Color get bar => Color.lerp(surface, primary, isDark ? 0.14 : 0.12)!;
+
   /// Ayah-end ornaments and numbers on the Mushaf page.
   Color get ayahMark => Color.lerp(ink, gold, 0.55)!;
 

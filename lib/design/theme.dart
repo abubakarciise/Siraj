@@ -83,10 +83,11 @@ ThemeData buildThemeFrom(AppColors c) {
       ),
     ),
     progressIndicatorTheme: ProgressIndicatorThemeData(color: c.primary, linearTrackColor: c.divider),
-    // Clean headers: part of the page (its colour, a little see-through over
-    // the background), dark text and icons. A plain bottom bar.
+    // Clean headers and bottom bar: a lightly tinted surface with a fine line,
+    // apart from the page's background; dark text and icons.
     appBarTheme: AppBarTheme(
-      backgroundColor: c.bg,
+      backgroundColor: c.bar,
+      shape: Border(bottom: BorderSide(color: c.divider)),
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
@@ -98,7 +99,7 @@ ThemeData buildThemeFrom(AppColors c) {
       systemOverlayStyle: c.isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
     ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: c.surface,
+      backgroundColor: c.bar,
       surfaceTintColor: Colors.transparent,
       indicatorColor: c.primarySoft,
       height: 68,

@@ -71,7 +71,7 @@ class HomeScreen extends ConsumerWidget {
               left: 0,
               right: 0,
               height: MediaQuery.paddingOf(context).top,
-              child: ColoredBox(color: c.bg),
+              child: ColoredBox(color: c.bar),
             ),
           ],
         ),
@@ -100,8 +100,11 @@ class _Header extends ConsumerWidget {
     final hijri = ref.watch(hijriTodayProvider);
     final now = DateTime.now();
     // In Home's own header colour.
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(Radii.xl)),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: c.bar,
+        border: Border(bottom: BorderSide(color: c.divider)),
+      ),
       child: Stack(
         children: [
           SafeArea(

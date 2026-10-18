@@ -40,7 +40,7 @@ class DailyScreen extends ConsumerWidget {
         slivers: [
           HeroSliverAppBar(title: 'Daily', subtitle: 'اليوم', art: HeroArt.daily),
           const SliverPadding(
-            padding: EdgeInsets.symmetric(horizontal: Space.gutter),
+            padding: EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, 0),
             sliver: SliverToBoxAdapter(child: PrayerCard()),
           ),
           SliverToBoxAdapter(

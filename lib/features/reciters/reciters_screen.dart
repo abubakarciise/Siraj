@@ -73,7 +73,7 @@ class _RecitersScreenState extends ConsumerState<RecitersScreen> {
               HeroSliverAppBar(title: 'Listen', subtitle: 'التلاوات', art: HeroArt.listen),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.md),
+                  padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, Space.md),
                   child: TextField(
                     onChanged: (v) => setState(() => _query = v),
                     textInputAction: TextInputAction.search,

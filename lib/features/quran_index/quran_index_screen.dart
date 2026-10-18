@@ -60,7 +60,7 @@ class _QuranIndexScreenState extends ConsumerState<QuranIndexScreen> {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xs, Space.gutter, 0),
+              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, 0),
               child: _ContinueCard(),
             ),
           ),
@@ -238,39 +238,55 @@ class _SurahList extends ConsumerWidget {
     final c = context.colors;
     final surahs = ref.watch(surahsProvider);
     return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: Space.md),
+      padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
       sliver: SliverList.builder(
         itemCount: surahs.length,
         itemBuilder: (_, i) {
           final s = surahs[i];
           final current = s.id == currentSurah;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Material(
-              elevation: c.isDark ? 0 : 1.5,
-              shadowColor: const Color(0x55103A2F),
+          final first = i == 0, last = i == surahs.length - 1;
+          // One calm card: the rows join, with fine lines between them.
+          final radius = BorderRadius.vertical(
+            top: first ? const Radius.circular(Radii.lg) : Radius.zero,
+            bottom: last ? const Radius.circular(Radii.lg) : Radius.zero,
+          );
+          return Container(
+            decoration: BoxDecoration(
               color: current ? c.primarySoft : c.surface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(Radii.lg),
-                side: current ? BorderSide(color: c.primary.withValues(alpha: 0.35)) : cardSide(c),
-              ),
+              borderRadius: radius,
+              border: c.isDark ? Border.all(color: c.divider, width: 0.5) : null,
+            ),
+            child: Material(
+              type: MaterialType.transparency,
               child: InkWell(
-                borderRadius: BorderRadius.circular(Radii.lg),
+                borderRadius: radius,
                 onTap: () => context.openReader(s.pageStart, surah: s.id),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: Space.md, vertical: 10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: 12),
+                  decoration: BoxDecoration(
+                    border: last ? null : Border(bottom: BorderSide(color: c.divider.withValues(alpha: 0.7))),
+                  ),
                   child: Row(
                     children: [
-                      StarMedallion(number: s.id, active: current),
+                      Container(
+                        width: 36,
+                        height: 36,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: current ? c.primary : c.primarySoft,
+                        ),
+                        child: Text(
+                          '${s.id}',
+                          style: context.text.labelLarge?.copyWith(color: current ? c.onPrimary : c.primary),
+                        ),
+                      ),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              s.nameEn,
-                              style: context.text.titleMedium?.copyWith(color: current ? c.primary : null),
-                            ),
+                            Text(s.nameEn, style: context.text.titleMedium),
                             Text(
                               '${s.isMakki ? 'Makki' : 'Madani'} · ${s.ayahCount} ayahs · ${s.meaning}',
                               style: context.text.bodySmall,

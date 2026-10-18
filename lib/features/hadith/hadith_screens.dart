@@ -68,6 +68,9 @@ class HadithHomeScreen extends ConsumerWidget {
     final sunnah = [...repo.sunnah.indexed]
       ..sort((a, b) => (b.$2.tags.any(tags.contains) ? 1 : 0) - (a.$2.tags.any(tags.contains) ? 1 : 0));
 
+    // The great collections to download (Bukhari, Muslim…) first, then the
+    // forty-hadith books that come with the app.
+    final collections = [...books.where((b) => !b.bundled), ...books.where((b) => b.bundled)];
     return Scaffold(
       backgroundColor: Colors.transparent, // the tab's art shows through (TabBackdrop)
       body: CustomScrollView(
@@ -113,11 +116,11 @@ class HadithHomeScreen extends ConsumerWidget {
           ),
           const SliverToBoxAdapter(child: SectionTitle('Collections')),
           SliverList.separated(
-            itemCount: books.length,
+            itemCount: collections.length,
             separatorBuilder: (_, _) => const SizedBox(height: Space.sm),
             itemBuilder: (_, i) => Padding(
               padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-              child: _BookTile(book: books[i]),
+              child: _BookTile(book: collections[i]),
             ),
           ),
           SliverToBoxAdapter(

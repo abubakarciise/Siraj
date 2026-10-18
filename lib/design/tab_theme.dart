@@ -89,60 +89,28 @@ class _PagePainter extends CustomPainter {
   final AppColors c;
   final PageLook look;
 
-  static const _mint = Color(0xFF7FC8A9);
-
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width, h = size.height;
     _base(canvas, size);
     _texture(canvas, size);
-    final emerald = c.primary, gold = c.gold;
     // (where, radius as a share of the width, colour, strength): every corner
     // has colour, so no part of the screen is left plain.
+    // One colour family per screen, never a mix: emerald (Home, Listen,
+    // Tasbih, other pages) or gold (Quran, Hadith, Daily).
+    final hue = _hue;
     final washes = switch (look) {
-      PageLook.home => [
-          (const Offset(1.0, 0.0), 0.95, emerald, 0.20),
-          (const Offset(0.0, 0.0), 0.70, gold, 0.14),
-          (const Offset(0.0, 0.55), 0.80, gold, 0.16),
-          (const Offset(0.9, 1.0), 0.90, _mint, 0.20),
-        ],
-      PageLook.quran => [
-          (const Offset(0.0, 0.0), 0.95, gold, 0.22),
-          (const Offset(1.0, 0.0), 0.65, emerald, 0.14),
-          (const Offset(1.0, 0.55), 0.85, emerald, 0.18),
-          (const Offset(0.3, 1.0), 0.85, _mint, 0.18),
-        ],
+      PageLook.home => [(const Offset(1.0, 0.0), 0.95, hue, 0.16), (const Offset(0.0, 1.0), 0.90, hue, 0.12)],
+      PageLook.quran => [(const Offset(0.0, 0.0), 0.95, hue, 0.18), (const Offset(1.0, 1.0), 0.85, hue, 0.12)],
       PageLook.listen => [
-          (const Offset(0.5, -0.05), 1.0, emerald, 0.20),
-          (const Offset(0.0, 0.0), 0.75, _mint, 0.20),
-          (const Offset(1.0, 0.0), 0.65, gold, 0.16),
-          (const Offset(1.0, 0.85), 0.85, gold, 0.18),
-          (const Offset(0.0, 0.7), 0.70, _mint, 0.18),
+          (const Offset(0.5, -0.05), 1.0, hue, 0.16),
+          (const Offset(0.0, 0.8), 0.75, hue, 0.12),
+          (const Offset(1.0, 0.9), 0.70, hue, 0.10),
         ],
-      PageLook.hadith => [
-          (const Offset(1.0, 0.05), 0.95, gold, 0.24),
-          (const Offset(0.0, 0.0), 0.70, _mint, 0.18),
-          (const Offset(0.0, 0.75), 0.90, emerald, 0.18),
-          (const Offset(1.0, 1.0), 0.75, gold, 0.16),
-        ],
-      PageLook.daily => [
-          (const Offset(0.5, -0.08), 1.10, gold, 0.26),
-          (const Offset(0.0, 0.35), 0.65, _mint, 0.18),
-          (const Offset(1.0, 0.6), 0.75, _mint, 0.18),
-          (const Offset(0.1, 1.0), 0.90, emerald, 0.18),
-        ],
-      PageLook.tasbih => [
-          (const Offset(0.5, 0.42), 1.00, emerald, 0.16),
-          (const Offset(0.0, 0.0), 0.70, gold, 0.18),
-          (const Offset(1.0, 0.0), 0.60, _mint, 0.18),
-          (const Offset(0.0, 1.0), 0.65, _mint, 0.18),
-          (const Offset(1.0, 1.0), 0.75, gold, 0.18),
-        ],
-      PageLook.page => [
-          (const Offset(1.0, 0.0), 0.85, emerald, 0.15),
-          (const Offset(0.0, 0.0), 0.55, _mint, 0.14),
-          (const Offset(0.0, 1.0), 0.85, gold, 0.14),
-        ],
+      PageLook.hadith => [(const Offset(1.0, 0.0), 0.95, hue, 0.18), (const Offset(0.0, 0.9), 0.85, hue, 0.12)],
+      PageLook.daily => [(const Offset(0.5, -0.08), 1.10, hue, 0.20), (const Offset(0.5, 1.1), 0.90, hue, 0.08)],
+      PageLook.tasbih => [(const Offset(0.5, 0.42), 1.0, hue, 0.12), (const Offset(0.5, 1.1), 0.8, hue, 0.08)],
+      PageLook.page => [(const Offset(1.0, 0.0), 0.85, hue, 0.10), (const Offset(0.0, 1.0), 0.80, hue, 0.08)],
     };
     final k = c.isDark ? 0.8 : 1.0;
     for (final (at, r, color, strength) in washes) {
@@ -162,7 +130,7 @@ class _PagePainter extends CustomPainter {
     }
     // The screen's own ornament, large and faint, spreading over the screen.
     final line = Paint()
-      ..color = (c.isDark ? c.gold : c.primary).withValues(alpha: c.isDark ? 0.12 : 0.10)
+      ..color = _hue.withValues(alpha: c.isDark ? 0.12 : 0.11)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.4;
     void rings(Offset o, double step, int n) {
@@ -231,18 +199,24 @@ class _PagePainter extends CustomPainter {
     }
   }
 
+  /// The screen's one colour family.
+  Color get _hue => switch (look) {
+        PageLook.quran || PageLook.hadith || PageLook.daily => c.gold,
+        _ => c.primary,
+      };
+
   /// Each screen's own base colour, warm and close to the logo's gold and
   /// emerald (never grey); in dark, the dark page tinted the same way.
   void _base(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
     final (top, bottom) = switch (look) {
-      PageLook.home => (const Color(0xFFFBF6EC), const Color(0xFFF3EEDF)),
-      PageLook.quran => (const Color(0xFFF8F0DD), const Color(0xFFF1E6CB)),
-      PageLook.listen => (const Color(0xFFEFF7F2), const Color(0xFFE8F2EC)),
-      PageLook.hadith => (const Color(0xFFF7EEDF), const Color(0xFFEFE3CE)),
-      PageLook.daily => (const Color(0xFFE6F3F0), const Color(0xFFFBEEE0)),
-      PageLook.tasbih => (const Color(0xFFEEF4EC), const Color(0xFFE6EEE3)),
-      PageLook.page => (const Color(0xFFFAF7F0), const Color(0xFFF4F1E8)),
+      PageLook.home => (const Color(0xFFFAF6EE), const Color(0xFFF4EFE4)),
+      PageLook.quran => (const Color(0xFFF8F1E1), const Color(0xFFF2E9D4)),
+      PageLook.listen => (const Color(0xFFF1F6F2), const Color(0xFFEAF1EC)),
+      PageLook.hadith => (const Color(0xFFF7F0E3), const Color(0xFFF0E6D4)),
+      PageLook.daily => (const Color(0xFFFAF3E6), const Color(0xFFF5ECDC)),
+      PageLook.tasbih => (const Color(0xFFF0F5EF), const Color(0xFFE9F0E8)),
+      PageLook.page => (const Color(0xFFFAF7F0), const Color(0xFFF5F1E8)),
     };
     final colors = c.isDark
         ? [Color.lerp(c.bg, top, 0.05)!, Color.lerp(c.bg, bottom, 0.03)!]
@@ -258,7 +232,7 @@ class _PagePainter extends CustomPainter {
   /// Each screen's own texture, fine and faint, over the whole page.
   void _texture(Canvas canvas, Size size) {
     final w = size.width, h = size.height;
-    final ink = c.isDark ? c.gold : c.primary;
+    final ink = _hue;
     final fine = Paint()
       ..color = ink.withValues(alpha: c.isDark ? 0.07 : 0.06)
       ..style = PaintingStyle.stroke

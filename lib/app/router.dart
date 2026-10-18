@@ -21,6 +21,7 @@ import '../features/search/search_screen.dart';
 import '../features/settings/reminders_screen.dart';
 import '../features/settings/settings_screen.dart';
 import 'shell.dart';
+import 'tab_switcher.dart';
 
 final _rootKey = GlobalKey<NavigatorState>();
 
@@ -33,14 +34,10 @@ final appRouter = GoRouter(
     StatefulShellRoute(
       builder: (context, state, shell) => AppShell(shell: shell, location: state.uri.path),
       // Each tab keeps its own stack, and its own background colour.
-      navigatorContainerBuilder: (context, shell, children) => IndexedStack(
+      navigatorContainerBuilder: (context, shell, children) => TabSwitcher(
         index: shell.currentIndex,
         children: [
-          for (var i = 0; i < children.length; i++)
-            TickerMode(
-              enabled: i == shell.currentIndex,
-              child: TabTheme(tab: AppTab.values[i], child: children[i]),
-            ),
+          for (var i = 0; i < children.length; i++) TabTheme(tab: AppTab.values[i], child: children[i]),
         ],
       ),
       branches: [

@@ -44,58 +44,88 @@ final appRouter = GoRouter(
         ],
       ),
       branches: [
-        StatefulShellBranch(routes: [
-          GoRoute(path: '/home', builder: (_, _) => const TabBackdrop(tab: AppTab.home, child: HomeScreen())),
-        ]),
-        StatefulShellBranch(routes: [
-          GoRoute(path: '/quran', builder: (_, _) => const TabBackdrop(tab: AppTab.quran, child: QuranIndexScreen())),
-        ]),
-        StatefulShellBranch(routes: [
-          GoRoute(
-            path: '/listen',
-            builder: (_, _) => const TabBackdrop(tab: AppTab.listen, child: RecitersScreen()),
-            routes: [
-              GoRoute(
-                path: 'reciter/:id',
-                builder: (_, s) => ReciterScreen(reciterId: int.parse(s.pathParameters['id']!)),
-              ),
-            ],
-          ),
-        ]),
-        StatefulShellBranch(routes: [
-          GoRoute(
-            path: '/hadith',
-            builder: (_, _) => const TabBackdrop(tab: AppTab.hadith, child: HadithHomeScreen()),
-            routes: [
-              // In the Hadith tab, so a hadith opened from them comes back to them.
-              GoRoute(path: 'search', builder: (_, _) => const HadithSearchScreen()),
-              GoRoute(path: 'saved', builder: (_, _) => const SavedHadithScreen()),
-              GoRoute(
-                path: ':book',
-                builder: (_, s) => HadithBookScreen(bookId: s.pathParameters['book']!),
-                routes: [
-                  GoRoute(
-                    path: 's/:section',
-                    builder: (_, s) => HadithListScreen(
-                      bookId: s.pathParameters['book']!,
-                      section: int.tryParse(s.pathParameters['section']!),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/home',
+              builder: (_, _) => const TabBackdrop(tab: AppTab.home, child: HomeScreen()),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/quran',
+              builder: (_, _) => const TabBackdrop(tab: AppTab.quran, child: QuranIndexScreen()),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/listen',
+              builder: (_, _) => const TabBackdrop(tab: AppTab.listen, child: RecitersScreen()),
+              routes: [
+                GoRoute(
+                  path: 'reciter/:id',
+                  builder: (_, s) =>
+                      PageBackground(child: ReciterScreen(reciterId: int.parse(s.pathParameters['id']!))),
+                ),
+              ],
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/hadith',
+              builder: (_, _) => const TabBackdrop(tab: AppTab.hadith, child: HadithHomeScreen()),
+              routes: [
+                // In the Hadith tab, so a hadith opened from them comes back to them.
+                GoRoute(
+                  path: 'search',
+                  builder: (_, _) => PageBackground(child: const HadithSearchScreen()),
+                ),
+                GoRoute(
+                  path: 'saved',
+                  builder: (_, _) => PageBackground(child: const SavedHadithScreen()),
+                ),
+                GoRoute(
+                  path: ':book',
+                  builder: (_, s) => PageBackground(child: HadithBookScreen(bookId: s.pathParameters['book']!)),
+                  routes: [
+                    GoRoute(
+                      path: 's/:section',
+                      builder: (_, s) => PageBackground(
+                        child: HadithListScreen(
+                          bookId: s.pathParameters['book']!,
+                          section: int.tryParse(s.pathParameters['section']!),
+                        ),
+                      ),
                     ),
-                  ),
-                  GoRoute(
-                    path: 'n/:number',
-                    builder: (_, s) => HadithDetailScreen(
-                      bookId: s.pathParameters['book']!,
-                      number: num.tryParse(s.pathParameters['number']!) ?? 1,
+                    GoRoute(
+                      path: 'n/:number',
+                      builder: (_, s) => PageBackground(
+                        child: HadithDetailScreen(
+                          bookId: s.pathParameters['book']!,
+                          number: num.tryParse(s.pathParameters['number']!) ?? 1,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ]),
-        StatefulShellBranch(routes: [
-          GoRoute(path: '/daily', builder: (_, _) => const TabBackdrop(tab: AppTab.daily, child: DailyScreen())),
-        ]),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/daily',
+              builder: (_, _) => const TabBackdrop(tab: AppTab.daily, child: DailyScreen()),
+            ),
+          ],
+        ),
       ],
     ),
     GoRoute(
@@ -129,44 +159,81 @@ final appRouter = GoRouter(
         transitionDuration: const Duration(milliseconds: 420),
         reverseTransitionDuration: const Duration(milliseconds: 320),
         transitionsBuilder: (_, a, _, child) => SlideTransition(
-          position: Tween(begin: const Offset(0, 1), end: Offset.zero)
-              .animate(CurvedAnimation(parent: a, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic)),
+          position: Tween(
+            begin: const Offset(0, 1),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(parent: a, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic)),
           child: child,
         ),
       ),
     ),
-    GoRoute(path: '/search', parentNavigatorKey: _rootKey, builder: (_, _) => const SearchScreen()),
-    GoRoute(path: '/prayer', parentNavigatorKey: _rootKey, builder: (_, _) => const PrayerScreen()),
-    GoRoute(path: '/qibla', parentNavigatorKey: _rootKey, builder: (_, _) => const QiblaScreen()),
-    GoRoute(path: '/tasbih', parentNavigatorKey: _rootKey, builder: (_, _) => const TasbihScreen()),
+    GoRoute(
+      path: '/search',
+      parentNavigatorKey: _rootKey,
+      builder: (_, _) => PageBackground(child: const SearchScreen()),
+    ),
+    GoRoute(
+      path: '/prayer',
+      parentNavigatorKey: _rootKey,
+      builder: (_, _) => PageBackground(child: const PrayerScreen()),
+    ),
+    GoRoute(
+      path: '/qibla',
+      parentNavigatorKey: _rootKey,
+      builder: (_, _) => PageBackground(child: const QiblaScreen()),
+    ),
+    GoRoute(
+      path: '/tasbih',
+      parentNavigatorKey: _rootKey,
+      builder: (_, _) => PageBackground(child: const TasbihScreen()),
+    ),
     GoRoute(
       path: '/adhkar',
       parentNavigatorKey: _rootKey,
-      builder: (_, _) => const AdhkarListScreen(),
+      builder: (_, _) => PageBackground(child: const AdhkarListScreen()),
       routes: [
         GoRoute(
           path: ':id',
           parentNavigatorKey: _rootKey,
-          builder: (_, s) => AdhkarScreen(
-            categoryId: s.pathParameters['id']!,
-            autoListen: s.uri.queryParameters['listen'] == '1',
+          builder: (_, s) => PageBackground(
+            child: AdhkarScreen(
+              categoryId: s.pathParameters['id']!,
+              autoListen: s.uri.queryParameters['listen'] == '1',
+            ),
           ),
         ),
       ],
     ),
-    GoRoute(path: '/settings', parentNavigatorKey: _rootKey, builder: (_, _) => const SettingsScreen()),
-    GoRoute(path: '/reminders', parentNavigatorKey: _rootKey, builder: (_, _) => const RemindersScreen()),
-    GoRoute(path: '/library', parentNavigatorKey: _rootKey, builder: (_, _) => const LibraryScreen()),
-    GoRoute(path: '/memorize', parentNavigatorKey: _rootKey, builder: (_, _) => const MemorizeScreen()),
+    GoRoute(
+      path: '/settings',
+      parentNavigatorKey: _rootKey,
+      builder: (_, _) => PageBackground(child: const SettingsScreen()),
+    ),
+    GoRoute(
+      path: '/reminders',
+      parentNavigatorKey: _rootKey,
+      builder: (_, _) => PageBackground(child: const RemindersScreen()),
+    ),
+    GoRoute(
+      path: '/library',
+      parentNavigatorKey: _rootKey,
+      builder: (_, _) => PageBackground(child: const LibraryScreen()),
+    ),
+    GoRoute(
+      path: '/memorize',
+      parentNavigatorKey: _rootKey,
+      builder: (_, _) => PageBackground(child: const MemorizeScreen()),
+    ),
     GoRoute(
       path: '/sunnah',
       parentNavigatorKey: _rootKey,
-      builder: (_, _) => const SunnahListScreen(),
+      builder: (_, _) => PageBackground(child: const SunnahListScreen()),
       routes: [
         GoRoute(
           path: ':index',
           parentNavigatorKey: _rootKey,
-          builder: (_, s) => SunnahDetailScreen(index: int.tryParse(s.pathParameters['index']!) ?? -1),
+          builder: (_, s) =>
+              PageBackground(child: SunnahDetailScreen(index: int.tryParse(s.pathParameters['index']!) ?? -1)),
         ),
       ],
     ),

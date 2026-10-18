@@ -28,7 +28,7 @@ class HomeScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Colors.transparent, // the tab's art shows through (TabBackdrop)
       body: AnnotatedRegion(
-        value: c.isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+        value: SystemUiOverlayStyle.light,
         child: Stack(
           children: [
             CustomScrollView(
@@ -71,7 +71,7 @@ class HomeScreen extends ConsumerWidget {
               left: 0,
               right: 0,
               height: MediaQuery.paddingOf(context).top,
-              child: ColoredBox(color: AppTab.home.header(c)),
+              child: ColoredBox(color: c.brand),
             ),
           ],
         ),
@@ -102,7 +102,7 @@ class _Header extends ConsumerWidget {
     // In Home's own header colour.
     return Container(
       decoration: BoxDecoration(
-        color: AppTab.home.header(c),
+        color: c.brand,
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(Radii.xl)),
       ),
       child: SafeArea(
@@ -119,28 +119,28 @@ class _Header extends ConsumerWidget {
                       '${_weekdays[now.weekday - 1]} · ${hijri.day} ${hijri.monthName} ${hijri.year}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: context.text.bodySmall?.copyWith(color: c.gold),
+                      style: context.text.bodySmall?.copyWith(color: Color.lerp(c.gold, Colors.white, 0.3)),
                     ),
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       alignment: AlignmentDirectional.centerStart,
-                      child: Text(_greeting(), maxLines: 1, style: context.text.headlineSmall?.copyWith(color: c.ink)),
+                      child: Text(_greeting(), maxLines: 1, style: context.text.headlineSmall?.copyWith(color: c.onBrand)),
                     ),
                     Text(
                       'السلام عليكم ورحمة الله',
-                      style: TextStyle(fontFamily: kNaskhFont, fontSize: 15, color: c.inkMuted),
+                      style: TextStyle(fontFamily: kNaskhFont, fontSize: 15, color: c.onBrand.withValues(alpha: 0.75)),
                     ),
                   ],
                 ),
               ),
               IconButton(
                 tooltip: 'Search',
-                icon: Icon(Icons.search_rounded, color: c.ink),
+                icon: Icon(Icons.search_rounded, color: c.onBrand),
                 onPressed: () => context.push('/search'),
               ),
               IconButton(
                 tooltip: 'Settings',
-                icon: Icon(Icons.settings_outlined, color: c.ink),
+                icon: Icon(Icons.settings_outlined, color: c.onBrand),
                 onPressed: () => context.push('/settings'),
               ),
             ],
@@ -348,8 +348,8 @@ class _Explore extends StatelessWidget {
       (Icons.history_edu_rounded, 'Hadith', 'الحديث', AppTab.hadith.accent, () => context.go('/hadith')),
       (Icons.auto_awesome_rounded, 'Adhkar', 'الأذكار', AppTab.home.accent, () => context.push('/adhkar')),
       (Icons.mosque_rounded, 'Prayer times', 'مواقيت الصلاة', AppTab.daily.accent, () => context.push('/prayer')),
-      (Icons.explore_rounded, 'Qibla', 'القبلة', const Color(0xFF8A5A9E), () => context.push('/qibla')),
-      (Icons.blur_circular_rounded, 'Tasbih', 'التسبيح', const Color(0xFF2E4A7D), () => context.push('/tasbih')),
+      (Icons.explore_rounded, 'Qibla', 'القبلة', const Color(0xFF2F6F5E), () => context.push('/qibla')),
+      (Icons.blur_circular_rounded, 'Tasbih', 'التسبيح', const Color(0xFF9A7B3A), () => context.push('/tasbih')),
       (Icons.bookmarks_rounded, 'Saved', 'المحفوظات', const Color(0xFF7A6A3A), () => context.push('/library')),
     ];
     return LayoutBuilder(

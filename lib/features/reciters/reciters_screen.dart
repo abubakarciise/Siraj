@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -185,6 +186,8 @@ class _ReciterTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
+    final current = ref.watch(settingsProvider.select((s) => s.defaultRecitation));
+    final mushaf = reciter.recitations.any((m) => m.key == current);
     return InkWell(
       onTap: () => context.go('/listen/reciter/${reciter.id}'),
       child: Padding(
@@ -199,11 +202,34 @@ class _ReciterTile extends ConsumerWidget {
               const SizedBox(height: 4),
               Wrap(spacing: 6, runSpacing: 4, children: [
                 for (final r in reciter.riwayat.take(3)) Pill(r),
+                if (mushaf) Pill('Mushaf', color: c.primary, icon: Icons.menu_book_rounded),
                 if (downloadedSurahs > 0)
                   Pill(downloadedSurahs >= 114 ? 'Offline' : '$downloadedSurahs offline',
                       color: c.gold, icon: Icons.download_done_rounded),
               ]),
             ]),
+          ),
+          // Recites when play is pressed in the Mushaf.
+          IconButton(
+            tooltip: mushaf ? 'Plays in the Mushaf' : 'Use for Mushaf playback',
+            onPressed: mushaf
+                ? null
+                : () {
+                    final r = reciter.recitations.firstWhere((m) => m.isHafs && m.isComplete,
+                        orElse: () => reciter.recitations.first);
+                    ref.read(settingsProvider.notifier).update((s) => s.copyWith(defaultRecitation: r.key));
+                    HapticFeedback.selectionClick();
+                    showToast(context, '${reciter.name} will recite when you press play in the Mushaf');
+                  },
+            icon: AnimatedSwitcher(
+              duration: Motion.quick,
+              transitionBuilder: (w, a) => ScaleTransition(scale: a, child: w),
+              child: Icon(
+                mushaf ? Icons.menu_book_rounded : Icons.menu_book_outlined,
+                key: ValueKey(mushaf),
+                color: mushaf ? c.primary : c.inkFaint,
+              ),
+            ),
           ),
           IconButton(
             onPressed: () => ref.read(favoritesProvider.notifier).toggle(reciter.id),

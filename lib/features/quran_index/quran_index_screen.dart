@@ -31,7 +31,7 @@ class _QuranIndexScreenState extends ConsumerState<QuranIndexScreen> {
       body: CustomScrollView(slivers: [
         SliverAppBar(
           pinned: true,
-          title: Text('Quran', style: context.text.headlineSmall),
+          title: const TabTitle('Quran'),
           actions: [
             IconButton(
               tooltip: 'Memorization test',

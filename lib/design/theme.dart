@@ -83,26 +83,32 @@ ThemeData buildThemeFrom(AppColors c) {
       ),
     ),
     progressIndicatorTheme: ProgressIndicatorThemeData(color: c.primary, linearTrackColor: c.divider),
+    // Every header and the bottom bar share one colour: the logo's emerald,
+    // with cream text and gold for what is selected.
     appBarTheme: AppBarTheme(
-      backgroundColor: c.bg,
+      backgroundColor: c.brand,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
-      foregroundColor: c.ink,
-      titleTextStyle: textTheme.titleLarge,
-      systemOverlayStyle: c.isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+      foregroundColor: c.onBrand,
+      iconTheme: IconThemeData(color: c.onBrand),
+      actionsIconTheme: IconThemeData(color: c.onBrand),
+      titleTextStyle: textTheme.titleLarge?.copyWith(color: c.onBrand),
+      systemOverlayStyle: SystemUiOverlayStyle.light,
     ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: c.surface,
+      backgroundColor: c.brand,
       surfaceTintColor: Colors.transparent,
-      indicatorColor: c.primarySoft,
+      indicatorColor: c.gold.withValues(alpha: 0.28),
       height: 68,
       labelTextStyle: WidgetStateProperty.resolveWith(
-        (st) => s(12, 16, FontWeight.w600, st.contains(WidgetState.selected) ? c.primary : c.inkMuted),
+        (st) => s(12, 16, FontWeight.w600,
+            st.contains(WidgetState.selected) ? c.onBrand : c.onBrand.withValues(alpha: 0.72)),
       ),
       iconTheme: WidgetStateProperty.resolveWith(
-        (st) => IconThemeData(color: st.contains(WidgetState.selected) ? c.primary : c.inkMuted),
+        (st) => IconThemeData(
+            color: st.contains(WidgetState.selected) ? Color.lerp(c.gold, Colors.white, 0.35) : c.onBrand.withValues(alpha: 0.72)),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(

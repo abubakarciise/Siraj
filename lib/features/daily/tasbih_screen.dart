@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/providers.dart';
-import '../../design/tab_theme.dart';
 import '../../design/theme.dart';
 import '../../design/tokens.dart';
 
@@ -115,109 +114,133 @@ class _TasbihScreenState extends ConsumerState<TasbihScreen> with SingleTickerPr
     final c = context.colors;
     final (ar, en) = _phrases[_phrase];
     final lit = _count % _round == 0 && _count > 0 && !_endless ? _round : _count % _round;
-    return SceneBackdrop(
-      kind: ArtKind.tasbih,
-      accent: c.gold,
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          title: const Text('Tasbih · التسبيح'),
-          actions: [
-            IconButton(
-              tooltip: 'Your tasbih',
-              icon: const Icon(Icons.insights_rounded),
-              onPressed: () async {
-                await Navigator.of(context).push(MaterialPageRoute(builder: (_) => TasbihStatsScreen(log: _log)));
-                if (mounted) setState(() => _today = _log.onDay(DateTime.now()));
-              },
-            ),
-            IconButton(tooltip: 'Start again', icon: const Icon(Icons.restart_alt_rounded), onPressed: _reset),
-          ],
-        ),
-        body: SafeArea(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: _tap,
-            // Swipe sideways anywhere for the next or previous dhikr.
-            onHorizontalDragEnd: (d) {
-              final v = d.primaryVelocity ?? 0;
-              if (v.abs() > 250) _select(_phrase + (v < 0 ? 1 : -1));
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Tasbih · التسبيح'),
+        actions: [
+          IconButton(
+            tooltip: 'Your tasbih',
+            icon: const Icon(Icons.insights_rounded),
+            onPressed: () async {
+              await Navigator.of(context).push(MaterialPageRoute(builder: (_) => TasbihStatsScreen(log: _log)));
+              if (mounted) setState(() => _today = _log.onDay(DateTime.now()));
             },
-            child: Column(children: [
+          ),
+          IconButton(tooltip: 'Start again', icon: const Icon(Icons.restart_alt_rounded), onPressed: _reset),
+        ],
+      ),
+      body: SafeArea(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _tap,
+          // Swipe sideways anywhere for the next or previous dhikr.
+          onHorizontalDragEnd: (d) {
+            final v = d.primaryVelocity ?? 0;
+            if (v.abs() > 250) _select(_phrase + (v < 0 ? 1 : -1));
+          },
+          child: Column(
+            children: [
               Expanded(
-                child: LayoutBuilder(builder: (context, box) {
-                  final size = math.min(box.maxWidth - 32, box.maxHeight - 8);
-                  return Center(
-                    child: SizedBox.square(
-                      dimension: size,
-                      child: AnimatedBuilder(
-                        animation: _pulse,
-                        builder: (_, _) => CustomPaint(
-                          painter: _MisbahaPainter(
-                            beads: _round,
-                            lit: lit,
-                            pulse: _pulse.value,
-                            dark: c.isDark,
-                            string: c.inkFaint,
-                          ),
-                          child: Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(size * 0.2),
-                              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                                AnimatedSwitcher(
-                                  duration: Motion.quick,
-                                  child: FittedBox(
-                                    key: ValueKey(_phrase),
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(ar,
-                                        textDirection: TextDirection.rtl,
-                                        style: TextStyle(
-                                            fontFamily: kNaskhFont, fontSize: 30, color: c.primary, height: 1.6)),
-                                  ),
+                child: LayoutBuilder(
+                  builder: (context, box) {
+                    final size = math.min(box.maxWidth - 32, box.maxHeight - 8);
+                    return Center(
+                      child: SizedBox.square(
+                        dimension: size,
+                        child: AnimatedBuilder(
+                          animation: _pulse,
+                          builder: (_, _) => CustomPaint(
+                            painter: _MisbahaPainter(
+                              beads: _round,
+                              lit: lit,
+                              pulse: _pulse.value,
+                              dark: c.isDark,
+                              string: c.inkFaint,
+                            ),
+                            child: Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(size * 0.2),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    AnimatedSwitcher(
+                                      duration: Motion.quick,
+                                      child: FittedBox(
+                                        key: ValueKey(_phrase),
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(
+                                          ar,
+                                          textDirection: TextDirection.rtl,
+                                          style: TextStyle(
+                                            fontFamily: kNaskhFont,
+                                            fontSize: 30,
+                                            color: c.primary,
+                                            height: 1.6,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      '$_count',
+                                      style: TextStyle(
+                                        fontSize: size * 0.2,
+                                        fontWeight: FontWeight.w300,
+                                        color: c.ink,
+                                        height: 1.1,
+                                      ),
+                                    ),
+                                    Text(_endless ? 'Tap anywhere' : 'of $_round', style: context.text.bodySmall),
+                                  ],
                                 ),
-                                Text('$_count',
-                                    style: TextStyle(
-                                        fontSize: size * 0.2, fontWeight: FontWeight.w300, color: c.ink, height: 1.1)),
-                                Text(_endless ? 'Tap anywhere' : 'of $_round', style: context.text.bodySmall),
-                              ]),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                }),
+                    );
+                  },
+                ),
               ),
               // The dhikr: previous, its name and place, next.
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-                child: Row(children: [
-                  _Arrow(icon: Icons.chevron_left_rounded, tooltip: 'Previous dhikr', onTap: () => _select(_phrase - 1)),
-                  Expanded(
-                    child: Column(children: [
-                      AnimatedSwitcher(
-                        duration: Motion.quick,
-                        child: Text(en, key: ValueKey(_phrase), style: context.text.titleMedium, maxLines: 1),
-                      ),
-                      const SizedBox(height: 6),
-                      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        for (var i = 0; i < _phrases.length; i++)
-                          AnimatedContainer(
+                child: Row(
+                  children: [
+                    _Arrow(
+                      icon: Icons.chevron_left_rounded,
+                      tooltip: 'Previous dhikr',
+                      onTap: () => _select(_phrase - 1),
+                    ),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          AnimatedSwitcher(
                             duration: Motion.quick,
-                            margin: const EdgeInsets.symmetric(horizontal: 3),
-                            width: i == _phrase ? 16 : 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: i == _phrase ? c.primary : c.divider,
-                              borderRadius: BorderRadius.circular(3),
-                            ),
+                            child: Text(en, key: ValueKey(_phrase), style: context.text.titleMedium, maxLines: 1),
                           ),
-                      ]),
-                    ]),
-                  ),
-                  _Arrow(icon: Icons.chevron_right_rounded, tooltip: 'Next dhikr', onTap: () => _select(_phrase + 1)),
-                ]),
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              for (var i = 0; i < _phrases.length; i++)
+                                AnimatedContainer(
+                                  duration: Motion.quick,
+                                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                                  width: i == _phrase ? 16 : 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: i == _phrase ? c.primary : c.divider,
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    _Arrow(icon: Icons.chevron_right_rounded, tooltip: 'Next dhikr', onTap: () => _select(_phrase + 1)),
+                  ],
+                ),
               ),
               const SizedBox(height: Space.lg),
               Padding(
@@ -240,16 +263,18 @@ class _TasbihScreenState extends ConsumerState<TasbihScreen> with SingleTickerPr
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, Space.lg),
-                child: Row(children: [
-                  // Without a limit there are no rounds, only the count.
-                  if (!_endless) ...[
-                    _Stat(label: 'Rounds of 33', value: '$_rounds'),
-                    const SizedBox(width: Space.md),
+                child: Row(
+                  children: [
+                    // Without a limit there are no rounds, only the count.
+                    if (!_endless) ...[
+                      _Stat(label: 'Rounds of 33', value: '$_rounds'),
+                      const SizedBox(width: Space.md),
+                    ],
+                    _Stat(label: 'Today', value: '$_today'),
                   ],
-                  _Stat(label: 'Today', value: '$_today'),
-                ]),
+                ),
               ),
-            ]),
+            ],
           ),
         ),
       ),
@@ -264,12 +289,8 @@ class _Arrow extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => IconButton.filledTonal(
-        tooltip: tooltip,
-        onPressed: onTap,
-        iconSize: 28,
-        icon: Icon(icon),
-      );
+  Widget build(BuildContext context) =>
+      IconButton.filledTonal(tooltip: tooltip, onPressed: onTap, iconSize: 28, icon: Icon(icon));
 }
 
 class _Stat extends StatelessWidget {
@@ -287,10 +308,12 @@ class _Stat extends StatelessWidget {
           borderRadius: BorderRadius.circular(Radii.lg),
           border: Border.all(color: c.divider),
         ),
-        child: Column(children: [
-          Text(value, style: context.text.titleLarge),
-          Text(label, style: context.text.bodySmall),
-        ]),
+        child: Column(
+          children: [
+            Text(value, style: context.text.titleLarge),
+            Text(label, style: context.text.bodySmall),
+          ],
+        ),
       ),
     );
   }
@@ -308,7 +331,8 @@ class TasbihStatsScreen extends StatelessWidget {
     final data = log.read();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    int sumDays(int n) => List.generate(n, (i) => log.onDay(today.subtract(Duration(days: i)), data)).fold(0, (a, b) => a + b);
+    int sumDays(int n) =>
+        List.generate(n, (i) => log.onDay(today.subtract(Duration(days: i)), data)).fold(0, (a, b) => a + b);
     final all = data.values.expand((d) => d.values).fold(0, (a, b) => a + b);
     // Streak: days in a row with tasbih, up to today (or yesterday, if not yet today).
     var streak = 0;
@@ -332,124 +356,154 @@ class TasbihStatsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Your tasbih')),
-      body: ListView(padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xxl), children: [
-        // Streak
-        Container(
-          padding: const EdgeInsets.all(Space.lg),
-          decoration: BoxDecoration(
-            color: Color.lerp(c.surface, accent, 0.12),
-            borderRadius: BorderRadius.circular(Radii.xl),
-            border: Border.all(color: accent.withValues(alpha: 0.45)),
-          ),
-          child: Row(children: [
-            Icon(Icons.local_fire_department_rounded, color: accent, size: 40),
-            const SizedBox(width: Space.md),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(streak == 1 ? '1 day in a row' : '$streak days in a row',
-                    style: context.text.titleLarge),
-                Text(streak == 0 ? 'Start today: a few taps are enough' : 'Keep it going, a little every day',
-                    style: context.text.bodySmall),
-              ]),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xxl),
+        children: [
+          // Streak
+          Container(
+            padding: const EdgeInsets.all(Space.lg),
+            decoration: BoxDecoration(
+              color: Color.lerp(c.surface, accent, 0.12),
+              borderRadius: BorderRadius.circular(Radii.xl),
+              border: Border.all(color: accent.withValues(alpha: 0.45)),
             ),
-          ]),
-        ),
-        const SizedBox(height: Space.md),
-        Row(children: [
-          _Stat(label: 'Today', value: '${log.onDay(today, data)}'),
-          const SizedBox(width: Space.sm),
-          _Stat(label: '7 days', value: '${sumDays(7)}'),
-        ]),
-        const SizedBox(height: Space.sm),
-        Row(children: [
-          _Stat(label: '30 days', value: '${sumDays(30)}'),
-          const SizedBox(width: Space.sm),
-          _Stat(label: 'All time', value: '$all'),
-        ]),
-        const _StatsTitle('This week'),
-        Container(
-          height: 180,
-          padding: const EdgeInsets.fromLTRB(Space.md, Space.lg, Space.md, Space.sm),
-          decoration: BoxDecoration(
-            color: c.surface,
-            borderRadius: BorderRadius.circular(Radii.lg),
-            border: Border.all(color: c.divider),
+            child: Row(
+              children: [
+                Icon(Icons.local_fire_department_rounded, color: accent, size: 40),
+                const SizedBox(width: Space.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(streak == 1 ? '1 day in a row' : '$streak days in a row', style: context.text.titleLarge),
+                      Text(
+                        streak == 0 ? 'Start today: a few taps are enough' : 'Keep it going, a little every day',
+                        style: context.text.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            for (var i = 0; i < 7; i++)
-              Expanded(
-                child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
-                  if (weekCounts[i] > 0)
-                    FittedBox(
-                      child: Text('${weekCounts[i]}', style: context.text.labelSmall),
+          const SizedBox(height: Space.md),
+          Row(
+            children: [
+              _Stat(label: 'Today', value: '${log.onDay(today, data)}'),
+              const SizedBox(width: Space.sm),
+              _Stat(label: '7 days', value: '${sumDays(7)}'),
+            ],
+          ),
+          const SizedBox(height: Space.sm),
+          Row(
+            children: [
+              _Stat(label: '30 days', value: '${sumDays(30)}'),
+              const SizedBox(width: Space.sm),
+              _Stat(label: 'All time', value: '$all'),
+            ],
+          ),
+          const _StatsTitle('This week'),
+          Container(
+            height: 180,
+            padding: const EdgeInsets.fromLTRB(Space.md, Space.lg, Space.md, Space.sm),
+            decoration: BoxDecoration(
+              color: c.surface,
+              borderRadius: BorderRadius.circular(Radii.lg),
+              border: Border.all(color: c.divider),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                for (var i = 0; i < 7; i++)
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (weekCounts[i] > 0)
+                          FittedBox(child: Text('${weekCounts[i]}', style: context.text.labelSmall)),
+                        const SizedBox(height: 4),
+                        Flexible(
+                          child: FractionallySizedBox(
+                            heightFactor: weekCounts.fold(0, math.max) == 0
+                                ? 0.02
+                                : math.max(0.02, weekCounts[i] / weekCounts.fold(0, math.max)),
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 6),
+                              decoration: BoxDecoration(
+                                color: i == 6 ? c.primary : c.primary.withValues(alpha: 0.35),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          days[week[i].weekday - 1],
+                          style: context.text.labelSmall?.copyWith(color: i == 6 ? c.primary : c.inkMuted),
+                        ),
+                      ],
                     ),
-                  const SizedBox(height: 4),
-                  Flexible(
-                    child: FractionallySizedBox(
-                      heightFactor: weekCounts.fold(0, math.max) == 0
-                          ? 0.02
-                          : math.max(0.02, weekCounts[i] / weekCounts.fold(0, math.max)),
+                  ),
+              ],
+            ),
+          ),
+          const _StatsTitle('Last 30 days'),
+          Wrap(
+            spacing: 5,
+            runSpacing: 5,
+            children: [
+              for (final m in month)
+                Builder(
+                  builder: (_) {
+                    final n = log.onDay(m, data);
+                    final k = n == 0 ? 0.0 : math.min(1.0, 0.25 + n / 400);
+                    return Tooltip(
+                      message: '${m.day}/${m.month}: $n',
                       child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 6),
+                        width: 28,
+                        height: 28,
                         decoration: BoxDecoration(
-                          color: i == 6 ? c.primary : c.primary.withValues(alpha: 0.35),
+                          color: n == 0 ? c.surfaceAlt : c.primary.withValues(alpha: k),
                           borderRadius: BorderRadius.circular(6),
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(days[week[i].weekday - 1],
-                      style: context.text.labelSmall?.copyWith(color: i == 6 ? c.primary : c.inkMuted)),
-                ]),
-              ),
-          ]),
-        ),
-        const _StatsTitle('Last 30 days'),
-        Wrap(spacing: 5, runSpacing: 5, children: [
-          for (final m in month)
-            Builder(builder: (_) {
-              final n = log.onDay(m, data);
-              final k = n == 0 ? 0.0 : math.min(1.0, 0.25 + n / 400);
-              return Tooltip(
-                message: '${m.day}/${m.month}: $n',
-                child: Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: n == 0 ? c.surfaceAlt : c.primary.withValues(alpha: k),
-                    borderRadius: BorderRadius.circular(6),
+                    );
+                  },
+                ),
+            ],
+          ),
+          const _StatsTitle('Dhikr this month'),
+          if (best == 0)
+            Text('Nothing yet this month.', style: context.text.bodyMedium?.copyWith(color: c.inkMuted))
+          else
+            for (var i = 0; i < _phrases.length; i++)
+              if (byPhrase[i] > 0)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: Space.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(child: Text(_phrases[i].$2, style: context.text.bodyLarge)),
+                          Text('${byPhrase[i]}', style: context.text.titleSmall?.copyWith(color: c.primary)),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: byPhrase[i] / best,
+                          minHeight: 6,
+                          color: c.primary,
+                          backgroundColor: c.surfaceAlt,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              );
-            }),
-        ]),
-        const _StatsTitle('Dhikr this month'),
-        if (best == 0)
-          Text('Nothing yet this month.', style: context.text.bodyMedium?.copyWith(color: c.inkMuted))
-        else
-          for (var i = 0; i < _phrases.length; i++)
-            if (byPhrase[i] > 0)
-              Padding(
-                padding: const EdgeInsets.only(bottom: Space.md),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  Row(children: [
-                    Expanded(child: Text(_phrases[i].$2, style: context.text.bodyLarge)),
-                    Text('${byPhrase[i]}', style: context.text.titleSmall?.copyWith(color: c.primary)),
-                  ]),
-                  const SizedBox(height: 6),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: byPhrase[i] / best,
-                      minHeight: 6,
-                      color: c.primary,
-                      backgroundColor: c.surfaceAlt,
-                    ),
-                  ),
-                ]),
-              ),
-      ]),
+        ],
+      ),
     );
   }
 }
@@ -460,15 +514,21 @@ class _StatsTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: Space.xl, bottom: Space.md),
-        child: Text(text, style: context.text.titleMedium),
-      );
+    padding: const EdgeInsets.only(top: Space.xl, bottom: Space.md),
+    child: Text(text, style: context.text.titleMedium),
+  );
 }
 
 /// A ring of beads, an imam bead and a tassel at the bottom. [lit] beads are
 /// gold; the newest glows as [pulse] goes from 0 to 1.
 class _MisbahaPainter extends CustomPainter {
-  _MisbahaPainter({required this.beads, required this.lit, required this.pulse, required this.dark, required this.string});
+  _MisbahaPainter({
+    required this.beads,
+    required this.lit,
+    required this.pulse,
+    required this.dark,
+    required this.string,
+  });
   final int beads, lit;
   final double pulse;
   final bool dark;
@@ -480,12 +540,13 @@ class _MisbahaPainter extends CustomPainter {
     final r = size.width * 0.40;
     // The string.
     canvas.drawCircle(
-        c,
-        r,
-        Paint()
-          ..color = string.withValues(alpha: 0.5)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.5);
+      c,
+      r,
+      Paint()
+        ..color = string.withValues(alpha: 0.5)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
     // Leave a gap at the bottom for the imam bead.
     const gap = 0.55; // radians
     final step = (2 * math.pi - gap) / math.max(1, beads - 1);
@@ -504,9 +565,9 @@ class _MisbahaPainter extends CustomPainter {
         colors: on
             ? [const Color(0xFFFFF0C8), _gold, const Color(0xFF9A7230)]
             : dark
-                ? [const Color(0xFF4A5A7C), const Color(0xFF26324D), const Color(0xFF151D30)]
-                // Lapis beads on a light page.
-                : [const Color(0xFF8FA9CF), const Color(0xFF3D5E91), const Color(0xFF1F3A63)],
+            ? [const Color(0xFF4A5A7C), const Color(0xFF26324D), const Color(0xFF151D30)]
+            // Lapis beads on a light page.
+            : [const Color(0xFF8FA9CF), const Color(0xFF3D5E91), const Color(0xFF1F3A63)],
         stops: const [0, 0.55, 1],
       ).createShader(Rect.fromCircle(center: p, radius: beadR));
       canvas.drawCircle(p, beadR * (newest ? 1 + 0.15 * (1 - pulse) : 1), Paint()..shader = shader);

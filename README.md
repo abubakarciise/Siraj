@@ -56,10 +56,7 @@
   wording no recording matches is left for you to read.
 - **Tasbih.** A misbaha of 33 beads (or count on without end), swipe for another dhikr, and your history: streak,
   today, 7 and 30 days, a weekly chart and the dhikr you say most.
-- **Scenes.** Each tab has a living scene of its own, moving gently without end: stars and swaying lanterns over a
-  mosque (Home), light rising from an open Mushaf (Quran), sound waves (Listen), falling Arabic letters over books
-  (Hadith), the sun crossing the five prayers (Daily), falling beads (Tasbih). Paint-only, paused when not seen.
-- **Appearance.** Light, Dark and true-black Midnight themes. The Mushaf page colour (Ivory, White, Sepia, Dark, Black)
+- **Appearance.** Emerald and gold, the colours of the logo, with one colour for every header and the bottom bar. Light, Dark and true-black Midnight themes. The Mushaf page colour (Ivory, White, Sepia, Dark, Black)
   can differ, and everything on the reading screen takes the page colour.
 - **Private.** No account, no ads, no analytics. Bookmarks, history and downloads stay on the device.
 

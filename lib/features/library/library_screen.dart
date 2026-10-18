@@ -28,7 +28,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Library', style: context.text.headlineSmall),
+        title: const TabTitle('Library'),
         actions: [IconButton(icon: const Icon(Icons.settings_outlined), onPressed: () => context.push('/settings'))],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),

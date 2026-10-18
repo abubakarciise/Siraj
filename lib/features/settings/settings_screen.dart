@@ -9,7 +9,7 @@ import '../../design/tokens.dart';
 import '../reader/reader_screen.dart' show PaperPicker, MushafPaperX;
 
 const kAppName = 'Siraj';
-const kAppVersion = '2.8.0';
+const kAppVersion = '2.9.0';
 const kRepoUrl = 'github.com/Abuubakar-Ciise/Siraj';
 
 class SettingsScreen extends ConsumerWidget {
@@ -83,7 +83,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
             _Switch(
               icon: Icons.auto_stories_rounded,
-              color: const Color(0xFF1F4E8C),
+              color: const Color(0xFF0F6B56),
               title: 'Turn pages with the recitation',
               value: s.followAudio,
               onChanged: (v) => n.update((x) => x.copyWith(followAudio: v)),
@@ -109,7 +109,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
             _Row(
               icon: Icons.download_done_rounded,
-              color: const Color(0xFF2A9D8F),
+              color: const Color(0xFF3E7C59),
               title: 'Downloads & bookmarks',
               onTap: () => context.push('/library'),
             ),
@@ -129,7 +129,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
             _Row(
               icon: Icons.mosque_rounded,
-              color: const Color(0xFF17345F),
+              color: const Color(0xFF0E5A49),
               title: 'Prayer times',
               onTap: () => context.push('/prayer'),
             ),

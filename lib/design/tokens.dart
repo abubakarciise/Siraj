@@ -62,58 +62,58 @@ class AppColors extends ThemeExtension<AppColors> {
   Color get ayahMark => Color.lerp(ink, gold, 0.55)!;
 
   static const light = AppColors(
-    bg: Color(0xFFF3F2EE),
-    surface: Color(0xFFFFFEFB),
-    surfaceAlt: Color(0xFFE8E7E1),
+    bg: Color(0xFFF6F2E9),
+    surface: Color(0xFFFFFCF6),
+    surfaceAlt: Color(0xFFEEE8DB),
     pageBg: Color(0xFFFBF7EE),
-    ink: Color(0xFF18202B),
-    inkMuted: Color(0xFF59606D),
-    inkFaint: Color(0xFF9CA2AD),
-    primary: Color(0xFF1F4E8C), // lapis
-    primarySoft: Color(0xFFE0E8F3),
+    ink: Color(0xFF1F1C17),
+    inkMuted: Color(0xFF645E53),
+    inkFaint: Color(0xFFA49D8F),
+    primary: Color(0xFF0F6B56),
+    primarySoft: Color(0xFFDFEDE6),
     onPrimary: Color(0xFFFFFFFF),
-    brand: Color(0xFF17345F), // deep lapis
-    onBrand: Color(0xFFFFFDF6),
-    gold: Color(0xFFAD873B),
-    divider: Color(0xFFE1E0D9),
+    brand: Color(0xFF0E5A49),
+    onBrand: Color(0xFFFFFCF6),
+    gold: Color(0xFFA8813A),
+    divider: Color(0xFFE5DECF),
     danger: Color(0xFFB3402F),
     isDark: false,
   );
 
   static const dark = AppColors(
-    bg: Color(0xFF11141A),
-    surface: Color(0xFF181C24),
-    surfaceAlt: Color(0xFF222733),
-    pageBg: Color(0xFF15181E),
-    ink: Color(0xFFE8E6E0),
-    inkMuted: Color(0xFFA3A8B3),
-    inkFaint: Color(0xFF6A707C),
-    primary: Color(0xFF8FB4E8),
-    primarySoft: Color(0xFF1C2A40),
-    onPrimary: Color(0xFF0B1626),
-    brand: Color(0xFF1A2C48),
-    onBrand: Color(0xFFECE8DE),
-    gold: Color(0xFFD9B46A),
-    divider: Color(0xFF2A2F3A),
+    bg: Color(0xFF131416),
+    surface: Color(0xFF1B1D20),
+    surfaceAlt: Color(0xFF25282C),
+    pageBg: Color(0xFF17181B),
+    ink: Color(0xFFEAE5DA),
+    inkMuted: Color(0xFFA9A498),
+    inkFaint: Color(0xFF6F6B63),
+    primary: Color(0xFF7CC6AC),
+    primarySoft: Color(0xFF203530),
+    onPrimary: Color(0xFF0B1D17),
+    brand: Color(0xFF1C3A32),
+    onBrand: Color(0xFFEDE8DC),
+    gold: Color(0xFFD5B26C),
+    divider: Color(0xFF2C2F34),
     danger: Color(0xFFEF7B6B),
     isDark: true,
   );
 
   static const midnight = AppColors(
     bg: Color(0xFF000000),
-    surface: Color(0xFF0C0D10),
-    surfaceAlt: Color(0xFF17181D),
+    surface: Color(0xFF0E0E10),
+    surfaceAlt: Color(0xFF19191C),
     pageBg: Color(0xFF000000),
-    ink: Color(0xFFD8D5CE),
-    inkMuted: Color(0xFF979BA4),
-    inkFaint: Color(0xFF5C6069),
-    primary: Color(0xFF7FA6DD),
-    primarySoft: Color(0xFF111B2B),
-    onPrimary: Color(0xFF07101C),
-    brand: Color(0xFF0F1A2C),
-    onBrand: Color(0xFFDCD8CE),
-    gold: Color(0xFFC9A660),
-    divider: Color(0xFF1E2026),
+    ink: Color(0xFFD8D3C7),
+    inkMuted: Color(0xFF99948A),
+    inkFaint: Color(0xFF5E5A54),
+    primary: Color(0xFF6DBB9F),
+    primarySoft: Color(0xFF14261F),
+    onPrimary: Color(0xFF07140F),
+    brand: Color(0xFF112620),
+    onBrand: Color(0xFFDCD7CB),
+    gold: Color(0xFFC6A45E),
+    divider: Color(0xFF202024),
     danger: Color(0xFFE8705F),
     isDark: true,
   );
@@ -207,4 +207,8 @@ class AppColors extends ThemeExtension<AppColors> {
 extension AppThemeX on BuildContext {
   AppColors get colors => Theme.of(this).extension<AppColors>()!;
   TextTheme get text => Theme.of(this).textTheme;
+
+  /// Title and subtitle on a header (the emerald app bar).
+  TextStyle? get headerTitle => text.titleMedium?.copyWith(color: colors.onBrand);
+  TextStyle? get headerSub => text.bodySmall?.copyWith(color: colors.onBrand.withValues(alpha: 0.75));
 }

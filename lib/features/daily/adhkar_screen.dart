@@ -207,8 +207,8 @@ class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(cat.titleEn, style: context.text.titleMedium),
-          Text(cat.titleAr, style: context.text.bodySmall),
+          Text(cat.titleEn, style: context.headerTitle),
+          Text(cat.titleAr, style: context.headerSub),
         ]),
         actions: [
           IconButton(

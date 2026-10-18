@@ -122,9 +122,6 @@ class _ReciterScreenState extends ConsumerState<ReciterScreen> {
               PopupMenuButton<String>(
                 onSelected: (v) async {
                   switch (v) {
-                    case 'default':
-                      ref.read(settingsProvider.notifier).update((s) => s.copyWith(defaultRecitation: r.key));
-                      showToast(context, '${reciter.name} will recite when you press play in the Mushaf');
                     case 'select':
                       setState(
                         () => _selected.add(
@@ -145,11 +142,6 @@ class _ReciterScreenState extends ConsumerState<ReciterScreen> {
                   }
                 },
                 itemBuilder: (_) => [
-                  PopupMenuItem(
-                    value: 'default',
-                    enabled: !isDefault,
-                    child: Text(isDefault ? 'Default reciter ✓' : 'Use for Mushaf playback'),
-                  ),
                   const PopupMenuItem(value: 'select', child: Text('Select surahs to download')),
                   const PopupMenuItem(value: 'juzamma', child: Text("Download Juz 'Amma (78–114)")),
                   if (activeCount > 0) const PopupMenuItem(value: 'cancel', child: Text('Cancel downloads')),

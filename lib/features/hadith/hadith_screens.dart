@@ -352,8 +352,8 @@ class _HadithBookScreenState extends ConsumerState<HadithBookScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(book.nameEn, style: context.text.titleMedium),
-          Text('${sections.length} books · ${book.nameAr}', style: context.text.bodySmall),
+          Text(book.nameEn, style: context.headerTitle),
+          Text('${sections.length} books · ${book.nameAr}', style: context.headerSub),
         ]),
         bottom: CollectionSearchBar(hint: 'Search ${book.nameEn}', onChanged: _search, busy: _searching),
       ),
@@ -433,8 +433,8 @@ class _HadithListScreenState extends ConsumerState<HadithListScreen> {
       appBar: AppBar(
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(title == null || title == bookName ? bookName : title,
-              maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleMedium),
-          if (title != null && title != bookName) Text(bookName, style: context.text.bodySmall),
+              maxLines: 1, overflow: TextOverflow.ellipsis, style: context.headerTitle),
+          if (title != null && title != bookName) Text(bookName, style: context.headerSub),
         ]),
         bottom: CollectionSearchBar(
           hint: all == null ? 'Search' : 'Search ${all.length} hadith · word or number',
@@ -653,9 +653,9 @@ class _HadithDetailScreenState extends ConsumerState<HadithDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('$bookName ${h.numberLabel}', style: context.text.titleMedium),
+          Text('$bookName ${h.numberLabel}', style: context.headerTitle),
           if (section != null && section != bookName)
-            Text(section, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.bodySmall),
+            Text(section, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.headerSub),
         ]),
         actions: [
           IconButton(

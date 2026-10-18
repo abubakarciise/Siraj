@@ -11,7 +11,7 @@ import 'adhkar_screen.dart' show adhkarIcons;
 class AdhkarMiniPlayer extends ConsumerWidget {
   const AdhkarMiniPlayer({super.key});
 
-  static const _night = Color(0xFF14223F);
+  static const _night = Color(0xFF0B3D32); // deep emerald, as the logo
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

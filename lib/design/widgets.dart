@@ -306,6 +306,9 @@ class TabTitle extends StatelessWidget {
   Widget build(BuildContext context) => FittedBox(
         fit: BoxFit.scaleDown,
         alignment: AlignmentDirectional.centerStart,
-        child: Text(text, maxLines: 1, style: Theme.of(context).textTheme.headlineSmall),
+        // On the header's emerald.
+        child: Text(text,
+            maxLines: 1,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Theme.of(context).appBarTheme.foregroundColor)),
       );
 }

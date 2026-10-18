@@ -1,73 +1,86 @@
 import 'package:flutter/material.dart';
 
-/// The five tabs, kept alive like an [IndexedStack], but changing with
-/// motion: the new tab slides in from the side it lies on (right for a tab
-/// further along, left for one before) and fades in, while the old one
-/// fades out a little the other way.
+/// The five tabs side by side, like WhatsApp: the page follows the finger
+/// while swiping and the next tab slides in beside it; letting go settles on
+/// the nearer one. Tapping a tab slides there too. Every tab is kept alive,
+/// so its pages and scroll positions stay.
 class TabSwitcher extends StatefulWidget {
-  const TabSwitcher({super.key, required this.index, required this.children});
+  const TabSwitcher({
+    super.key,
+    required this.index,
+    required this.children,
+    required this.onChanged,
+    this.swipe = true,
+  });
+
   final int index;
   final List<Widget> children;
+
+  /// A swipe settled on another tab.
+  final ValueChanged<int> onChanged;
+
+  /// Swiping is on for a tab's main page only (inside a page, a sideways
+  /// drag belongs to the page).
+  final bool swipe;
 
   @override
   State<TabSwitcher> createState() => _TabSwitcherState();
 }
 
-class _TabSwitcherState extends State<TabSwitcher> with SingleTickerProviderStateMixin {
-  late final _move = AnimationController(vsync: this, duration: const Duration(milliseconds: 320), value: 1);
-  late int _from = widget.index;
+class _TabSwitcherState extends State<TabSwitcher> {
+  late final _pages = PageController(initialPage: widget.index);
+
+  /// Set while the pager moves on its own (a tab was tapped), so the pages it
+  /// passes are not taken for a swipe.
+  bool _driving = false;
 
   @override
   void didUpdateWidget(TabSwitcher old) {
     super.didUpdateWidget(old);
-    if (old.index != widget.index) {
-      _from = old.index;
-      _move.forward(from: 0);
+    final shown = _pages.hasClients ? _pages.page?.round() : null;
+    if (widget.index != shown && _pages.hasClients) {
+      _driving = true;
+      _pages
+          .animateToPage(widget.index, duration: const Duration(milliseconds: 320), curve: Curves.easeOutCubic)
+          .whenComplete(() => _driving = false);
     }
   }
 
   @override
   void dispose() {
-    _move.dispose();
+    _pages.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) {
-    final to = widget.index;
-    final dir = to > _from ? 1.0 : -1.0;
-    return AnimatedBuilder(
-      animation: _move,
-      builder: (context, _) {
-        final t = Curves.easeOutCubic.transform(_move.value);
-        final moving = _move.value < 1 && _from != to;
-        return Stack(fit: StackFit.expand, children: [
-          // The same wrappers for every tab at all times, so no tab is ever
-          // rebuilt (its pages and scroll positions are kept).
-          for (var i = 0; i < widget.children.length; i++)
-            Offstage(
-              offstage: !(i == to || (moving && i == _from)),
-              child: _place(
-                child: widget.children[i],
-                active: i == to,
-                dx: i == to ? dir * 0.22 * (1 - t) : (i == _from ? -dir * 0.10 * t : 0),
-                opacity: i == to ? t : (i == _from ? (1 - t * 2.5).clamp(0.0, 1.0) : 0),
-              ),
-            ),
-        ]);
-      },
-    );
-  }
-
-  Widget _place({required Widget child, required bool active, required double dx, required double opacity}) =>
-      IgnorePointer(
-        ignoring: !active,
-        child: TickerMode(
-          enabled: active,
-          child: FractionalTranslation(
-            translation: Offset(dx, 0),
-            child: Opacity(opacity: opacity.clamp(0.0, 1.0), child: child),
-          ),
-        ),
+  Widget build(BuildContext context) => PageView(
+        controller: _pages,
+        // The tabs beside the open one are built ahead, so a swipe never
+        // shows an empty page.
+        allowImplicitScrolling: true,
+        physics: widget.swipe ? const PageScrollPhysics() : const NeverScrollableScrollPhysics(),
+        onPageChanged: (i) {
+          if (!_driving && i != widget.index) widget.onChanged(i);
+        },
+        children: [for (final child in widget.children) _KeepAlive(child: child)],
       );
+}
+
+class _KeepAlive extends StatefulWidget {
+  const _KeepAlive({required this.child});
+  final Widget child;
+
+  @override
+  State<_KeepAlive> createState() => _KeepAliveState();
+}
+
+class _KeepAliveState extends State<_KeepAlive> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
+  }
 }

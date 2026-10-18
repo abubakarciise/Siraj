@@ -36,6 +36,8 @@ final appRouter = GoRouter(
       // Each tab keeps its own stack, and its own background colour.
       navigatorContainerBuilder: (context, shell, children) => TabSwitcher(
         index: shell.currentIndex,
+        onChanged: shell.goBranch,
+        swipe: const ['/home', '/quran', '/listen', '/hadith', '/daily'].contains(GoRouterState.of(context).uri.path),
         children: [
           for (var i = 0; i < children.length; i++) TabTheme(tab: AppTab.values[i], child: children[i]),
         ],

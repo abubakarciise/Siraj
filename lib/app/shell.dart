@@ -11,26 +11,15 @@ class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.shell, required this.location});
   final StatefulNavigationShell shell;
 
-  /// Where the app is, to know if a tab's main page is showing.
+  /// Where the app is.
   final String location;
-
-  static const _roots = ['/home', '/quran', '/listen', '/hadith', '/daily'];
-
-  /// Swipe left for the next tab, right for the previous one (on a tab's
-  /// main page; inside a page, a swipe belongs to the page).
-  void _swipe(DragEndDetails d) {
-    final v = d.primaryVelocity ?? 0;
-    if (v.abs() < 450 || !_roots.contains(location)) return;
-    final next = shell.currentIndex + (v < 0 ? 1 : -1);
-    if (next >= 0 && next < _roots.length) shell.goBranch(next);
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
     final downloading = ref.watch(downloadsProvider).value?.active.isNotEmpty ?? false;
     return Scaffold(
-      body: GestureDetector(onHorizontalDragEnd: _swipe, child: shell),
+      body: shell,
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

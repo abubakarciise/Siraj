@@ -30,7 +30,7 @@ class HeroSliverAppBar extends StatelessWidget {
             Text(subtitle!,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 11, color: c.inkMuted, fontWeight: FontWeight.w500)),
+                style: TextStyle(fontSize: 11, color: c.onBar.withValues(alpha: 0.75), fontWeight: FontWeight.w500)),
         ]),
       ),
     );

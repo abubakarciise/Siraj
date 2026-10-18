@@ -58,12 +58,15 @@ class AppColors extends ThemeExtension<AppColors> {
   Color get ayahHighlight => primary.withValues(alpha: isDark ? 0.20 : 0.13);
   Color get selection => gold.withValues(alpha: isDark ? 0.24 : 0.18);
 
-  /// Headers and the bottom bar: a warm sand from the logo's gold, so they
-  /// stand apart from the pages' backgrounds.
-  Color get bar => Color.lerp(surface, gold, isDark ? 0.14 : 0.24)!;
+  /// Headers and the bottom bar: the logo's emerald.
+  Color get bar => brand;
 
-  /// The line under a header and over the bottom bar.
-  Color get barLine => Color.lerp(divider, gold, 0.35)!;
+  /// The line under a header and over the bottom bar: the logo's gold.
+  Color get barLine => gold.withValues(alpha: 0.55);
+
+  /// Text and icons on the bars: cream, and gold for what is selected.
+  Color get onBar => onBrand;
+  Color get barSelected => Color.lerp(gold, Colors.white, 0.30)!;
 
   /// Ayah-end ornaments and numbers on the Mushaf page.
   Color get ayahMark => Color.lerp(ink, gold, 0.55)!;
@@ -216,6 +219,6 @@ extension AppThemeX on BuildContext {
   TextTheme get text => Theme.of(this).textTheme;
 
   /// Title and subtitle in a header.
-  TextStyle? get headerTitle => text.titleMedium;
-  TextStyle? get headerSub => text.bodySmall;
+  TextStyle? get headerTitle => text.titleMedium?.copyWith(color: colors.onBar);
+  TextStyle? get headerSub => text.bodySmall?.copyWith(color: colors.onBar.withValues(alpha: 0.75));
 }

@@ -28,7 +28,7 @@ class HomeScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Colors.transparent, // the tab's art shows through (TabBackdrop)
       body: AnnotatedRegion(
-        value: c.isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+        value: SystemUiOverlayStyle.light,
         child: Stack(
           children: [
             CustomScrollView(
@@ -121,28 +121,28 @@ class _Header extends ConsumerWidget {
                           '${_weekdays[now.weekday - 1]} · ${hijri.day} ${hijri.monthName} ${hijri.year}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: context.text.bodySmall?.copyWith(color: c.gold),
+                          style: context.text.bodySmall?.copyWith(color: c.barSelected),
                         ),
                         FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: AlignmentDirectional.centerStart,
-                          child: Text(_greeting(), maxLines: 1, style: context.text.headlineSmall),
+                          child: Text(_greeting(), maxLines: 1, style: context.text.headlineSmall?.copyWith(color: c.onBar)),
                         ),
                         Text(
                           'السلام عليكم ورحمة الله',
-                          style: TextStyle(fontFamily: kNaskhFont, fontSize: 15, color: c.inkMuted),
+                          style: TextStyle(fontFamily: kNaskhFont, fontSize: 15, color: c.onBar.withValues(alpha: 0.75)),
                         ),
                       ],
                     ),
                   ),
                   IconButton(
                     tooltip: 'Search',
-                    icon: Icon(Icons.search_rounded, color: c.ink),
+                    icon: Icon(Icons.search_rounded, color: c.onBar),
                     onPressed: () => context.push('/search'),
                   ),
                   IconButton(
                     tooltip: 'Settings',
-                    icon: Icon(Icons.settings_outlined, color: c.ink),
+                    icon: Icon(Icons.settings_outlined, color: c.onBar),
                     onPressed: () => context.push('/settings'),
                   ),
                 ],

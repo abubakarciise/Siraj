@@ -198,7 +198,7 @@ class _AdhkarNow extends ConsumerWidget {
     final tasbih = id == 'tasbih';
     final page = tasbih ? '/tasbih' : '/adhkar/$id';
     final gold = c.goldOnBrand;
-    final listen = cat != null && cat.listeningTime > Duration.zero;
+    final listen = cat != null && cat.listeningTime() > Duration.zero;
     return BrandPanel(
       onTap: () => context.push(page),
       child: Column(
@@ -260,7 +260,7 @@ class _AdhkarNow extends ConsumerWidget {
                     onPressed: () => context.push('/adhkar/$id?listen=1'),
                     icon: const Icon(Icons.play_arrow_rounded),
                     label: Text(listen
-                        ? '${started ? 'Continue' : 'Listen'} · ${formatListeningTime(cat.listeningTime)}'
+                        ? '${started ? 'Continue' : 'Listen'} · ${formatListeningTime(cat.listeningTime(full: audio.full))}'
                         : (started ? 'Continue' : 'Listen')),
                   ),
                 ),

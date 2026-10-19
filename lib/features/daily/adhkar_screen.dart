@@ -63,7 +63,7 @@ class AdhkarListScreen extends ConsumerWidget {
                     Text(cat.titleEn, style: context.text.titleLarge?.copyWith(fontSize: 18)),
                     Text(cat.titleAr,
                         style: TextStyle(fontFamily: kNaskhFont, fontSize: 16, height: 1.5, color: c.goldText)),
-                    _ListenTime(cat),
+                    _ListenTime(cat, full: ref.read(adhkarPlayerProvider).full),
                   ]),
                 ),
                 if (done) Icon(Icons.check_circle_rounded, color: c.primary),
@@ -227,7 +227,7 @@ class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
     final total = cat.totalCount;
     final done = total - List.generate(cat.items.length, (i) => _left(cat, i)).fold(0, (a, b) => a + b);
 
-    final recorded = cat.listeningTime > Duration.zero;
+    final recorded = cat.listeningTime() > Duration.zero;
     return Scaffold(
       appBar: AppBar(
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -280,10 +280,10 @@ class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 if (recorded) ...[
                   _ModeSwitch(
-                    once: _audio.once,
-                    onceTime: formatListeningTime(cat.onceTime),
-                    fullTime: formatListeningTime(cat.listeningTime),
-                    onChanged: _audio.setOnce,
+                    full: _audio.full,
+                    shortTime: formatListeningTime(cat.listeningTime()),
+                    fullTime: formatListeningTime(cat.listeningTime(full: true)),
+                    onChanged: _audio.setFull,
                   ),
                   const SizedBox(height: Space.md),
                 ],
@@ -293,7 +293,7 @@ class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
                       ? const SizedBox(width: double.infinity)
                       : _ListenCard(
                           onTap: () => _listen(cat),
-                          once: _audio.once,
+                          full: _audio.full,
                           // Where reading or listening stopped (kept until "Start again").
                           resumeAt: done > 0 && done < total
                               ? List.generate(cat.items.length, (i) => i).firstWhere((i) => _left(cat, i) > 0) + 1
@@ -345,19 +345,19 @@ class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
   }
 }
 
-/// "Once each" or "Full count": how the adhkar are recited while listening,
-/// each with how long it takes.
+/// "Short" (a hundred-times dhikr plays ten times) or "Full count": how the
+/// adhkar are recited while listening, each with how long it takes.
 class _ModeSwitch extends StatelessWidget {
-  const _ModeSwitch({required this.once, required this.onceTime, required this.fullTime, required this.onChanged});
-  final bool once;
-  final String onceTime, fullTime;
+  const _ModeSwitch({required this.full, required this.shortTime, required this.fullTime, required this.onChanged});
+  final bool full;
+  final String shortTime, fullTime;
   final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     Widget option(bool value, String label, String time) {
-      final selected = once == value;
+      final selected = full == value;
       return Expanded(
         child: Semantics(
           button: true,
@@ -402,9 +402,9 @@ class _ModeSwitch extends StatelessWidget {
         border: Border.all(color: c.divider),
       ),
       child: Row(children: [
-        option(true, 'Once each', onceTime),
+        option(false, 'Short', shortTime),
         const SizedBox(width: 4),
-        option(false, 'Full count', fullTime),
+        option(true, 'Full count', fullTime),
       ]),
     );
   }
@@ -571,9 +571,9 @@ class _Counter extends StatelessWidget {
 }
 
 class _ListenCard extends StatelessWidget {
-  const _ListenCard({required this.onTap, required this.once, this.resumeAt});
+  const _ListenCard({required this.onTap, required this.full, this.resumeAt});
   final VoidCallback onTap;
-  final bool once;
+  final bool full;
 
   /// The dhikr (1-based) to continue from, when some were already counted.
   final int? resumeAt;
@@ -598,7 +598,7 @@ class _ListenCard extends StatelessWidget {
                 style: context.text.titleLarge?.copyWith(color: c.onBrand)),
             Text(
               resumeAt == null
-                  ? (once ? 'Each dhikr recited once' : 'Each dhikr as many times as it is said')
+                  ? (full ? 'Each dhikr as many times as it is said' : 'A hundred-times dhikr plays ten times')
                   : 'From dhikr $resumeAt, where you stopped',
               style: context.text.bodySmall?.copyWith(color: c.onBrand.withValues(alpha: 0.78)),
             ),
@@ -625,7 +625,7 @@ class _ListenBar extends StatelessWidget {
         : audio.repetitions > 1
             ? 'Recitation ${(audio.repetition + (audio.playing ? 1 : 0)).clamp(1, audio.repetitions)} of ${audio.repetitions}'
             : audio.playing
-                ? (audio.once ? 'Once each' : 'Full count')
+                ? (audio.full ? 'Full count' : 'Short')
                 : 'Paused';
     final onBar = c.onBrand;
     return SafeArea(
@@ -691,13 +691,16 @@ class _ListenBar extends StatelessWidget {
 
 /// "12 min of listening", with a note when some adhkar have no recording.
 class _ListenTime extends StatelessWidget {
-  const _ListenTime(this.cat);
+  const _ListenTime(this.cat, {required this.full});
   final AdhkarCategory cat;
+
+  /// The listener's choice: "Full count" or "Short".
+  final bool full;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final t = cat.listeningTime;
+    final t = cat.listeningTime(full: full);
     if (t == Duration.zero) return const SizedBox.shrink();
     return Row(children: [
       Icon(Icons.headphones_rounded, size: 14, color: c.goldText),

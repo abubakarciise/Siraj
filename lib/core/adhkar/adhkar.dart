@@ -2,11 +2,11 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 
-/// While listening, a dhikr said a hundred times plays this often; its card
-/// keeps the rest of the count for the listener to finish by tapping.
-/// Complete recordings do the same (Alafasy recites the hundred-times adhkar
-/// once), and it keeps the morning and evening adhkar near 20 minutes.
-/// Shorter counts (3, 7, 10, 33) always play in full.
+/// Listening "Short", a dhikr said a hundred times plays this often; its card
+/// keeps the rest of the count for the listener to finish by tapping (complete
+/// recordings do the same: Alafasy recites the hundred-times adhkar once), and
+/// the morning and evening adhkar stay near 20 minutes. "Full count" plays
+/// every dhikr its whole count. Shorter counts (3, 7, 10, 33) always play in full.
 const kListenCap = 10;
 const kLongCount = 100;
 
@@ -27,7 +27,7 @@ class Dhikr {
   final int audioMs;
 
   /// How many times the recording plays when listening to the whole category.
-  int get listenTimes => count >= kLongCount ? kListenCap : count;
+  int listenTimes({bool full = false}) => full || count < kLongCount ? count : kListenCap;
 
   factory Dhikr.fromJson(Map<String, dynamic> j, [Map<String, dynamic>? audio]) => Dhikr(
         text: j['text'] as String,
@@ -46,17 +46,15 @@ class AdhkarCategory {
 
   int get totalCount => items.fold(0, (a, b) => a + b.count);
 
-  /// How long listening to the whole category takes: each recording as many
-  /// times as it plays ([Dhikr.listenTimes]), with the player's pauses between
-  /// (450 ms between repetitions, a second before the next dhikr). Adhkar
-  /// without a recording are left out; [unrecorded] says how many.
-  Duration get listeningTime => Duration(
-        milliseconds: items.where((d) => d.audioMs > 0).fold(0, (t, d) => t + d.listenTimes * (d.audioMs + 450) + 550),
-      );
-
-  /// Listening with each recording once (the "Once each" choice).
-  Duration get onceTime => Duration(
-        milliseconds: items.where((d) => d.audioMs > 0).fold(0, (t, d) => t + d.audioMs + 1000),
+  /// How long listening to the whole category takes ("Short", or the full
+  /// count): each recording as many times as it plays ([Dhikr.listenTimes]),
+  /// with the player's pauses between (450 ms between repetitions, a second
+  /// before the next dhikr). Adhkar without a recording are left out;
+  /// [unrecorded] says how many.
+  Duration listeningTime({bool full = false}) => Duration(
+        milliseconds: items
+            .where((d) => d.audioMs > 0)
+            .fold(0, (t, d) => t + d.listenTimes(full: full) * (d.audioMs + 450) + 550),
       );
 
   int get unrecorded => items.where((d) => d.audioFile == null).length;

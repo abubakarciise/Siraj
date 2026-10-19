@@ -46,3 +46,6 @@ app.*.map.json
 
 # Build-time source cache (re-downloaded by tool/build_quran_db.py)
 /tool/cache/
+
+# Build scripts (adhkar audio, icons, content databases): kept locally, not published
+/tool/

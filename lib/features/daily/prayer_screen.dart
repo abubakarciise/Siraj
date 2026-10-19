@@ -183,9 +183,11 @@ class _PrayerRow extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: Space.sm),
       padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.md),
       decoration: BoxDecoration(
-        color: isNext ? c.primarySoft : c.surface,
+        // The prayer now or next: a warm gold wash edged in emerald, as the
+        // dhikr and ayah being recited.
+        color: isNext ? Color.lerp(c.surface, c.gold, c.isDark ? 0.12 : 0.10) : c.surface,
         borderRadius: BorderRadius.circular(Radii.md),
-        border: isNext ? Border.all(color: c.primary.withValues(alpha: 0.4)) : cardBorder(c),
+        border: isNext ? Border.all(color: c.primary.withValues(alpha: 0.55), width: 1.5) : cardBorder(c),
         boxShadow: cardShadow(c),
       ),
       child: Row(children: [

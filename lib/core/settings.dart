@@ -10,7 +10,7 @@ class AppSettings {
   const AppSettings({
     this.theme = ThemePref.system,
     this.paper = MushafPaper.auto,
-    this.translation = 'en_sahih',
+    this.translation = '', // off until chosen in Settings
     this.wifiOnly = false,
     this.keepScreenOn = true,
     this.followAudio = true,
@@ -59,7 +59,7 @@ class AppSettings {
   static AppSettings load(SharedPreferences p) => AppSettings(
         theme: _theme(p),
         paper: MushafPaper.values.asNameMap()[p.getString('paper')] ?? MushafPaper.auto,
-        translation: p.getString('translation') ?? 'en_sahih',
+        translation: p.getString('translation') ?? '',
         wifiOnly: p.getBool('wifiOnly') ?? false,
         keepScreenOn: p.getBool('keepScreenOn') ?? true,
         followAudio: p.getBool('followAudio') ?? true,

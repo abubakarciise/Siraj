@@ -15,6 +15,12 @@
   <img alt="License" src="https://img.shields.io/badge/license-MIT-D5B26C">
 </p>
 
+## Install
+
+**Android:** download `Siraj.apk` from the [latest release](https://github.com/Abuubakar-Ciise/Siraj/releases/latest)
+and open it on your phone. Android asks once to allow installing apps from your browser or file manager; allow it,
+then tap Install. Later versions install over it and keep your bookmarks and progress.
+
 ## Screenshots
 
 | Home | Quran | Mushaf |
@@ -26,8 +32,8 @@
 | <img src="docs/screenshots/04_hadith.png" width="260"> | <img src="docs/screenshots/05_hadith_detail.png" width="260"> | <img src="docs/screenshots/06_reminders.png" width="260"> |
 | **Memorization test** | **Tasbih** | **Settings** |
 | <img src="docs/screenshots/12_memorize.png" width="260"> | <img src="docs/screenshots/13_tasbih.png" width="260"> | <img src="docs/screenshots/08_appearance.png" width="260"> |
-| **Dark** | | |
-| <img src="docs/screenshots/09_home_dark.png" width="260"> | | |
+| **Dark** | **Listen** | **Prayer times** |
+| <img src="docs/screenshots/09_home_dark.png" width="260"> | <img src="docs/screenshots/16_listen.png" width="260"> | <img src="docs/screenshots/17_prayer.png" width="260"> |
 
 ## Features
 

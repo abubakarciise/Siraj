@@ -26,26 +26,46 @@ class AppShell extends ConsumerWidget {
           const MiniPlayer(),
           const AdhkarMiniPlayer(),
           DecoratedBox(
-            decoration: BoxDecoration(border: Border(top: BorderSide(color: c.barLine))),
+            decoration: BoxDecoration(color: c.navBar, border: Border(top: BorderSide(color: c.barLine))),
             child: NavigationBar(
               selectedIndex: shell.currentIndex,
               onDestinationSelected: (i) => shell.goBranch(i, initialLocation: i == shell.currentIndex),
               destinations: [
                 const NavigationDestination(
-                    icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'Home'),
+                  icon: Icon(Icons.home_outlined),
+                  selectedIcon: Icon(Icons.home_rounded),
+                  label: 'Home',
+                ),
                 const NavigationDestination(
-                    icon: Icon(Icons.menu_book_outlined), selectedIcon: Icon(Icons.menu_book_rounded), label: 'Quran'),
+                  icon: Icon(Icons.menu_book_outlined),
+                  selectedIcon: Icon(Icons.menu_book_rounded),
+                  label: 'Quran',
+                ),
                 NavigationDestination(
-                  icon: Badge(isLabelVisible: downloading, smallSize: 8, backgroundColor: c.primary,
-                      child: const Icon(Icons.headphones_outlined)),
-                  selectedIcon: Badge(isLabelVisible: downloading, smallSize: 8, backgroundColor: c.primary,
-                      child: const Icon(Icons.headphones_rounded)),
+                  icon: Badge(
+                    isLabelVisible: downloading,
+                    smallSize: 8,
+                    backgroundColor: c.gold,
+                    child: const Icon(Icons.headphones_outlined),
+                  ),
+                  selectedIcon: Badge(
+                    isLabelVisible: downloading,
+                    smallSize: 8,
+                    backgroundColor: c.gold,
+                    child: const Icon(Icons.headphones_rounded),
+                  ),
                   label: 'Listen',
                 ),
                 const NavigationDestination(
-                    icon: Icon(Icons.auto_stories_outlined), selectedIcon: Icon(Icons.auto_stories_rounded), label: 'Hadith'),
+                  icon: Icon(Icons.auto_stories_outlined),
+                  selectedIcon: Icon(Icons.auto_stories_rounded),
+                  label: 'Hadith',
+                ),
                 const NavigationDestination(
-                    icon: Icon(Icons.wb_twilight_outlined), selectedIcon: Icon(Icons.wb_twilight_rounded), label: 'Daily'),
+                  icon: Icon(Icons.wb_twilight_outlined),
+                  selectedIcon: Icon(Icons.wb_twilight_rounded),
+                  label: 'Daily',
+                ),
               ],
             ),
           ),

@@ -131,7 +131,7 @@ class _Shell extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => AppCard(onTap: onTap, tint: context.colors.primary, child: child);
+  Widget build(BuildContext context) => AppCard(onTap: onTap, child: child);
 }
 
 /// Location picker. Defaults to the prayer-times location; the Qibla passes

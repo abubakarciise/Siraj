@@ -568,9 +568,9 @@ class _MisbahaPainter extends CustomPainter {
         colors: on
             ? [const Color(0xFFFFF0C8), _gold, const Color(0xFF9A7230)]
             : dark
-            ? [const Color(0xFF4A5A7C), const Color(0xFF26324D), const Color(0xFF151D30)]
-            // Lapis beads on a light page.
-            : [const Color(0xFF8FA9CF), const Color(0xFF3D5E91), const Color(0xFF1F3A63)],
+            ? [const Color(0xFF3F7A68), const Color(0xFF1B4A3E), const Color(0xFF0C261F)]
+            // Emerald beads on the ivory page, turning gold as they are counted.
+            : [const Color(0xFF5FA58E), const Color(0xFF0F5C4A), const Color(0xFF083A2E)],
         stops: const [0, 0.55, 1],
       ).createShader(Rect.fromCircle(center: p, radius: beadR));
       canvas.drawCircle(p, beadR * (newest ? 1 + 0.15 * (1 - pulse) : 1), Paint()..shader = shader);

@@ -123,15 +123,16 @@ class ReciterAvatar extends StatelessWidget {
   final String nameAr;
   final double size;
 
-  // Within the logo's family: emeralds, teals and golds.
-  static const _hues = [160.0, 168.0, 176.0, 152.0, 40.0, 34.0, 145.0, 184.0, 46.0, 138.0];
+  // Within the logo's family only: emeralds and golds.
+  static const _hues = [160.0, 38.0, 152.0, 166.0, 42.0, 156.0, 34.0, 162.0];
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final hue = _hues[id % _hues.length];
-    final base = HSLColor.fromAHSL(1, hue, 0.38, c.isDark ? 0.26 : 0.36).toColor();
-    final light = HSLColor.fromAHSL(1, (hue + 18) % 360, 0.42, c.isDark ? 0.34 : 0.48).toColor();
+    final gold = hue < 90;
+    final base = HSLColor.fromAHSL(1, hue, gold ? 0.42 : 0.55, c.isDark ? 0.26 : (gold ? 0.40 : 0.27)).toColor();
+    final light = HSLColor.fromAHSL(1, hue, gold ? 0.45 : 0.45, c.isDark ? 0.34 : (gold ? 0.52 : 0.38)).toColor();
     final letter = nameAr.replaceAll(RegExp(r'^(الشيخ|الشيخ|ال)\s*'), '').trim();
     return Container(
       width: size,
@@ -146,7 +147,7 @@ class ReciterAvatar extends StatelessWidget {
         children: [
           Transform.rotate(
             angle: (id % 8) * math.pi / 16,
-            child: GirihPattern(color: Colors.white, cell: size / 2.2, opacity: 0.16),
+            child: GirihPattern(color: Colors.white, cell: size / 2.2, opacity: 0.09),
           ),
           Center(
             child: Text(
@@ -250,11 +251,24 @@ class SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xxl, Space.gutter, Space.md),
-        child: Row(children: [
-          Expanded(child: Text(text, style: context.text.titleLarge)),
-          if (trailing != null) trailing!,
-        ]),
+        padding: EdgeInsets.fromLTRB(Space.gutter, Space.xxl + 4, trailing == null ? Space.gutter : Space.sm, Space.md),
+        child: SizedBox(
+          height: 32,
+          child: Row(children: [
+            Text(text, style: context.text.titleLarge?.copyWith(fontSize: 19)),
+            const SizedBox(width: Space.md),
+            // A gold rule fading out, as under a heading in a printed book.
+            Expanded(
+              child: Container(
+                height: 1,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: [context.colors.gold.withValues(alpha: 0.55), context.colors.gold.withValues(alpha: 0)]),
+                ),
+              ),
+            ),
+            if (trailing != null) ...[const SizedBox(width: Space.sm), trailing!],
+          ]),
+        ),
       );
 }
 
@@ -307,30 +321,23 @@ class TabTitle extends StatelessWidget {
   Widget build(BuildContext context) => FittedBox(
         fit: BoxFit.scaleDown,
         alignment: AlignmentDirectional.centerStart,
-        // On the header's emerald.
-        child: Text(text,
-            maxLines: 1,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Theme.of(context).appBarTheme.foregroundColor)),
+        child: Text(text, maxLines: 1, style: Theme.of(context).textTheme.headlineSmall),
       );
 }
 
-/// Cards: in light, a white surface lifted by a soft shadow (no outline); in
-/// dark, where shadows do not show, a fine outline on a lifted surface.
-Border? cardBorder(AppColors c) => c.isDark ? Border.all(color: c.divider) : null;
+/// Cards: an ivory sheet edged with a fine gold hairline, lifted by a soft
+/// warm shadow in light (shadows do not show in dark, the hairline does).
+Border? cardBorder(AppColors c) => Border.all(color: c.divider);
 
 List<BoxShadow>? cardShadow(AppColors c) => c.isDark
     ? null
-    : const [
-        BoxShadow(color: Color(0x14103A2F), blurRadius: 18, offset: Offset(0, 6)),
-        BoxShadow(color: Color(0x0A103A2F), blurRadius: 3, offset: Offset(0, 1)),
-      ];
+    : const [BoxShadow(color: Color(0x148A6A2B), blurRadius: 20, offset: Offset(0, 8))];
 
-BorderSide cardSide(AppColors c) =>
-    c.isDark ? BorderSide(color: c.divider) : BorderSide(color: Color.lerp(c.divider, c.surface, 0.5)!);
+BorderSide cardSide(AppColors c) => BorderSide(color: c.divider);
 
-/// The app's card: a solid surface lifted by a soft shadow (drawn outside the
-/// card, so it shows), a ripple when tapped, and optionally a gradient tint
-/// and an accent stripe down the leading edge.
+/// The app's card: an ivory sheet with a gold hairline and a soft warm shadow
+/// (drawn outside the card, so it shows), a ripple when tapped, and optionally
+/// an accent stripe down the leading edge.
 class AppCard extends StatelessWidget {
   const AppCard({
     super.key,
@@ -338,8 +345,8 @@ class AppCard extends StatelessWidget {
     this.onTap,
     this.onLongPress,
     this.padding = const EdgeInsets.all(Space.lg),
-    this.radius = Radii.lg,
-    this.tint,
+    this.radius = 22,
+    this.color,
     this.accent,
     this.width,
   });
@@ -349,8 +356,8 @@ class AppCard extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final double radius;
 
-  /// A colour the card fades into from its top-left corner.
-  final Color? tint;
+  /// The card's fill, when not the ivory surface (e.g. [AppColors.emeraldTint]).
+  final Color? color;
 
   /// A stripe down the leading edge.
   final Color? accent;
@@ -363,7 +370,7 @@ class AppCard extends StatelessWidget {
     Widget body = Padding(padding: padding, child: child);
     if (accent != null) {
       body = Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Container(width: 4, color: accent),
+        Container(width: 3, color: accent),
         Expanded(child: body),
       ]);
       body = IntrinsicHeight(child: body);
@@ -371,14 +378,7 @@ class AppCard extends StatelessWidget {
     return Container(
       width: width,
       decoration: BoxDecoration(
-        color: c.surface,
-        gradient: tint == null
-            ? null
-            : LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color.lerp(c.surface, tint, c.isDark ? 0.22 : 0.16)!, c.surface],
-              ),
+        color: color ?? c.surface,
         borderRadius: shape,
         border: cardBorder(c),
         boxShadow: cardShadow(c),
@@ -394,7 +394,7 @@ class AppCard extends StatelessWidget {
   }
 }
 
-/// An icon in a filled circle, for cards and lists.
+/// An icon on an ivory tile edged in gold, like an illuminated initial.
 class IconBadge extends StatelessWidget {
   const IconBadge(this.icon, {super.key, required this.color, this.size = 44});
   final IconData icon;
@@ -402,18 +402,210 @@ class IconBadge extends StatelessWidget {
   final double size;
 
   @override
-  Widget build(BuildContext context) => Container(
-        width: size,
-        height: size,
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final fg = c.isDark ? Color.lerp(color, Colors.white, 0.35)! : color;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: Color.lerp(c.surface, fg, c.isDark ? 0.12 : 0.06),
+        borderRadius: BorderRadius.circular(size * 0.31),
+        border: Border.all(color: c.divider),
+      ),
+      child: Icon(icon, color: fg, size: size * 0.48),
+    );
+  }
+}
+
+/// The one rich surface of a screen: the logo's emerald, lighter at the top
+/// left, with a single large, faint eight-point star rising from a corner.
+/// Text on it uses [AppColors.onBrand]; gold marks labels and actions.
+class BrandPanel extends StatelessWidget {
+  const BrandPanel({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.padding = const EdgeInsets.all(Space.xl),
+    this.borderRadius = const BorderRadius.all(Radius.circular(Radii.xl)),
+    this.ornament = true,
+  });
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final EdgeInsetsGeometry padding;
+  final BorderRadius borderRadius;
+  final bool ornament;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Material(
+      borderRadius: borderRadius,
+      clipBehavior: Clip.antiAlias,
+      color: c.brand,
+      child: Ink(
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color.lerp(color, Colors.white, 0.18)!, color],
-          ),
-          boxShadow: [BoxShadow(color: color.withValues(alpha: 0.30), blurRadius: 8, offset: const Offset(0, 3))],
+          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: c.brandGradient),
         ),
-        child: Icon(icon, color: Colors.white, size: size * 0.5),
+        child: InkWell(
+          onTap: onTap,
+          child: Stack(
+            children: [
+              if (ornament)
+                Positioned.fill(
+                  child: IgnorePointer(child: CustomPaint(painter: _CornerStarPainter(c.goldOnBrand.withValues(alpha: 0.32)))),
+                ),
+              Padding(padding: padding, child: child),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Two nested eight-point stars and a ring, centred past the top-right
+/// corner so only part of them shows.
+class _CornerStarPainter extends CustomPainter {
+  _CornerStarPainter(this.color);
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final r = math.min(size.shortestSide * 0.95, 190.0);
+    final o = Offset(size.width - r * 0.28, r * 0.22);
+    final p = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    canvas.drawPath(starPath(o, r), p);
+    canvas.drawPath(starPath(o, r * 0.66), p);
+    canvas.drawCircle(o, r * 0.80, p);
+    canvas.drawCircle(o, r * 0.42, p);
+  }
+
+  @override
+  bool shouldRepaint(_CornerStarPainter old) => old.color != color;
+}
+
+
+// ---------------------------------------------------------------------------
+// Grouped settings (Settings, Reminders): a small gold header, then rows in
+// one ivory card edged in gold, separated by hairlines.
+// ---------------------------------------------------------------------------
+
+/// A section's name above a group, small and in capitals.
+class GroupHeader extends StatelessWidget {
+  const GroupHeader(this.text, {super.key});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(Space.xs, Space.xl, Space.xs, Space.sm),
+        child: Text(text.toUpperCase(), style: context.text.labelSmall?.copyWith(color: context.colors.goldText)),
+      );
+}
+
+/// A rounded ivory card holding rows, separated by hairlines.
+class SettingsGroup extends StatelessWidget {
+  const SettingsGroup({super.key, required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Material(
+      color: c.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.lg), side: cardSide(c)),
+      clipBehavior: Clip.antiAlias,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        for (var i = 0; i < children.length; i++) ...[
+          if (i > 0) Divider(height: 1, indent: 60, color: c.divider),
+          children[i],
+        ],
+      ]),
+    );
+  }
+}
+
+/// A row in a group: an icon tile, a title, an optional line under it, and a
+/// chevron (or [trailing]).
+class SettingsRow extends StatelessWidget {
+  const SettingsRow({
+    super.key,
+    required this.icon,
+    required this.color,
+    required this.title,
+    this.value,
+    this.trailing,
+    this.onTap,
+  });
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String? value;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(Space.md, Space.md, Space.sm, Space.md),
+        child: Row(children: [
+          IconBadge(icon, color: color, size: 36),
+          const SizedBox(width: Space.md),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title, style: context.text.titleMedium),
+              if (value != null)
+                Text(value!, maxLines: 3, overflow: TextOverflow.ellipsis, style: context.text.bodySmall),
+            ]),
+          ),
+          trailing ?? Icon(Icons.chevron_right_rounded, color: c.inkFaint),
+        ]),
+      ),
+    );
+  }
+}
+
+/// A row in a group with a switch.
+class SettingsSwitch extends StatelessWidget {
+  const SettingsSwitch({
+    super.key,
+    required this.icon,
+    required this.color,
+    required this.title,
+    this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String? subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        onTap: () => onChanged(!value),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(Space.md, Space.sm, Space.sm, Space.sm),
+          child: Row(children: [
+            IconBadge(icon, color: color, size: 36),
+            const SizedBox(width: Space.md),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(title, style: context.text.titleMedium),
+                if (subtitle != null) Text(subtitle!, style: context.text.bodySmall),
+              ]),
+            ),
+            Switch(value: value, onChanged: onChanged),
+          ]),
+        ),
       );
 }

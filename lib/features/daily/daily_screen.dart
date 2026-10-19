@@ -46,46 +46,36 @@ class DailyScreen extends ConsumerWidget {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 0),
-              child: Material(
-                color: c.brand,
-                borderRadius: BorderRadius.circular(Radii.lg),
-                clipBehavior: Clip.antiAlias,
-                child: InkWell(
-                  onTap: () => context.push(suggested == 'tasbih' ? '/tasbih' : '/adhkar/$suggested'),
-                  child: Stack(
-                    children: [
-                      Positioned.fill(child: GirihPattern(color: c.onBrand, cell: 44, opacity: 0.08)),
-                      Padding(
-                        padding: const EdgeInsets.all(Space.xl),
-                        child: Row(
-                          children: [
-                            Icon(adhkarIcons[suggested] ?? Icons.auto_awesome_rounded, color: c.onBrand, size: 32),
-                            const SizedBox(width: Space.lg),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    moment.reason.toUpperCase(),
-                                    style: context.text.labelSmall?.copyWith(color: c.onBrand.withValues(alpha: 0.75)),
-                                  ),
-                                  Text(title, style: context.text.titleLarge?.copyWith(color: c.onBrand)),
-                                  Text(
-                                    suggestedDone ? 'Completed today · تقبّل الله' : arabic,
-                                    style: context.text.bodyMedium?.copyWith(color: c.onBrand.withValues(alpha: 0.85)),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Icon(
-                              suggestedDone ? Icons.check_circle_rounded : Icons.arrow_forward_rounded,
-                              color: c.onBrand,
-                            ),
-                          ],
-                        ),
+              child: BrandPanel(
+                onTap: () => context.push(suggested == 'tasbih' ? '/tasbih' : '/adhkar/$suggested'),
+                padding: const EdgeInsets.all(Space.lg),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(color: c.onBrand.withValues(alpha: 0.12), shape: BoxShape.circle),
+                      child: Icon(adhkarIcons[suggested] ?? Icons.auto_awesome_rounded, color: c.goldOnBrand, size: 26),
+                    ),
+                    const SizedBox(width: Space.lg),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(moment.reason.toUpperCase(), style: context.text.labelSmall?.copyWith(color: c.goldOnBrand)),
+                          Text(title, style: context.text.titleLarge?.copyWith(color: c.onBrand)),
+                          Text(
+                            suggestedDone ? 'Completed today · تقبّل الله' : arabic,
+                            style: context.text.bodyMedium?.copyWith(color: c.onBrand.withValues(alpha: 0.8)),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    Icon(
+                      suggestedDone ? Icons.check_circle_rounded : Icons.arrow_forward_rounded,
+                      color: suggestedDone ? c.goldOnBrand : c.onBrand,
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -99,15 +89,15 @@ class DailyScreen extends ConsumerWidget {
                 maxCrossAxisExtent: 240,
                 mainAxisSpacing: Space.md,
                 crossAxisSpacing: Space.md,
-                mainAxisExtent: 82 + context.ts(46),
+                mainAxisExtent: 86 + context.ts(46),
               ),
               delegate: SliverChildListDelegate([
-                _Tile(Icons.auto_stories_rounded, 'Adhkar', 'الأذكار', const Color(0xFF0F6B56), () => context.push('/adhkar')),
-                _Tile(Icons.blur_circular_rounded, 'Tasbih', 'التسبيح', const Color(0xFFA8813A), () => context.push('/tasbih')),
-                _Tile(Icons.access_time_filled_rounded, 'Prayer times', 'مواقيت الصلاة', const Color(0xFFA8813A), () => context.push('/prayer')),
-                _Tile(Icons.explore_rounded, 'Qibla', 'القبلة', const Color(0xFF0F6B56), () => context.push('/qibla')),
-                _Tile(Icons.bedtime_rounded, 'Before sleep', 'أذكار النوم', const Color(0xFF0F6B56), () => context.push('/adhkar/sleep')),
-                _Tile(Icons.mosque_rounded, 'After prayer', 'بعد الصلاة', const Color(0xFFA8813A), () => context.push('/adhkar/after_salah')),
+                _Tile(Icons.auto_stories_rounded, 'Adhkar', 'الأذكار', const Color(0xFF0F5C4A), () => context.push('/adhkar')),
+                _Tile(Icons.blur_circular_rounded, 'Tasbih', 'التسبيح', const Color(0xFF8A6A2B), () => context.push('/tasbih')),
+                _Tile(Icons.access_time_filled_rounded, 'Prayer times', 'مواقيت الصلاة', const Color(0xFF8A6A2B), () => context.push('/prayer')),
+                _Tile(Icons.explore_rounded, 'Qibla', 'القبلة', const Color(0xFF0F5C4A), () => context.push('/qibla')),
+                _Tile(Icons.bedtime_rounded, 'Before sleep', 'أذكار النوم', const Color(0xFF0F5C4A), () => context.push('/adhkar/sleep')),
+                _Tile(Icons.mosque_rounded, 'After prayer', 'بعد الصلاة', const Color(0xFF8A6A2B), () => context.push('/adhkar/after_salah')),
               ]),
             ),
           ),
@@ -132,11 +122,11 @@ class _Tile extends StatelessWidget {
     final c = context.colors;
     return AppCard(
       onTap: onTap,
-      tint: color,
+      color: color == const Color(0xFF8A6A2B) ? c.goldTint : c.emeraldTint,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconBadge(icon, color: color, size: 40),
+          IconBadge(icon, color: color, size: 44),
           const Spacer(),
           Text(title, style: context.text.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
           Text(arabic,
@@ -160,7 +150,7 @@ class _Reminders extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
       child: AppCard(
         onTap: () => context.push('/reminders'),
-        tint: c.gold,
+        color: c.goldTint,
         child: Row(children: [
           IconBadge(Icons.notifications_active_rounded, color: c.gold, size: 44),
           const SizedBox(width: Space.lg),

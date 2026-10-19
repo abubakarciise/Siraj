@@ -11,7 +11,7 @@ import 'adhkar_screen.dart' show adhkarIcons;
 class AdhkarMiniPlayer extends ConsumerWidget {
   const AdhkarMiniPlayer({super.key});
 
-  static const _night = Color(0xFF0B3D32); // deep emerald, as the logo
+  static const _night = Color(0xFF0F4F40); // deep emerald, as the logo
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,8 +43,8 @@ class AdhkarMiniPlayer extends ConsumerWidget {
                       Container(
                         width: 40,
                         height: 40,
-                        decoration: BoxDecoration(color: c.gold.withValues(alpha: 0.18), shape: BoxShape.circle),
-                        child: Icon(adhkarIcons[cat.id] ?? Icons.favorite_border, color: c.gold, size: 22),
+                        decoration: BoxDecoration(color: c.goldOnBrand.withValues(alpha: 0.18), shape: BoxShape.circle),
+                        child: Icon(adhkarIcons[cat.id] ?? Icons.favorite_border, color: c.goldOnBrand, size: 22),
                       ),
                       const SizedBox(width: 12),
                       Expanded(

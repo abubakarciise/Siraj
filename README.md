@@ -17,15 +17,17 @@
 
 ## Screenshots
 
-| Home | Mushaf | Follow the recitation |
+| Home | Quran | Mushaf |
 |:---:|:---:|:---:|
-| <img src="docs/screenshots/01_home.png" width="260"> | <img src="docs/screenshots/02_reader.png" width="260"> | <img src="docs/screenshots/03_player.png" width="260"> |
-| **Hadith & Sunnah** | **Hadith** | **Daily reminders** |
+| <img src="docs/screenshots/01_home.png" width="260"> | <img src="docs/screenshots/14_quran.png" width="260"> | <img src="docs/screenshots/02_reader.png" width="260"> |
+| **Follow the recitation** | **Listen to adhkar** | **Daily** |
+| <img src="docs/screenshots/03_player.png" width="260"> | <img src="docs/screenshots/10_adhkar_listen.png" width="260"> | <img src="docs/screenshots/15_daily.png" width="260"> |
+| **Hadith & Sunnah** | **Hadith** | **Reminders** |
 | <img src="docs/screenshots/04_hadith.png" width="260"> | <img src="docs/screenshots/05_hadith_detail.png" width="260"> | <img src="docs/screenshots/06_reminders.png" width="260"> |
-| **Listen to adhkar** | **Settings** | **Dark** |
-| <img src="docs/screenshots/10_adhkar_listen.png" width="260"> | <img src="docs/screenshots/08_appearance.png" width="260"> | <img src="docs/screenshots/09_home_dark.png" width="260"> |
-| **Memorization test** | **Tasbih** | |
-| <img src="docs/screenshots/12_memorize.png" width="260"> | <img src="docs/screenshots/13_tasbih.png" width="260"> | |
+| **Memorization test** | **Tasbih** | **Settings** |
+| <img src="docs/screenshots/12_memorize.png" width="260"> | <img src="docs/screenshots/13_tasbih.png" width="260"> | <img src="docs/screenshots/08_appearance.png" width="260"> |
+| **Dark** | | |
+| <img src="docs/screenshots/09_home_dark.png" width="260"> | | |
 
 ## Features
 
@@ -47,13 +49,16 @@
   A separate reminder at the times you choose to read the morning and evening adhkar.
 - **Prayer times & Qibla.** Calculated on the phone, with 11 methods, Hanafi/Standard Asr, prayer alerts and a Qibla
   compass.
-- **Adhkar.** Hisn al-Muslim in 7 categories, with tap-to-count cards that remember where you stopped. Listen to a
-  whole category (each shows how long it takes): each dhikr is recited by a human voice, repeated as many times as
-  prescribed while the counter counts down, then the next one begins, and keeps playing while you use the rest of the
-  app. Recordings come from Hisn al-Muslim, Mishary Alafasy's morning, evening and after-prayer adhkar, Fares Abbad,
-  Idrees Abkar and "Dua Rabbana" (archive.org), and Alafasy's recitation for Quranic duas, cut on Quran.com's word
-  timings. Every recording is checked word by word against the text (tool/check_adhkar_audio.py); a dhikr whose
-  wording no recording matches is left for you to read.
+- **Adhkar.** Hisn al-Muslim in 7 categories, with tap-to-count cards that remember where you stopped. Every dhikr
+  has a human recording, bundled for offline listening. Listen to a whole category in one of two ways: **Once each**
+  (about 9 minutes for the morning adhkar) or **Full count**, each dhikr repeated as many times as it is said while
+  the counter counts down (about 23 minutes; a dhikr said a hundred times plays ten times and you finish the rest by
+  tapping). The list follows the recitation; scroll away and **Back to dhikr** returns to it, and listening carries on
+  while you use the rest of the app. One reader per section where possible: Mishary Alafasy reads the morning, evening,
+  after-prayer and bedtime adhkar (his complete recordings on archive.org), and the Quranic duas; Hisn al-Muslim's
+  narrator reads the waking adhkar; the few dhikr Alafasy never recorded come from Hisn al-Muslim's narrator, Fares
+  Abbad, and a per-dhikr series made for the Zad app. Every clip is heard again and checked word by word against the
+  text, with no clipped word at either end (tool/check_adhkar_audio.py).
 - **Tasbih.** A misbaha of 33 beads (or count on without end), swipe for another dhikr, and your history: streak,
   today, 7 and 30 days, a weekly chart and the dhikr you say most.
 - **Appearance.** Emerald and gold, the colours of the logo, with one colour for every header and the bottom bar. Light, Dark and true-black Midnight themes. The Mushaf page colour (Ivory, White, Sepia, Dark, Black)
@@ -105,10 +110,12 @@ shown comes from the source collections with its reference and grade.
 - Translations: Saheeh International; Mahmud Muhammad Abduh (Somali).
 - Recitations and ayah timings: [mp3quran.net](https://mp3quran.net), streamed from their servers.
 - Hadith: [fawazahmed0/hadith-api](https://github.com/fawazahmed0/hadith-api) (public domain).
-- Adhkar: Hisn al-Muslim. Adhkar recordings: [hisnmuslim.com](https://www.hisnmuslim.com) and, for Quranic adhkar,
-  Mishary Alafasy via [everyayah.com](https://everyayah.com); cut to each dhikr and included for offline listening
+- Adhkar: Hisn al-Muslim. Adhkar recordings: Mishary Alafasy's morning, evening, after-prayer and bedtime adhkar
+  ([archive.org](https://archive.org/details/adkar_sabah_masae_safar)), [hisnmuslim.com](https://www.hisnmuslim.com),
+  Fares Abbad and the Zad app's morning adhkar (archive.org), and for Quranic adhkar Mishary Alafasy via
+  [everyayah.com](https://everyayah.com) and Quran.com; cut to each dhikr and included for offline listening
   (`tool/build_adhkar_audio.py`, needs ffmpeg and faster-whisper). Prayer times: the open-source Adhan library. Hijri dates: Umm al-Qura.
-- Fonts: IBM Plex Sans Arabic and Amiri (SIL Open Font License).
+- Fonts: IBM Plex Sans Arabic, Amiri and Lora (SIL Open Font License).
 - Logo: the name سراج in Amiri Bold (SIL Open Font License). Adhkar notification art: a Mamluk glass mosque lamp,
   photographed by The Metropolitan Museum of Art (Open Access, CC0).
 - Reminder sound "Pixie Dust" from the Android Open Source Project (Apache 2.0).

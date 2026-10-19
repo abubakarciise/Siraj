@@ -68,15 +68,15 @@ class HadithHomeScreen extends ConsumerWidget {
     final sunnah = [...repo.sunnah.indexed]
       ..sort((a, b) => (b.$2.tags.any(tags.contains) ? 1 : 0) - (a.$2.tags.any(tags.contains) ? 1 : 0));
 
-    // The great collections to download (Bukhari, Muslim…) first, then the
-    // forty-hadith books that come with the app.
-    final collections = [...books.where((b) => !b.bundled), ...books.where((b) => b.bundled)];
+    // The books on the phone first (those that come with the app and those
+    // downloaded), then the ones still to download.
+    final collections = [...books.where((b) => b.available), ...books.where((b) => !b.available)];
     return Scaffold(
       backgroundColor: Colors.transparent, // the tab's art shows through (TabBackdrop)
       body: CustomScrollView(
         slivers: [
           HeroSliverAppBar(
-            title: 'Hadith & Sunnah',
+            title: 'Hadith',
             subtitle: 'الحديث والسنة',
             art: HeroArt.hadith,
             actions: [
@@ -153,8 +153,7 @@ class _SunnahChip extends StatelessWidget {
     return AppCard(
       width: 210,
       onTap: () => context.push('/sunnah/$index'),
-      tint: accent,
-      accent: accent,
+      color: highlight ? c.emeraldTint : c.goldTint,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -614,7 +613,7 @@ class HadithCard extends StatelessWidget {
               narrator,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: context.text.bodySmall?.copyWith(color: c.gold),
+              style: context.text.bodySmall?.copyWith(color: c.goldText),
             ),
           Text(
             body,
@@ -755,7 +754,7 @@ class HadithBody extends StatelessWidget {
           ),
         const SizedBox(height: Space.xl),
         if (narrator != null) ...[
-          Text(narrator, style: context.text.titleMedium?.copyWith(color: c.gold)),
+          Text(narrator, style: context.text.titleMedium?.copyWith(color: c.goldText)),
           const SizedBox(height: Space.sm),
         ],
         SelectableText(body, style: context.text.bodyLarge?.copyWith(height: 1.65)),

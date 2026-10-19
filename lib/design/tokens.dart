@@ -58,72 +58,86 @@ class AppColors extends ThemeExtension<AppColors> {
   Color get ayahHighlight => primary.withValues(alpha: isDark ? 0.20 : 0.13);
   Color get selection => gold.withValues(alpha: isDark ? 0.24 : 0.18);
 
-  /// Headers and the bottom bar: the logo's emerald.
-  Color get bar => brand;
+  /// "Ivory Manuscript": headers sit on the paper itself with dark serif
+  /// titles; the bottom bar is a sheet of the same ivory as the cards over a
+  /// gold hairline, the open tab in emerald on a soft gold pill.
+  Color get bar => bg;
+  Color get onBar => ink;
+  Color get barLine => divider;
+  Color get navBar => surface;
+  Color get onNav => inkMuted;
+  Color get navSelected => primary;
+  Color get navPill => isDark ? gold.withValues(alpha: 0.16) : const Color(0xFFEADFC2);
 
-  /// The line under a header and over the bottom bar: the logo's gold.
-  Color get barLine => gold.withValues(alpha: 0.55);
+  /// Gold for small text and labels: deep enough to read on ivory.
+  Color get goldText => isDark ? gold : const Color(0xFF8A6A2B);
 
-  /// Text and icons on the bars: cream, and gold for what is selected.
-  Color get onBar => onBrand;
-  Color get barSelected => Color.lerp(gold, Colors.white, 0.30)!;
+  /// Gold on the emerald heroes.
+  Color get goldOnBrand => const Color(0xFFD9B868);
+
+  /// Soft tints for feature cards, so not every card is the same ivory.
+  Color get emeraldTint => isDark ? Color.lerp(surface, primary, 0.13)! : const Color(0xFFE7EFE6);
+  Color get goldTint => isDark ? Color.lerp(surface, gold, 0.11)! : const Color(0xFFF3E7C8);
+
+  /// The emerald of hero panels, lighter at the top-left for depth.
+  List<Color> get brandGradient => [Color.lerp(brand, primary, isDark ? 0.18 : 0.22)!, brand];
 
   /// Ayah-end ornaments and numbers on the Mushaf page.
   Color get ayahMark => Color.lerp(ink, gold, 0.55)!;
 
   static const light = AppColors(
-    bg: Color(0xFFF1F5F3), // a cool off-white, faintly green
-    surface: Color(0xFFFFFFFF),
-    surfaceAlt: Color(0xFFE7EEEA),
+    bg: Color(0xFFF6EFDF),
+    surface: Color(0xFFFFF9EC),
+    surfaceAlt: Color(0xFFF1E6CC),
     pageBg: Color(0xFFFBF7EE),
-    ink: Color(0xFF14201B),
-    inkMuted: Color(0xFF56635D),
-    inkFaint: Color(0xFF96A39D),
-    primary: Color(0xFF0F6B56),
+    ink: Color(0xFF1E2A24),
+    inkMuted: Color(0xFF6B6150),
+    inkFaint: Color(0xFFA0957E),
+    primary: Color(0xFF0F5C4A),
     primarySoft: Color(0xFFDFEDE6),
     onPrimary: Color(0xFFFFFFFF),
-    brand: Color(0xFF0E5A49),
-    onBrand: Color(0xFFFFFCF6),
-    gold: Color(0xFFA8813A),
-    divider: Color(0xFFDDE6E1),
+    brand: Color(0xFF0F4F40),
+    onBrand: Color(0xFFFBF4E2),
+    gold: Color(0xFFB08A3E),
+    divider: Color(0xFFE6D6AE),
     danger: Color(0xFFB3402F),
     isDark: false,
   );
 
   static const dark = AppColors(
-    bg: Color(0xFF0D1412), // green-black
-    surface: Color(0xFF16201C),
-    surfaceAlt: Color(0xFF1F2B26),
+    bg: Color(0xFF0E1A16),
+    surface: Color(0xFF15241F),
+    surfaceAlt: Color(0xFF1D2F29),
     pageBg: Color(0xFF17181B),
-    ink: Color(0xFFE6ECE9),
-    inkMuted: Color(0xFFA0ACA7),
-    inkFaint: Color(0xFF66736D),
+    ink: Color(0xFFEEE7D6),
+    inkMuted: Color(0xFFB3AA94),
+    inkFaint: Color(0xFF7D7663),
     primary: Color(0xFF7CC6AC),
     primarySoft: Color(0xFF203530),
     onPrimary: Color(0xFF0B1D17),
-    brand: Color(0xFF1C3A32),
-    onBrand: Color(0xFFEDE8DC),
-    gold: Color(0xFFD5B26C),
-    divider: Color(0xFF26332E),
+    brand: Color(0xFF15463A),
+    onBrand: Color(0xFFFBF4E2),
+    gold: Color(0xFFD9B868),
+    divider: Color(0xFF2C3D35),
     danger: Color(0xFFEF7B6B),
     isDark: true,
   );
 
   static const midnight = AppColors(
     bg: Color(0xFF000000),
-    surface: Color(0xFF0B100E),
-    surfaceAlt: Color(0xFF141B18),
+    surface: Color(0xFF0D120F),
+    surfaceAlt: Color(0xFF161D19),
     pageBg: Color(0xFF000000),
-    ink: Color(0xFFD8D3C7),
-    inkMuted: Color(0xFF99948A),
-    inkFaint: Color(0xFF5E5A54),
+    ink: Color(0xFFDCD4C2),
+    inkMuted: Color(0xFF9C9482),
+    inkFaint: Color(0xFF615B4F),
     primary: Color(0xFF6DBB9F),
     primarySoft: Color(0xFF14261F),
     onPrimary: Color(0xFF07140F),
-    brand: Color(0xFF112620),
-    onBrand: Color(0xFFDCD7CB),
-    gold: Color(0xFFC6A45E),
-    divider: Color(0xFF1A2320),
+    brand: Color(0xFF103329),
+    onBrand: Color(0xFFE6DECB),
+    gold: Color(0xFFC9A75E),
+    divider: Color(0xFF1E2622),
     danger: Color(0xFFE8705F),
     isDark: true,
   );
@@ -219,6 +233,6 @@ extension AppThemeX on BuildContext {
   TextTheme get text => Theme.of(this).textTheme;
 
   /// Title and subtitle in a header.
-  TextStyle? get headerTitle => text.titleMedium?.copyWith(color: colors.onBar);
-  TextStyle? get headerSub => text.bodySmall?.copyWith(color: colors.onBar.withValues(alpha: 0.75));
+  TextStyle? get headerTitle => text.titleLarge?.copyWith(fontSize: 19, color: colors.onBar);
+  TextStyle? get headerSub => text.bodySmall?.copyWith(color: colors.goldText);
 }

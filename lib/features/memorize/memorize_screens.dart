@@ -65,9 +65,6 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
   final _kinds = {QuizKind.nextAyah, QuizKind.completeAyah, QuizKind.missingWord, QuizKind.recite};
   bool _busy = false;
 
-  static const _gold = Color(0xFFE2C27F);
-  static const _ink = Color(0xFF3B2A12);
-
   Future<void> _pickSurahs() async {
     final picked = await showModalBottomSheet<Set<int>>(
       context: context,
@@ -145,33 +142,15 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
 
     return Scaffold(
       body: CustomScrollView(slivers: [
+        // A header like every other screen's: the title on the paper, its
+        // Arabic name beside it in gold.
         SliverAppBar(
           pinned: true,
-          expandedHeight: 170,
-          backgroundColor: _gold,
-          foregroundColor: _ink,
-          flexibleSpace: FlexibleSpaceBar(
-            titlePadding: const EdgeInsetsDirectional.only(start: 56, bottom: 14),
-            title: const Text('Memorization test', style: TextStyle(color: _ink, fontWeight: FontWeight.w700)),
-            background: DecoratedBox(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFF4E3BC), _gold],
-                ),
-              ),
-              child: Stack(children: [
-                const Positioned.fill(child: GirihPattern(color: _ink, cell: 40, opacity: 0.07)),
-                Positioned(
-                  right: Space.gutter,
-                  top: 56,
-                  child: Text('اختبار الحفظ',
-                      style: TextStyle(fontFamily: kNaskhFont, fontSize: 26, color: _ink.withValues(alpha: 0.75))),
-                ),
-              ]),
-            ),
-          ),
+          title: Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
+            const Flexible(child: Text('Memorization test', overflow: TextOverflow.ellipsis)),
+            const SizedBox(width: Space.sm),
+            Text('اختبار الحفظ', style: TextStyle(fontFamily: kNaskhFont, fontSize: 16, color: context.colors.goldText)),
+          ]),
         ),
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, 120),
@@ -762,7 +741,7 @@ class _QuranCard extends StatelessWidget {
         ),
         if (label != null) ...[
           const SizedBox(height: Space.sm),
-          Text(label!, textAlign: TextAlign.center, style: context.text.labelSmall?.copyWith(color: c.gold)),
+          Text(label!, textAlign: TextAlign.center, style: context.text.labelSmall?.copyWith(color: c.goldText)),
         ],
       ]),
     );
@@ -892,7 +871,7 @@ class _Results extends ConsumerWidget {
                       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                         Row(children: [
                           Text('${db.surah(q.ayah.ref.surah).nameEn} ${q.ayah.ref}',
-                              style: context.text.labelSmall?.copyWith(color: c.gold)),
+                              style: context.text.labelSmall?.copyWith(color: c.goldText)),
                           const Spacer(),
                           Text(q.kind.title, style: context.text.labelSmall),
                         ]),

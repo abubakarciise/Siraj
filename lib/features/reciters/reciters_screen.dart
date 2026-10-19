@@ -109,7 +109,7 @@ class _RecitersScreenState extends ConsumerState<RecitersScreen> {
                 const SliverToBoxAdapter(child: SectionTitle('Featured')),
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: 92 + context.ts(58),
+                    height: 80 + context.ts(58),
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
@@ -120,10 +120,10 @@ class _RecitersScreenState extends ConsumerState<RecitersScreen> {
                         return GestureDetector(
                           onTap: () => context.go('/listen/reciter/${r.id}'),
                           child: SizedBox(
-                            width: 92,
+                            width: 84,
                             child: Column(
                               children: [
-                                ReciterAvatar(id: r.id, nameAr: r.nameAr, size: 84),
+                                ReciterAvatar(id: r.id, nameAr: r.nameAr, size: 72),
                                 const SizedBox(height: 8),
                                 Text(
                                   r.name,
@@ -275,52 +275,40 @@ class _ContinueListening extends ConsumerWidget {
     final surah = ref.watch(quranDbProvider).surah(listening.surah);
     return Padding(
       padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 0),
-      child: Material(
-        color: c.brand,
-        borderRadius: BorderRadius.circular(Radii.xl),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => playRecitation(context, ref, reciter, rec, listening.surah, resume: true),
-          child: Stack(
-            children: [
-              Positioned.fill(child: GirihPattern(color: c.onBrand, cell: 44, opacity: 0.07)),
-              Padding(
-                padding: const EdgeInsets.all(Space.lg),
-                child: Row(
-                  children: [
-                    ReciterAvatar(id: reciter.id, nameAr: reciter.nameAr, size: 52),
-                    const SizedBox(width: Space.lg),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('CONTINUE LISTENING', style: context.text.labelSmall?.copyWith(color: c.gold)),
-                          Text(
-                            '${surah.nameEn} · ${surah.nameAr}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.text.titleMedium?.copyWith(color: c.onBrand),
-                          ),
-                          Text(
-                            reciter.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.text.bodySmall?.copyWith(color: c.onBrand.withValues(alpha: 0.8)),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(color: c.gold, shape: BoxShape.circle),
-                      child: Icon(Icons.play_arrow_rounded, color: c.brand, size: 28),
-                    ),
-                  ],
-                ),
+      child: BrandPanel(
+        onTap: () => playRecitation(context, ref, reciter, rec, listening.surah, resume: true),
+        padding: const EdgeInsets.all(Space.lg),
+        child: Row(
+          children: [
+            ReciterAvatar(id: reciter.id, nameAr: reciter.nameAr, size: 52),
+            const SizedBox(width: Space.lg),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('CONTINUE LISTENING', style: context.text.labelSmall?.copyWith(color: c.goldOnBrand)),
+                  Text(
+                    '${surah.nameEn} · ${surah.nameAr}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.titleMedium?.copyWith(color: c.onBrand),
+                  ),
+                  Text(
+                    reciter.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.bodySmall?.copyWith(color: c.onBrand.withValues(alpha: 0.8)),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(color: c.goldOnBrand, shape: BoxShape.circle),
+              child: Icon(Icons.play_arrow_rounded, color: c.brand, size: 28),
+            ),
+          ],
         ),
       ),
     );

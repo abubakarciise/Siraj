@@ -36,7 +36,13 @@ class AdhkarListScreen extends ConsumerWidget {
     final c = context.colors;
     final cats = ref.watch(adhkarProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Adhkar · الأذكار')),
+      appBar: AppBar(
+        title: Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
+          const Text('Adhkar'),
+          const SizedBox(width: Space.sm),
+          Text('الأذكار', style: TextStyle(fontFamily: kNaskhFont, fontSize: 16, color: c.goldText)),
+        ]),
+      ),
       body: cats.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('$e')),
@@ -47,37 +53,22 @@ class AdhkarListScreen extends ConsumerWidget {
           itemBuilder: (_, i) {
             final cat = list[i];
             final done = adhkarDoneToday(ref, cat.id);
-            return Material(
-              color: c.surface,
-              borderRadius: BorderRadius.circular(Radii.lg),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(Radii.lg),
-                onTap: () => context.push('/adhkar/${cat.id}'),
-                child: Container(
-                  padding: const EdgeInsets.all(Space.lg),
-                  decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(Radii.lg), border: cardBorder(c),
-            boxShadow: cardShadow(c)),
-                  child: Row(children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(color: c.primarySoft, borderRadius: BorderRadius.circular(Radii.md)),
-                      child: Icon(adhkarIcons[cat.id] ?? Icons.favorite_border, color: c.primary),
-                    ),
-                    const SizedBox(width: Space.lg),
-                    Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(cat.titleEn, style: context.text.titleMedium),
-                        Text('${cat.titleAr} · ${cat.items.length} adhkar', style: context.text.bodySmall),
-                        const SizedBox(height: 4),
-                        _ListenTime(cat),
-                      ]),
-                    ),
-                    if (done) Icon(Icons.check_circle_rounded, color: c.primary),
-                    Icon(Icons.chevron_right_rounded, color: c.inkMuted),
+            return AppCard(
+              onTap: () => context.push('/adhkar/${cat.id}'),
+              child: Row(children: [
+                IconBadge(adhkarIcons[cat.id] ?? Icons.favorite_border, color: c.primary, size: 48),
+                const SizedBox(width: Space.lg),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(cat.titleEn, style: context.text.titleLarge?.copyWith(fontSize: 18)),
+                    Text(cat.titleAr,
+                        style: TextStyle(fontFamily: kNaskhFont, fontSize: 16, height: 1.5, color: c.goldText)),
+                    _ListenTime(cat),
                   ]),
                 ),
-              ),
+                if (done) Icon(Icons.check_circle_rounded, color: c.primary),
+                Icon(Icons.chevron_right_rounded, color: c.inkFaint),
+              ]),
             );
           },
         ),
@@ -104,6 +95,13 @@ class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
   late final AdhkarPlayer _audio = ref.read(adhkarPlayerProvider);
   int? _followed;
   late bool _autoListen = widget.autoListen;
+  final _scroll = ScrollController();
+
+  /// While listening the list follows the dhikr being recited; scrolling by
+  /// hand pauses that until "Back to dhikr" (or the next dhikr), as the Quran
+  /// player's "Back to ayah" does.
+  bool _following = true;
+  bool _userDragging = false;
 
   int _left(AdhkarCategory cat, int i) => _audio.left(cat, i);
 
@@ -119,6 +117,7 @@ class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
   void dispose() {
     // Listening carries on in the background (mini player, notification).
     _audio.removeListener(_onAudio);
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -128,8 +127,10 @@ class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
     final cat = ref.read(adhkarProvider).value?.where((x) => x.id == widget.categoryId).firstOrNull;
     if (cat != null) _checkComplete(cat);
     if (_listening && _audio.index != _followed) {
+      // A new dhikr: follow the recitation again, even after scrolling away.
       _followed = _audio.index;
-      _scrollTo(_audio.index);
+      _following = true;
+      if (!_userDragging) _scrollTo(_audio.index);
     }
   }
 
@@ -137,13 +138,34 @@ class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
     final ctx = _keys[i]?.currentContext;
     if (ctx != null && ctx.mounted) {
       Scrollable.ensureVisible(ctx, duration: Motion.gentle, curve: Motion.emphasized, alignment: 0.08);
+      return;
     }
+    // Far away, the card is not built yet: jump near it by the average card
+    // height, then settle on it once it is.
+    if (!_scroll.hasClients) return;
+    final cat = ref.read(adhkarProvider).value?.where((x) => x.id == widget.categoryId).firstOrNull;
+    if (cat == null) return;
+    final pos = _scroll.position;
+    final perCard = (pos.maxScrollExtent + pos.viewportDimension) / (cat.items.length + 1);
+    _scroll.jumpTo(((i + 1) * perCard).clamp(0.0, pos.maxScrollExtent));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final c = _keys[i]?.currentContext;
+      if (c != null && c.mounted) {
+        Scrollable.ensureVisible(c, duration: Motion.standard, curve: Motion.curve, alignment: 0.08);
+      }
+    });
+  }
+
+  void _backToDhikr() {
+    setState(() => _following = true);
+    _scrollTo(_audio.index);
   }
 
   void _listen(AdhkarCategory cat) {
     if (_audio.allDone(cat)) _celebrated = false;
     _celebrated ??= false;
     _followed = null;
+    _following = true;
     _audio.onError = (e) {
       if (mounted) showToast(context, '$e');
     };
@@ -205,11 +227,16 @@ class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
     final total = cat.totalCount;
     final done = total - List.generate(cat.items.length, (i) => _left(cat, i)).fold(0, (a, b) => a + b);
 
+    final recorded = cat.listeningTime > Duration.zero;
     return Scaffold(
       appBar: AppBar(
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(cat.titleEn, style: context.headerTitle),
-          Text(cat.titleAr, style: context.headerSub),
+          Text(cat.titleEn),
+          // Arabic and English apart: in one string the order would jumble.
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            Text(cat.titleAr, style: TextStyle(fontFamily: kNaskhFont, fontSize: 14, height: 1.4, color: c.goldText)),
+            Text('  ·  ${cat.items.length} adhkar', style: context.text.bodySmall?.copyWith(color: c.goldText)),
+          ]),
         ]),
         actions: [
           IconButton(
@@ -222,36 +249,58 @@ class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(4),
+          preferredSize: const Size.fromHeight(3),
           child: TweenAnimationBuilder<double>(
             tween: Tween(end: total == 0 ? 0 : done / total),
             duration: Motion.standard,
-            builder: (_, v, _) =>
-                LinearProgressIndicator(value: v, minHeight: 4, color: c.primary, backgroundColor: c.divider),
+            builder: (_, v, _) => LinearProgressIndicator(value: v, minHeight: 3, color: c.gold, backgroundColor: c.divider),
           ),
         ),
       ),
-      body: ListView.builder(
+      body: Stack(children: [
+      NotificationListener<ScrollNotification>(
+        onNotification: (n) {
+          // Only a drag by hand pauses the follow, never the list's own scrolling.
+          if (n is ScrollStartNotification && n.dragDetails != null) _userDragging = true;
+          if (n is ScrollEndNotification && _userDragging) {
+            _userDragging = false;
+            if (_listening && _following) setState(() => _following = false);
+          }
+          return false;
+        },
+        child: ListView.builder(
+        controller: _scroll,
         padding: EdgeInsets.fromLTRB(
-            Space.gutter, Space.lg, Space.gutter, Space.xxxl + MediaQuery.paddingOf(context).bottom),
+            Space.gutter, Space.md, Space.gutter, Space.xxxl + MediaQuery.paddingOf(context).bottom),
         itemCount: cat.items.length + 1,
         itemBuilder: (_, k) {
           if (k == 0) {
             return Padding(
               padding: const EdgeInsets.only(bottom: Space.lg),
-              child: AnimatedSwitcher(
-                duration: Motion.quick,
-                child: _listening
-                    ? const SizedBox(width: double.infinity)
-                    : _ListenCard(
-                        onTap: () => _listen(cat),
-                        time: cat.listeningTime > Duration.zero ? formatListeningTime(cat.listeningTime) : null,
-                        // Where reading or listening stopped (kept until "Start again").
-                        resumeAt: done > 0 && done < total
-                            ? List.generate(cat.items.length, (i) => i).firstWhere((i) => _left(cat, i) > 0) + 1
-                            : null,
-                      ),
-              ),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                if (recorded) ...[
+                  _ModeSwitch(
+                    once: _audio.once,
+                    onceTime: formatListeningTime(cat.onceTime),
+                    fullTime: formatListeningTime(cat.listeningTime),
+                    onChanged: _audio.setOnce,
+                  ),
+                  const SizedBox(height: Space.md),
+                ],
+                AnimatedSwitcher(
+                  duration: Motion.quick,
+                  child: _listening || !recorded
+                      ? const SizedBox(width: double.infinity)
+                      : _ListenCard(
+                          onTap: () => _listen(cat),
+                          once: _audio.once,
+                          // Where reading or listening stopped (kept until "Start again").
+                          resumeAt: done > 0 && done < total
+                              ? List.generate(cat.items.length, (i) => i).firstWhere((i) => _left(cat, i) > 0) + 1
+                              : null,
+                        ),
+                ),
+              ]),
             );
           }
           final i = k - 1;
@@ -268,7 +317,95 @@ class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
           );
         },
       ),
+      ),
+      Positioned(
+        left: 0,
+        right: 0,
+        bottom: Space.md,
+        child: Center(
+          child: AnimatedSwitcher(
+            duration: Motion.quick,
+            child: !_listening || _following
+                ? const SizedBox.shrink()
+                : ActionChip(
+                    avatar: Icon(Icons.my_location_rounded, size: 18, color: c.primary),
+                    label: Text('Back to dhikr ${_audio.index + 1}'),
+                    backgroundColor: c.surface,
+                    side: BorderSide(color: c.divider),
+                    elevation: 2,
+                    shadowColor: const Color(0x338A6A2B),
+                    onPressed: _backToDhikr,
+                  ),
+          ),
+        ),
+      ),
+      ]),
       bottomNavigationBar: _listening ? _ListenBar(audio: _audio, category: cat) : null,
+    );
+  }
+}
+
+/// "Once each" or "Full count": how the adhkar are recited while listening,
+/// each with how long it takes.
+class _ModeSwitch extends StatelessWidget {
+  const _ModeSwitch({required this.once, required this.onceTime, required this.fullTime, required this.onChanged});
+  final bool once;
+  final String onceTime, fullTime;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    Widget option(bool value, String label, String time) {
+      final selected = once == value;
+      return Expanded(
+        child: Semantics(
+          button: true,
+          selected: selected,
+          child: Material(
+            color: selected ? c.brand : Colors.transparent,
+            borderRadius: BorderRadius.circular(22),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(22),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                onChanged(value);
+              },
+              child: SizedBox(
+                height: 44,
+                child: Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      '$label · $time',
+                      maxLines: 1,
+                      style: context.text.labelLarge?.copyWith(
+                        fontSize: 14,
+                        color: selected ? c.goldOnBrand : c.inkMuted,
+                        fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: c.divider),
+      ),
+      child: Row(children: [
+        option(true, 'Once each', onceTime),
+        const SizedBox(width: 4),
+        option(false, 'Full count', fullTime),
+      ]),
     );
   }
 }
@@ -294,31 +431,42 @@ class _DhikrCard extends StatelessWidget {
     final finished = left == 0;
     return AnimatedOpacity(
       duration: Motion.standard,
-      opacity: finished && !active ? 0.55 : 1,
-      child: Material(
-        color: finished ? c.surfaceAlt : c.surface,
-        borderRadius: BorderRadius.circular(Radii.lg),
+      opacity: finished && !active ? 0.8 : 1,
+      // The fill is on the box that casts the shadow, or the shadow shows
+      // through the card and greys it.
+      child: AnimatedContainer(
+        duration: Motion.quick,
+        decoration: BoxDecoration(
+          color: active ? Color.lerp(c.surface, c.gold, c.isDark ? 0.10 : 0.07) : c.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: active ? c.primary : c.divider, width: active ? 2 : 1),
+          boxShadow: finished ? null : cardShadow(c),
+        ),
+        child: Material(
+        type: MaterialType.transparency,
+        borderRadius: BorderRadius.circular(24),
         child: InkWell(
-          borderRadius: BorderRadius.circular(Radii.lg),
+          borderRadius: BorderRadius.circular(24),
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.all(Space.xl),
+            padding: const EdgeInsets.fromLTRB(Space.xl, Space.lg, Space.xl, Space.xl),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(Radii.lg),
-              border: Border.all(
-                color: active ? c.primary : (finished ? Colors.transparent : c.divider),
-                width: active ? 2 : 1,
-              ),
+              borderRadius: BorderRadius.circular(24),
             ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               Row(children: [
-                StarMedallion(number: index + 1, size: 34),
+                StarMedallion(number: index + 1, size: 34, active: active),
                 if (active) ...[
                   const SizedBox(width: Space.sm),
                   Icon(Icons.graphic_eq_rounded, size: 20, color: c.primary),
+                  const SizedBox(width: 4),
+                  Text('RECITING', style: context.text.labelSmall?.copyWith(color: c.primary)),
                 ],
                 const Spacer(),
-                if (dhikr.quranRef != null) Pill('Quran ${dhikr.quranRef}', color: c.gold),
+                if (dhikr.quranRef != null)
+                  Pill('Quran ${dhikr.quranRef}', color: c.goldText)
+                else if (dhikr.count > 1)
+                  Pill('${dhikr.count} times', color: c.goldText),
               ]),
               const SizedBox(height: Space.md),
               Text(
@@ -330,48 +478,102 @@ class _DhikrCard extends StatelessWidget {
                     : TextStyle(fontFamily: kNaskhFont, fontSize: 24, height: 2.0, color: c.ink),
               ),
               if (dhikr.virtue.isNotEmpty) ...[
-                const SizedBox(height: Space.md),
+                const SizedBox(height: Space.sm),
+                Container(
+                  height: 1,
+                  margin: const EdgeInsets.symmetric(horizontal: Space.xxl, vertical: Space.sm),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: [
+                      c.gold.withValues(alpha: 0),
+                      c.gold.withValues(alpha: 0.6),
+                      c.gold.withValues(alpha: 0),
+                    ]),
+                  ),
+                ),
                 Text(
                   dhikr.virtue,
                   textDirection: TextDirection.rtl,
                   textAlign: TextAlign.center,
-                  style: context.text.bodySmall?.copyWith(height: 1.6),
+                  style: context.text.bodySmall?.copyWith(height: 1.7),
                 ),
               ],
               const SizedBox(height: Space.lg),
-              Center(
-                child: AnimatedContainer(
-                  duration: Motion.quick,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: finished ? c.primary : c.primarySoft,
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(finished ? Icons.check_rounded : Icons.touch_app_outlined,
-                        size: 18, color: finished ? c.onPrimary : c.primary),
-                    const SizedBox(width: 8),
-                    Text(
-                      finished ? 'Done' : dhikr.count == 1 ? 'Tap when read' : '$left of ${dhikr.count} left',
-                      style: context.text.labelLarge?.copyWith(color: finished ? c.onPrimary : c.primary),
-                    ),
-                  ]),
-                ),
-              ),
+              Center(child: _Counter(left: left, count: dhikr.count)),
             ]),
           ),
+        ),
         ),
       ),
     );
   }
 }
 
-class _ListenCard extends StatelessWidget {
-  const _ListenCard({required this.onTap, this.resumeAt, this.time});
-  final VoidCallback onTap;
+/// The count of a dhikr: a large gold-ringed circle for a dhikr said several
+/// times (the number left, filling as it is counted), a pill for one said once.
+class _Counter extends StatelessWidget {
+  const _Counter({required this.left, required this.count});
+  final int left, count;
 
-  /// How long listening to all of it takes, e.g. "12 min".
-  final String? time;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final finished = left == 0;
+    if (count == 1 || finished) {
+      return AnimatedContainer(
+        duration: Motion.quick,
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
+        decoration: BoxDecoration(
+          color: finished ? c.brand : c.surface,
+          borderRadius: BorderRadius.circular(99),
+          border: Border.all(color: finished ? c.brand : c.divider),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(finished ? Icons.check_rounded : Icons.touch_app_outlined,
+              size: 18, color: finished ? c.goldOnBrand : c.primary),
+          const SizedBox(width: 8),
+          Text(finished ? 'Done' : 'Tap when read',
+              style: context.text.labelLarge?.copyWith(color: finished ? c.onBrand : c.primary)),
+        ]),
+      );
+    }
+    final said = count - left;
+    return SizedBox.square(
+      dimension: 96,
+      child: Stack(alignment: Alignment.center, children: [
+        Positioned.fill(
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(end: said / count),
+            duration: Motion.standard,
+            builder: (_, v, _) => CircularProgressIndicator(
+              value: v,
+              strokeWidth: 4,
+              strokeCap: StrokeCap.round,
+              color: c.gold,
+              backgroundColor: c.divider,
+            ),
+          ),
+        ),
+        Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Color.lerp(c.surface, c.gold, c.isDark ? 0.12 : 0.10),
+          ),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Text('$left', style: context.text.headlineSmall?.copyWith(color: c.primary, height: 1.1)),
+            Text('of $count · tap', style: context.text.labelSmall?.copyWith(letterSpacing: 0, fontSize: 10)),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
+class _ListenCard extends StatelessWidget {
+  const _ListenCard({required this.onTap, required this.once, this.resumeAt});
+  final VoidCallback onTap;
+  final bool once;
 
   /// The dhikr (1-based) to continue from, when some were already counted.
   final int? resumeAt;
@@ -379,45 +581,36 @@ class _ListenCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    return Material(
-      color: c.primarySoft,
-      borderRadius: BorderRadius.circular(Radii.lg),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(Radii.lg),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(Space.lg),
-          child: Row(children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(color: c.primary, shape: BoxShape.circle),
-              child: Icon(Icons.play_arrow_rounded, color: c.onPrimary, size: 28),
-            ),
-            const SizedBox(width: Space.lg),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  Text(resumeAt == null ? 'Listen' : 'Continue listening', style: context.text.titleMedium),
-                  const Spacer(),
-                  if (time != null)
-                    Text(time!, style: context.text.labelLarge?.copyWith(color: context.colors.primary)),
-                ]),
-                Text(
-                    resumeAt == null
-                        ? 'Recited one after another, each as many times as prescribed'
-                        : 'From dhikr $resumeAt, where you stopped · "Start again" resets',
-                    style: context.text.bodySmall),
-              ]),
+    return BrandPanel(
+      onTap: onTap,
+      padding: const EdgeInsets.all(Space.lg),
+      child: Row(children: [
+        Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(color: c.goldOnBrand, shape: BoxShape.circle),
+          child: Icon(Icons.play_arrow_rounded, color: c.brand, size: 32),
+        ),
+        const SizedBox(width: Space.lg),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(resumeAt == null ? 'Listen' : 'Continue listening',
+                style: context.text.titleLarge?.copyWith(color: c.onBrand)),
+            Text(
+              resumeAt == null
+                  ? (once ? 'Each dhikr recited once' : 'Each dhikr as many times as it is said')
+                  : 'From dhikr $resumeAt, where you stopped',
+              style: context.text.bodySmall?.copyWith(color: c.onBrand.withValues(alpha: 0.78)),
             ),
           ]),
         ),
-      ),
+      ]),
     );
   }
 }
 
-/// Controls while listening: previous, play / pause, next, once-each, stop.
+/// Controls while listening: previous, play / pause, next, stop; the mode
+/// ("Once each" / "Full count") is chosen above the adhkar.
 class _ListenBar extends StatelessWidget {
   const _ListenBar({required this.audio, required this.category});
   final AdhkarPlayer audio;
@@ -432,69 +625,64 @@ class _ListenBar extends StatelessWidget {
         : audio.repetitions > 1
             ? 'Recitation ${(audio.repetition + (audio.playing ? 1 : 0)).clamp(1, audio.repetitions)} of ${audio.repetitions}'
             : audio.playing
-                ? 'Reciting'
+                ? (audio.once ? 'Once each' : 'Full count')
                 : 'Paused';
+    final onBar = c.onBrand;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(Space.md, 0, Space.md, Space.sm),
-        child: Material(
-          color: c.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(Radii.xl),
-            side: cardSide(c),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(28),
+            gradient: LinearGradient(colors: c.brandGradient),
+            boxShadow: c.isDark ? null : const [BoxShadow(color: Color(0x400F4F40), blurRadius: 20, offset: Offset(0, 8))],
           ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(Space.lg, Space.sm, Space.sm, Space.sm),
-            child: Row(children: [
-              Expanded(
-                child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Dhikr ${i + 1} of ${category.items.length}',
-                      maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleMedium),
-                  Text(status, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.bodySmall),
-                  const SizedBox(height: 2),
-                  InkWell(
-                    onTap: () => audio.setOnce(!audio.once),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(audio.once ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
-                          size: 18, color: c.primary),
-                      const SizedBox(width: 4),
-                      Text('Once each', style: context.text.bodySmall?.copyWith(color: c.ink)),
-                    ]),
-                  ),
-                ]),
-              ),
-              IconButton(
-                tooltip: 'Previous',
-                onPressed: i > 0 ? () => audio.skip(-1) : null,
-                icon: const Icon(Icons.skip_previous_rounded),
-              ),
-              Material(
-                color: c.primary,
-                shape: const CircleBorder(),
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: audio.playing ? audio.pause : audio.resume,
-                  child: SizedBox.square(
-                    dimension: 52,
-                    child: Center(
-                      child: Icon(audio.playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                          color: c.onPrimary, size: 30),
-                    ),
+          padding: const EdgeInsets.fromLTRB(Space.lg, Space.sm, Space.xs, Space.sm),
+          child: Row(children: [
+            Expanded(
+              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Dhikr ${i + 1} of ${category.items.length}',
+                    maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleMedium?.copyWith(color: onBar)),
+                Text(status,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.bodySmall?.copyWith(color: c.goldOnBrand)),
+              ]),
+            ),
+            IconButton(
+              tooltip: 'Previous',
+              color: onBar,
+              disabledColor: onBar.withValues(alpha: 0.3),
+              onPressed: i > 0 ? () => audio.skip(-1) : null,
+              icon: const Icon(Icons.skip_previous_rounded),
+            ),
+            Material(
+              color: c.goldOnBrand,
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: audio.playing ? audio.pause : audio.resume,
+                child: SizedBox.square(
+                  dimension: 54,
+                  child: Center(
+                    child: Icon(audio.playing ? Icons.pause_rounded : Icons.play_arrow_rounded, color: c.brand, size: 30),
                   ),
                 ),
               ),
-              IconButton(
-                tooltip: 'Next',
-                onPressed: i < category.items.length - 1 ? () => audio.skip(1) : null,
-                icon: const Icon(Icons.skip_next_rounded),
-              ),
-              IconButton(
-                tooltip: 'Stop listening',
-                onPressed: audio.stop,
-                icon: Icon(Icons.close_rounded, color: c.inkMuted),
-              ),
-            ]),
-          ),
+            ),
+            IconButton(
+              tooltip: 'Next',
+              color: onBar,
+              disabledColor: onBar.withValues(alpha: 0.3),
+              onPressed: i < category.items.length - 1 ? () => audio.skip(1) : null,
+              icon: const Icon(Icons.skip_next_rounded),
+            ),
+            IconButton(
+              tooltip: 'Stop listening',
+              onPressed: audio.stop,
+              icon: Icon(Icons.close_rounded, color: onBar.withValues(alpha: 0.7)),
+            ),
+          ]),
         ),
       ),
     );
@@ -512,7 +700,7 @@ class _ListenTime extends StatelessWidget {
     final t = cat.listeningTime;
     if (t == Duration.zero) return const SizedBox.shrink();
     return Row(children: [
-      Icon(Icons.headphones_rounded, size: 14, color: c.primary),
+      Icon(Icons.headphones_rounded, size: 14, color: c.goldText),
       const SizedBox(width: 4),
       Flexible(
         child: Text(
@@ -521,7 +709,7 @@ class _ListenTime extends StatelessWidget {
               : '${formatListeningTime(t)} of listening · ${cat.unrecorded} to read',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: context.text.labelSmall?.copyWith(color: c.primary),
+          style: context.text.labelSmall?.copyWith(color: c.goldText, letterSpacing: 0.2),
         ),
       ),
     ]);

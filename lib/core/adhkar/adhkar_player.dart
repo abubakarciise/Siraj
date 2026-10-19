@@ -13,9 +13,9 @@ import 'adhkar.dart';
 /// with the app (no internet needed), through the same media session as the
 /// Quran, so it has its own notification and lock-screen controls.
 ///
-/// Each dhikr repeats as many times as it is prescribed, or once if the
-/// listener prefers; [onRepetition] tells the screen to count one down after
-/// each recitation. A dhikr without a recording is the listener's turn:
+/// Each dhikr repeats as many times as it is prescribed (up to [kListenCap];
+/// the listener finishes a hundred-times dhikr by tapping), or once if the
+/// listener prefers; each recitation counts one down on the screen. A dhikr without a recording is the listener's turn:
 /// playback waits until they have counted it on screen, then continues.
 class AdhkarPlayer extends ChangeNotifier implements ExternalPlayback {
   AdhkarPlayer({required this.handler, this.beforeStart, this.artUri, this.onCompleted, this.prefs, this.scopeOf});
@@ -121,8 +121,9 @@ class AdhkarPlayer extends ChangeNotifier implements ExternalPlayback {
   /// The current dhikr has no recording: waiting for the listener to read it.
   bool waitingForReader = false;
 
-  /// Recite each dhikr once instead of its prescribed count.
-  bool once = false;
+  /// Recite each dhikr once instead of its prescribed count ("Once each");
+  /// the listener's choice, remembered.
+  late bool once = prefs?.getBool('adhkar_listen_once') ?? false;
 
   void Function(Object error)? onError;
 
@@ -226,6 +227,7 @@ class AdhkarPlayer extends ChangeNotifier implements ExternalPlayback {
 
   void setOnce(bool v) {
     once = v;
+    prefs?.setBool('adhkar_listen_once', v);
     notifyListeners();
   }
 
@@ -272,7 +274,9 @@ class AdhkarPlayer extends ChangeNotifier implements ExternalPlayback {
       while (session == _session && index < cat.items.length) {
         final d = cat.items[index];
         final remaining = left(cat, index);
-        final times = once ? (remaining > 0 ? 1 : 0) : remaining;
+        // What the cap leaves of a long count stays on the card to tap.
+        final played = d.count - remaining;
+        final times = once ? (remaining > 0 ? 1 : 0) : (d.listenTimes - played).clamp(0, remaining);
         repetitions = times;
         repetition = 0;
         if (d.audioFile == null) {

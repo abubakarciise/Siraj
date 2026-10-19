@@ -150,7 +150,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final top = MediaQuery.paddingOf(context).top;
 
     return AnnotatedRegion(
-      value: c.isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+      value: systemBars(c, bottom: c.pageBg),
       child: Scaffold(
         backgroundColor: c.pageBg,
         body: Stack(

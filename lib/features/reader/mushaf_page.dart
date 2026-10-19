@@ -245,7 +245,8 @@ class _TextPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final frame = layout.frame;
     if (frame != null) {
-      canvas.drawRRect(frame, Paint()..color = c.primarySoft.withValues(alpha: 0.18));
+      // A faint gold wash inside the frame, warm like the page itself.
+      canvas.drawRRect(frame, Paint()..color = c.gold.withValues(alpha: c.isDark ? 0.05 : 0.04));
       canvas.drawRRect(
         frame,
         Paint()
@@ -266,7 +267,7 @@ class _TextPainter extends CustomPainter {
   void _paintHeaderFrame(Canvas canvas, Rect line) {
     final rect = line.deflate(line.height * 0.1);
     final r = RRect.fromRectAndRadius(rect, Radius.circular(rect.height / 2));
-    canvas.drawRRect(r, Paint()..color = c.primarySoft.withValues(alpha: 0.5));
+    canvas.drawRRect(r, Paint()..color = c.gold.withValues(alpha: c.isDark ? 0.14 : 0.12));
     final stroke = Paint()
       ..color = c.gold
       ..style = PaintingStyle.stroke

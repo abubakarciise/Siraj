@@ -52,7 +52,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [c.primarySoft.withValues(alpha: c.isDark ? 0.55 : 0.7), c.bg],
+                  colors: [c.goldTint, c.bg],
                   stops: const [0, 0.35],
                 ),
               ),
@@ -377,9 +377,11 @@ class _FollowRow extends StatelessWidget {
             curve: Motion.curve,
             padding: const EdgeInsets.symmetric(horizontal: Space.md, vertical: Space.md),
             decoration: BoxDecoration(
-              color: active ? c.primarySoft.withValues(alpha: c.isDark ? 0.55 : 0.75) : Colors.transparent,
+              // The ayah being recited: a warm gold wash edged in emerald, as the
+              // dhikr being recited in the adhkar.
+              color: active ? Color.lerp(c.surface, c.gold, c.isDark ? 0.12 : 0.10) : Colors.transparent,
               borderRadius: BorderRadius.circular(Radii.lg),
-              border: Border.all(color: active ? c.primary.withValues(alpha: 0.35) : Colors.transparent),
+              border: Border.all(color: active ? c.primary.withValues(alpha: 0.55) : Colors.transparent, width: 1.5),
             ),
             child: child,
           ),

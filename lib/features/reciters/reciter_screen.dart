@@ -211,7 +211,7 @@ class _ReciterScreenState extends ConsumerState<ReciterScreen> {
                     alignment: WrapAlignment.center,
                     children: [
                       Pill(r.isComplete ? 'Complete Quran' : '${r.surahs.length} surahs'),
-                      if (isDefault) Pill('Default', color: c.gold, icon: Icons.star_rounded),
+                      if (isDefault) Pill('Default', color: c.goldText, icon: Icons.star_rounded),
                     ],
                   ),
                   const SizedBox(height: Space.xl),

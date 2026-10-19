@@ -4,6 +4,9 @@ import 'package:flutter/services.dart';
 import 'tokens.dart';
 
 const kUiFont = 'Plex';
+
+/// Serif for titles (Ivory Manuscript).
+const kTitleFont = 'Lora';
 const kQuranFont = 'Hafs';
 
 /// Classical Naskh for non-Quran Arabic (adhkar, duas); the Hafs font is Quran-only.
@@ -14,6 +17,21 @@ const kNaskhFont = 'Amiri';
 const kUiFallback = ['Roboto', 'sans-serif', kNaskhFont];
 
 ThemeData buildTheme(AppThemeKind kind) => buildThemeFrom(AppColors.of(kind));
+
+/// The phone's own bars: a see-through status bar (no grey scrim over the
+/// page, as some phones draw by default) and the gesture/button strip in the
+/// ivory of the app's bottom bar.
+SystemUiOverlayStyle systemBars(AppColors c, {Color? bottom}) {
+  final base = c.isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark;
+  return base.copyWith(
+    statusBarColor: Colors.transparent,
+    systemStatusBarContrastEnforced: false,
+    systemNavigationBarColor: bottom ?? c.navBar,
+    systemNavigationBarDividerColor: Colors.transparent,
+    systemNavigationBarIconBrightness: c.isDark ? Brightness.light : Brightness.dark,
+    systemNavigationBarContrastEnforced: false,
+  );
+}
 
 ThemeData buildThemeFrom(AppColors c) {
   final brightness = c.isDark ? Brightness.dark : Brightness.light;
@@ -42,16 +60,27 @@ ThemeData buildThemeFrom(AppColors c) {
         letterSpacing: ls,
       );
 
+  // Titles in the Lora serif, like a printed book; everything else in Plex.
+  TextStyle serif(double size, double height, FontWeight w, Color color) => TextStyle(
+        fontFamily: kTitleFont,
+        fontFamilyFallback: const [kUiFont, kNaskhFont],
+        fontSize: size,
+        height: height / size,
+        fontWeight: w,
+        color: color,
+      );
+
   final textTheme = TextTheme(
-    displaySmall: s(34, 40, FontWeight.w700, c.ink, -0.5),
-    headlineSmall: s(24, 30, FontWeight.w700, c.ink, -0.2),
-    titleLarge: s(20, 26, FontWeight.w600, c.ink),
+    displaySmall: serif(34, 42, FontWeight.w600, c.ink),
+    headlineMedium: serif(30, 38, FontWeight.w600, c.ink),
+    headlineSmall: serif(24, 32, FontWeight.w600, c.ink),
+    titleLarge: serif(20, 28, FontWeight.w600, c.ink),
     titleMedium: s(16, 24, FontWeight.w600, c.ink),
     bodyLarge: s(16, 24, FontWeight.w400, c.ink),
     bodyMedium: s(14, 20, FontWeight.w400, c.ink),
     bodySmall: s(13, 18, FontWeight.w500, c.inkMuted),
     labelLarge: s(15, 20, FontWeight.w600, c.ink),
-    labelSmall: s(11, 14, FontWeight.w600, c.inkMuted, 0.6),
+    labelSmall: s(11, 14, FontWeight.w700, c.inkMuted, 0.8),
   );
 
   return ThemeData(
@@ -75,40 +104,40 @@ ThemeData buildThemeFrom(AppColors c) {
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: ButtonStyle(
         backgroundColor: WidgetStateProperty.resolveWith(
-            (st) => st.contains(WidgetState.selected) ? c.primarySoft : Colors.transparent),
+            (st) => st.contains(WidgetState.selected) ? c.brand : c.surface),
         foregroundColor: WidgetStateProperty.resolveWith(
-            (st) => st.contains(WidgetState.selected) ? c.primary : c.inkMuted),
+            (st) => st.contains(WidgetState.selected) ? c.onBrand : c.inkMuted),
         side: WidgetStateProperty.all(BorderSide(color: c.divider)),
         textStyle: WidgetStateProperty.all(s(13, 18, FontWeight.w600, c.ink)),
       ),
     ),
     progressIndicatorTheme: ProgressIndicatorThemeData(color: c.primary, linearTrackColor: c.divider),
-    // Headers and the bottom bar in the logo's colours: emerald, cream text,
-    // gold for what is selected, and a fine gold line.
+    // Headers sit on the paper with dark serif titles; once content scrolls
+    // under them they turn card-ivory. The bottom bar is ivory over a gold
+    // hairline, the open tab in emerald on a soft gold pill.
     appBarTheme: AppBarTheme(
-      backgroundColor: c.bar,
-      shape: Border(bottom: BorderSide(color: c.barLine, width: 0.8)),
+      backgroundColor: WidgetStateColor.resolveWith((st) => st.contains(WidgetState.scrolledUnder) ? c.surface : c.bar),
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
       foregroundColor: c.onBar,
       iconTheme: IconThemeData(color: c.onBar),
-      actionsIconTheme: IconThemeData(color: c.onBar),
+      actionsIconTheme: IconThemeData(color: c.inkMuted),
       titleTextStyle: textTheme.titleLarge?.copyWith(color: c.onBar),
-      systemOverlayStyle: SystemUiOverlayStyle.light,
+      systemOverlayStyle: systemBars(c),
     ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: c.bar,
+      backgroundColor: c.navBar,
       surfaceTintColor: Colors.transparent,
-      indicatorColor: c.gold.withValues(alpha: 0.28),
-      height: 68,
+      indicatorColor: c.navPill,
+      height: 66,
       labelTextStyle: WidgetStateProperty.resolveWith(
-        (st) => s(12, 16, FontWeight.w600,
-            st.contains(WidgetState.selected) ? c.barSelected : c.onBar.withValues(alpha: 0.75)),
+        (st) => s(12, 16, st.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w500,
+            st.contains(WidgetState.selected) ? c.navSelected : c.onNav),
       ),
       iconTheme: WidgetStateProperty.resolveWith(
-        (st) => IconThemeData(color: st.contains(WidgetState.selected) ? c.barSelected : c.onBar.withValues(alpha: 0.75)),
+        (st) => IconThemeData(color: st.contains(WidgetState.selected) ? c.navSelected : c.onNav),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
@@ -117,39 +146,50 @@ ThemeData buildThemeFrom(AppColors c) {
         foregroundColor: c.onPrimary,
         minimumSize: const Size(0, 52),
         textStyle: textTheme.labelLarge,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.md)),
+        shape: const StadiumBorder(),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: c.ink,
         minimumSize: const Size(0, 52),
-        side: BorderSide(color: c.divider),
+        side: BorderSide(color: c.divider, width: 1.2),
         textStyle: textTheme.labelLarge,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.md)),
+        shape: const StadiumBorder(),
       ),
     ),
     chipTheme: ChipThemeData(
-      backgroundColor: c.surfaceAlt,
-      selectedColor: c.primarySoft,
-      side: BorderSide.none,
-      labelStyle: s(13, 18, FontWeight.w600, c.ink),
+      backgroundColor: c.surface,
+      selectedColor: c.brand,
+      side: BorderSide(color: c.divider),
+      // The label's colour follows the chip's state, for every kind of chip
+      // (filter chips ignore secondaryLabelStyle): cream on the emerald of a
+      // selected chip, muted ink otherwise.
+      labelStyle: s(13, 18, FontWeight.w600, c.inkMuted).copyWith(
+        color: WidgetStateColor.resolveWith((st) => st.contains(WidgetState.selected) ? c.onBrand : c.inkMuted),
+      ),
+      secondaryLabelStyle: s(13, 18, FontWeight.w600, c.onBrand),
       shape: const StadiumBorder(),
       padding: const EdgeInsets.symmetric(horizontal: 6),
       showCheckmark: false,
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: c.surfaceAlt,
+      fillColor: c.surface,
       hintStyle: s(15, 20, FontWeight.w400, c.inkFaint),
+      prefixIconColor: c.inkMuted,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(Radii.md), borderSide: BorderSide.none),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(Radii.lg), borderSide: BorderSide(color: c.divider)),
+      enabledBorder:
+          OutlineInputBorder(borderRadius: BorderRadius.circular(Radii.lg), borderSide: BorderSide(color: c.divider)),
+      focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(Radii.lg), borderSide: BorderSide(color: c.primary, width: 1.4)),
     ),
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: c.surface,
       surfaceTintColor: Colors.transparent,
       showDragHandle: true,
-      dragHandleColor: c.divider,
+      dragHandleColor: c.gold.withValues(alpha: 0.5),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(Radii.xl))),
     ),
     sliderTheme: SliderThemeData(

@@ -11,6 +11,7 @@ import '../../core/prayer/prayer.dart';
 import '../../core/providers.dart';
 import '../../core/reminders/reminders.dart';
 import '../../design/dialogs.dart';
+import '../../design/theme.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
 
@@ -47,27 +48,42 @@ class RemindersScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Reminders')),
-      body: ListView(padding: const EdgeInsets.only(bottom: Space.xxxl), children: [
+      body: ListView(padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, 40), children: [
         _Hero(enabled: s.enabled),
-        SwitchListTile(
-          title: const Text('Daily reminders'),
-          subtitle: const Text('An ayah, hadith, sunnah or dhikr through the day'),
-          value: s.enabled,
-          onChanged: (v) async {
-            if (v && !await _ensurePermission(context, ref)) return;
-            await n.update(s.copyWith(enabled: v));
-            if (v && context.mounted) showToast(context, 'Daily reminders are on');
-          },
-        ),
+
+        // ---- Daily reminders ----
+        const GroupHeader('Daily reminders'),
+        SettingsGroup(children: [
+          SettingsSwitch(
+            icon: Icons.notifications_active_rounded,
+            color: const Color(0xFF0F5C4A),
+            title: 'Daily reminders',
+            subtitle: 'An ayah, hadith, sunnah or dhikr through the day',
+            value: s.enabled,
+            onChanged: (v) async {
+              if (v && !await _ensurePermission(context, ref)) return;
+              await n.update(s.copyWith(enabled: v));
+              if (v && context.mounted) showToast(context, 'Daily reminders are on');
+            },
+          ),
+          if (s.enabled)
+            SettingsSwitch(
+              icon: Icons.shuffle_rounded,
+              color: const Color(0xFF8A6A2B),
+              title: 'Vary the time a little',
+              subtitle: 'Each reminder arrives a few minutes earlier or later',
+              value: s.vary,
+              onChanged: (v) => n.update(s.copyWith(vary: v)),
+            ),
+        ]),
         AnimatedSize(
           duration: Motion.standard,
           curve: Motion.curve,
           child: !s.enabled
               ? const SizedBox(width: double.infinity)
-              : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const _Label('How often'),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+              : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  const GroupHeader('How often'),
+                  _Panel(
                     child: Wrap(spacing: 8, runSpacing: 8, children: [
                       for (final h in DailyReminderSettings.intervals)
                         ChoiceChip(
@@ -77,103 +93,106 @@ class RemindersScreen extends ConsumerWidget {
                         ),
                     ]),
                   ),
-                  SwitchListTile(
-                    title: const Text('Vary the time a little'),
-                    subtitle: const Text('Each reminder arrives a few minutes earlier or later'),
-                    value: s.vary,
-                    onChanged: (v) => n.update(s.copyWith(vary: v)),
-                  ),
-                  const _Label('Active hours'),
+                  const GroupHeader('Active hours'),
+                  Row(children: [
+                    Expanded(child: _TimeBox(label: 'From', time: s.from, onTap: () => pickTime(true))),
+                    const SizedBox(width: Space.md),
+                    Expanded(child: _TimeBox(label: 'Until', time: s.until, onTap: () => pickTime(false))),
+                  ]),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-                    child: Row(children: [
-                      Expanded(child: _TimeBox(label: 'From', time: s.from, onTap: () => pickTime(true))),
-                      const SizedBox(width: Space.md),
-                      Expanded(child: _TimeBox(label: 'Until', time: s.until, onTap: () => pickTime(false))),
-                    ]),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, 0),
+                    padding: const EdgeInsets.fromLTRB(Space.xs, Space.sm, Space.xs, 0),
                     child: Text(
                       '${ReminderService.slots(s.copyWith(vary: false), DateTime(2000), 0, Random(0)).length} reminders a day. '
                       'Nothing is sent outside these hours.',
                       style: context.text.bodySmall,
                     ),
                   ),
-                  const _Label('What to send (chosen at random)'),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-                    child: Wrap(spacing: 8, runSpacing: 8, children: [
-                      for (final t in ReminderContent.values)
-                        FilterChip(
-                          label: Text(t.label),
-                          selected: s.content.contains(t),
-                          onSelected: (on) {
-                            final next = {...s.content};
-                            on ? next.add(t) : next.remove(t);
-                            if (next.isNotEmpty) n.update(s.copyWith(content: next));
-                          },
-                        ),
+                  const GroupHeader('What to send · chosen at random'),
+                  _Panel(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                      Wrap(spacing: 8, runSpacing: 8, children: [
+                        for (final t in ReminderContent.values)
+                          FilterChip(
+                            label: Text(t.label),
+                            selected: s.content.contains(t),
+                            onSelected: (on) {
+                              final next = {...s.content};
+                              on ? next.add(t) : next.remove(t);
+                              if (next.isNotEmpty) n.update(s.copyWith(content: next));
+                            },
+                          ),
+                      ]),
+                      const SizedBox(height: Space.md),
+                      Text(
+                        'Reminders follow the day: Surah Al-Kahf and salawat on Friday, a reminder the evening '
+                        'before the Monday and Thursday fasts, the White Days, Ramadan and its last ten nights, '
+                        'Dhul Hijjah, Arafah and Ashura, and adhkar in the morning, evening and before sleep.',
+                        style: context.text.bodySmall?.copyWith(height: 1.5),
+                      ),
+                      const SizedBox(height: Space.md),
+                      OutlinedButton.icon(
+                        onPressed: () => _preview(context, ref),
+                        icon: const Icon(Icons.visibility_outlined),
+                        label: const Text('Preview a reminder'),
+                      ),
                     ]),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, 0),
-                    child: Text(
-                      'Reminders follow the day: Surah Al-Kahf and salawat on Friday, a reminder the evening '
-                      'before the Monday and Thursday fasts, the White Days, Ramadan and its last ten nights, '
-                      'Dhul Hijjah, Arafah and Ashura, and adhkar in the morning, evening and before sleep.',
-                      style: context.text.bodySmall,
-                    ),
-                  ),
-                  const SizedBox(height: Space.md),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-                    child: OutlinedButton.icon(
-                      onPressed: () => _preview(context, ref),
-                      icon: const Icon(Icons.visibility_outlined),
-                      label: const Text('Preview a reminder'),
-                    ),
                   ),
                 ]),
         ),
-        const _Label('Morning & evening adhkar'),
+
+        // ---- Adhkar ----
+        const GroupHeader('Morning & evening adhkar'),
         AdhkarReminderTiles(settings: ref.watch(prayerSettingsProvider)),
-        const _Label('Hijri date'),
-        ListTile(
-          leading: Icon(Icons.calendar_month_outlined, color: c.primary),
-          title: Text('${hijri.label} AH'),
-          subtitle: Text(s.hijriOffset == 0
-              ? 'Umm al-Qura calendar · adjust if your local moon sighting differs'
-              : 'Adjusted ${s.hijriOffset > 0 ? '+' : ''}${s.hijriOffset} day${s.hijriOffset.abs() == 1 ? '' : 's'}'),
-          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-            IconButton(
-              tooltip: 'One day earlier',
-              onPressed: s.hijriOffset > -2 ? () => n.update(s.copyWith(hijriOffset: s.hijriOffset - 1)) : null,
-              icon: const Icon(Icons.remove_circle_outline_rounded),
-            ),
-            IconButton(
-              tooltip: 'One day later',
-              onPressed: s.hijriOffset < 2 ? () => n.update(s.copyWith(hijriOffset: s.hijriOffset + 1)) : null,
-              icon: const Icon(Icons.add_circle_outline_rounded),
-            ),
-          ]),
-        ),
-        ListTile(
-          leading: Icon(Icons.access_time_rounded, color: c.primary),
-          title: const Text('Prayer time alerts'),
-          subtitle: const Text('Choose which prayers alert you'),
-          trailing: const Icon(Icons.chevron_right_rounded),
-          onTap: () => context.push('/prayer'),
-        ),
-        const _Label('Sound'),
+
+        // ---- Prayer and calendar ----
+        const GroupHeader('Prayer & calendar'),
+        SettingsGroup(children: [
+          SettingsRow(
+            icon: Icons.access_time_rounded,
+            color: const Color(0xFF0F5C4A),
+            title: 'Prayer time alerts',
+            value: 'Choose which prayers alert you',
+            onTap: () => context.push('/prayer'),
+          ),
+          SettingsRow(
+            icon: Icons.calendar_month_rounded,
+            color: const Color(0xFF8A6A2B),
+            title: '${hijri.label} AH',
+            value: s.hijriOffset == 0
+                ? 'Umm al-Qura calendar · adjust if your local moon sighting differs'
+                : 'Adjusted ${s.hijriOffset > 0 ? '+' : ''}${s.hijriOffset} day${s.hijriOffset.abs() == 1 ? '' : 's'}',
+            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+              IconButton(
+                tooltip: 'One day earlier',
+                color: c.primary,
+                onPressed: s.hijriOffset > -2 ? () => n.update(s.copyWith(hijriOffset: s.hijriOffset - 1)) : null,
+                icon: const Icon(Icons.remove_circle_outline_rounded),
+              ),
+              IconButton(
+                tooltip: 'One day later',
+                color: c.primary,
+                onPressed: s.hijriOffset < 2 ? () => n.update(s.copyWith(hijriOffset: s.hijriOffset + 1)) : null,
+                icon: const Icon(Icons.add_circle_outline_rounded),
+              ),
+            ]),
+          ),
+        ]),
+
+        // ---- Sound ----
+        const GroupHeader('Sound'),
         const _SoundChoice(),
-        ListTile(
-          leading: Icon(Icons.notifications_active_outlined, color: c.primary),
-          title: const Text('Send a test notification'),
-          onTap: () async {
-            if (await _ensurePermission(context, ref)) await notifications.showTest(ReminderKind.daily);
-          },
-        ),
+        const SizedBox(height: Space.md),
+        SettingsGroup(children: [
+          SettingsRow(
+            icon: Icons.notifications_active_outlined,
+            color: const Color(0xFF0F5C4A),
+            title: 'Send a test notification',
+            value: 'See and hear a reminder now',
+            onTap: () async {
+              if (await _ensurePermission(context, ref)) await notifications.showTest(ReminderKind.daily);
+            },
+          ),
+        ]),
       ]),
     );
   }
@@ -210,42 +229,32 @@ class _Hero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.sm),
-      child: Container(
-        decoration: BoxDecoration(color: c.brand, borderRadius: BorderRadius.circular(Radii.xl)),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(children: [
-          Positioned.fill(child: GirihPattern(color: c.onBrand, cell: 48, opacity: 0.07)),
-          Padding(
-            padding: const EdgeInsets.all(Space.xl),
-            child: Row(children: [
-              Icon(enabled ? Icons.notifications_active_rounded : Icons.notifications_none_rounded,
-                  color: c.gold, size: 34),
-              const SizedBox(width: Space.lg),
-              Expanded(
-                child: Text(
-                  '"Remember Me; I will remember you." (2:152)',
-                  style: context.text.titleMedium?.copyWith(color: c.onBrand, height: 1.4),
-                ),
-              ),
-            ]),
-          ),
-        ]),
-      ),
+    return BrandPanel(
+      child: Row(children: [
+        Icon(enabled ? Icons.notifications_active_rounded : Icons.notifications_none_rounded,
+            color: c.goldOnBrand, size: 34),
+        const SizedBox(width: Space.lg),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('فَاذْكُرُونِي أَذْكُرْكُمْ',
+                textDirection: TextDirection.rtl,
+                style: TextStyle(fontFamily: kQuranFont, fontSize: 22, height: 1.6, color: c.onBrand)),
+            Text('"Remember Me; I will remember you." (2:152)',
+                style: context.text.bodyMedium?.copyWith(color: c.onBrand.withValues(alpha: 0.85), height: 1.4)),
+          ]),
+        ),
+      ]),
     );
   }
 }
 
-class _Label extends StatelessWidget {
-  const _Label(this.text);
-  final String text;
+/// Free content (chips, notes) in the same ivory card as a group.
+class _Panel extends StatelessWidget {
+  const _Panel({required this.child});
+  final Widget child;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, Space.sm),
-        child: Text(text.toUpperCase(), style: context.text.labelSmall?.copyWith(color: context.colors.primary)),
-      );
+  Widget build(BuildContext context) => AppCard(padding: const EdgeInsets.all(Space.lg), radius: Radii.lg, child: child);
 }
 
 class _TimeBox extends StatelessWidget {
@@ -257,29 +266,22 @@ class _TimeBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    return Material(
-      color: c.surfaceAlt,
-      borderRadius: BorderRadius.circular(Radii.md),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(Radii.md),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.md),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(label, style: context.text.bodySmall),
-            Text(time.format(context), style: context.text.titleLarge?.copyWith(color: c.primary)),
-          ]),
-        ),
-      ),
+    return AppCard(
+      onTap: onTap,
+      radius: Radii.lg,
+      padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.md),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label.toUpperCase(), style: context.text.labelSmall?.copyWith(color: c.goldText)),
+        Text(time.format(context), style: context.text.headlineSmall?.copyWith(color: c.primary)),
+      ]),
     );
   }
 }
 
 /// The morning and evening adhkar reminder: on/off and the two times.
 class AdhkarReminderTiles extends ConsumerWidget {
-  const AdhkarReminderTiles({super.key, required this.settings, this.padding});
+  const AdhkarReminderTiles({super.key, required this.settings});
   final PrayerSettings settings;
-  final EdgeInsetsGeometry? padding;
 
   Future<void> _pick(BuildContext context, WidgetRef ref, bool morning) async {
     final t = await showTimePicker(context: context, initialTime: morning ? settings.morning : settings.evening);
@@ -293,11 +295,13 @@ class AdhkarReminderTiles extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
     final s = settings;
-    return Column(mainAxisSize: MainAxisSize.min, children: [
-      SwitchListTile(
-        contentPadding: padding,
-        title: const Text('Morning & evening adhkar'),
-        subtitle: const Text('A reminder to read the morning adhkar and the evening adhkar, at the times you set'),
+    Widget time(TimeOfDay t) => Text(t.format(context), style: context.text.titleMedium?.copyWith(color: c.primary));
+    return SettingsGroup(children: [
+      SettingsSwitch(
+        icon: Icons.alarm_rounded,
+        color: const Color(0xFF0F5C4A),
+        title: 'Adhkar reminders',
+        subtitle: 'To read the morning and the evening adhkar, at the times you set',
         value: s.adhkarReminders,
         onChanged: (v) async {
           if (v) {
@@ -316,20 +320,20 @@ class AdhkarReminderTiles extends ConsumerWidget {
         },
       ),
       if (s.adhkarReminders) ...[
-        ListTile(
-          contentPadding: padding,
-          leading: Icon(Icons.wb_twilight_rounded, color: c.primary),
-          title: const Text('Morning adhkar reminder'),
-          subtitle: const Text('Time to read the morning adhkar'),
-          trailing: Text(s.morning.format(context), style: context.text.titleMedium?.copyWith(color: c.primary)),
+        SettingsRow(
+          icon: Icons.wb_twilight_rounded,
+          color: const Color(0xFF8A6A2B),
+          title: 'Morning adhkar',
+          value: 'Time to read the morning adhkar',
+          trailing: Padding(padding: const EdgeInsets.only(right: Space.sm), child: time(s.morning)),
           onTap: () => _pick(context, ref, true),
         ),
-        ListTile(
-          contentPadding: padding,
-          leading: Icon(Icons.nights_stay_outlined, color: c.primary),
-          title: const Text('Evening adhkar reminder'),
-          subtitle: const Text('Time to read the evening adhkar'),
-          trailing: Text(s.evening.format(context), style: context.text.titleMedium?.copyWith(color: c.primary)),
+        SettingsRow(
+          icon: Icons.nights_stay_outlined,
+          color: const Color(0xFF0F5C4A),
+          title: 'Evening adhkar',
+          value: 'Time to read the evening adhkar',
+          trailing: Padding(padding: const EdgeInsets.only(right: Space.sm), child: time(s.evening)),
           onTap: () => _pick(context, ref, false),
         ),
       ],
@@ -372,15 +376,19 @@ class _SoundChoiceState extends ConsumerState<_SoundChoice> {
   Widget build(BuildContext context) {
     final c = context.colors;
     final current = ref.read(notificationsProvider).sound;
-    Widget tile(String value, IconData icon, String title, String subtitle) => RadioListTile<String>(
-          value: value,
-          groupValue: current,
-          onChanged: (v) => _choose(v!),
-          secondary: Icon(icon, color: c.primary),
-          title: Text(title),
-          subtitle: Text(subtitle),
+    Widget tile(String value, IconData icon, String title, String subtitle) => SettingsRow(
+          icon: icon,
+          color: value == 'siraj' ? const Color(0xFF8A6A2B) : const Color(0xFF0F5C4A),
+          title: title,
+          value: subtitle,
+          trailing: Padding(
+            padding: const EdgeInsets.only(right: Space.sm),
+            child: Icon(current == value ? Icons.check_circle_rounded : Icons.circle_outlined,
+                color: current == value ? c.primary : c.inkFaint),
+          ),
+          onTap: () => _choose(value),
         );
-    return Column(children: [
+    return SettingsGroup(children: [
       tile('siraj', Icons.music_note_rounded, 'Pixie Dust', 'A soft, short chime · tap to hear it'),
       tile('default', Icons.phone_android_rounded, 'Phone default', "Your phone's notification sound"),
     ]);

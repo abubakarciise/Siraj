@@ -35,32 +35,35 @@ class _QuranIndexScreenState extends ConsumerState<QuranIndexScreen> {
             title: 'Quran',
             subtitle: 'القرآن الكريم',
             art: HeroArt.quran,
+            // Two everyday actions; the rest in a menu.
             actions: [
-              IconButton(
-                tooltip: 'Memorization test',
-                icon: const Icon(Icons.fact_check_outlined),
-                onPressed: () => context.push('/memorize'),
-              ),
-              IconButton(
-                tooltip: 'Bookmarks & downloads',
-                icon: const Icon(Icons.bookmarks_outlined),
-                onPressed: () => context.push('/library'),
-              ),
               IconButton(
                 tooltip: 'Search',
                 icon: const Icon(Icons.search_rounded),
                 onPressed: () => context.push('/search'),
               ),
               IconButton(
-                tooltip: 'Go to page',
-                icon: const Icon(Icons.tag_rounded),
-                onPressed: () => _goToPage(context),
+                tooltip: 'Bookmarks & downloads',
+                icon: const Icon(Icons.bookmarks_outlined),
+                onPressed: () => context.push('/library'),
+              ),
+              PopupMenuButton<int>(
+                tooltip: 'More',
+                icon: const Icon(Icons.more_vert_rounded),
+                color: c.surface,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.md)),
+                onSelected: (v) => v == 0 ? _goToPage(context) : context.push('/memorize'),
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 0, child: ListTile(leading: Icon(Icons.tag_rounded), title: Text('Go to page'))),
+                  PopupMenuItem(
+                      value: 1, child: ListTile(leading: Icon(Icons.fact_check_outlined), title: Text('Memorization test'))),
+                ],
               ),
             ],
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, 0),
+              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xs),
               child: _ContinueCard(),
             ),
           ),
@@ -147,83 +150,70 @@ class _ContinueCard extends ConsumerWidget {
     final progress = last == null
         ? 0.0
         : ((last.page - surah.pageStart + 1) / (surah.pageEnd - surah.pageStart + 1)).clamp(0.0, 1.0);
-    return Material(
-      color: c.brand,
-      borderRadius: BorderRadius.circular(Radii.xl),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.openReader(last?.page ?? 1),
-        child: Stack(
-          children: [
-            Positioned.fill(child: GirihPattern(color: c.onBrand, cell: 46, opacity: 0.07)),
-            Padding(
-              padding: const EdgeInsets.all(Space.xl),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              last == null ? 'START READING' : 'CONTINUE READING',
-                              style: context.text.labelSmall?.copyWith(color: c.gold),
-                            ),
-                            const SizedBox(height: Space.xs),
-                            Text(
-                              surah.nameEn,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: context.text.headlineSmall?.copyWith(color: c.onBrand),
-                            ),
-                            Text(
-                              last == null ? 'The Opening' : 'Page ${last.page} · Ayah ${last.ref.ayah}',
-                              style: context.text.bodyMedium?.copyWith(color: c.onBrand.withValues(alpha: 0.8)),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        surah.nameAr,
-                        style: TextStyle(fontFamily: kQuranFont, fontSize: 30, color: c.onBrand, height: 1.4),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: Space.lg),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: progress,
-                            minHeight: 5,
-                            color: c.gold,
-                            backgroundColor: c.onBrand.withValues(alpha: 0.2),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: Space.lg),
-                      FilledButton.icon(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: c.gold,
-                          foregroundColor: c.brand,
-                          minimumSize: const Size(0, 40),
-                        ),
-                        onPressed: () => context.openReader(last?.page ?? 1),
-                        icon: const Icon(Icons.menu_book_rounded, size: 18),
-                        label: Text(last == null ? 'Open' : 'Continue'),
-                      ),
-                    ],
-                  ),
-                ],
+    return BrandPanel(
+      onTap: () => context.openReader(last?.page ?? 1),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      last == null ? 'START READING' : 'CONTINUE READING',
+                      style: context.text.labelSmall?.copyWith(color: c.goldOnBrand),
+                    ),
+                    const SizedBox(height: Space.xs),
+                    Text(
+                      surah.nameEn,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.headlineSmall?.copyWith(color: c.onBrand),
+                    ),
+                    Text(
+                      last == null ? 'The Opening' : 'Page ${last.page} · Ayah ${last.ref.ayah}',
+                      style: context.text.bodyMedium?.copyWith(color: c.onBrand.withValues(alpha: 0.8)),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
+              Text(
+                surah.nameAr,
+                style: TextStyle(fontFamily: kQuranFont, fontSize: 30, color: c.onBrand, height: 1.4),
+              ),
+            ],
+          ),
+          const SizedBox(height: Space.lg),
+          Row(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 5,
+                    color: c.goldOnBrand,
+                    backgroundColor: c.onBrand.withValues(alpha: 0.2),
+                  ),
+                ),
+              ),
+              const SizedBox(width: Space.lg),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: c.goldOnBrand,
+                  foregroundColor: c.brand,
+                  minimumSize: const Size(0, 42),
+                ),
+                onPressed: () => context.openReader(last?.page ?? 1),
+                icon: const Icon(Icons.menu_book_rounded, size: 18),
+                label: Text(last == null ? 'Open' : 'Continue'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -254,7 +244,13 @@ class _SurahList extends ConsumerWidget {
             decoration: BoxDecoration(
               color: current ? c.primarySoft : c.surface,
               borderRadius: radius,
-              border: c.isDark ? Border.all(color: c.divider, width: 0.5) : null,
+              // One gold-edged sheet: the rows join, with fine lines between them.
+              border: Border(
+                left: BorderSide(color: c.divider),
+                right: BorderSide(color: c.divider),
+                top: first ? BorderSide(color: c.divider) : BorderSide.none,
+                bottom: last ? BorderSide(color: c.divider) : BorderSide.none,
+              ),
             ),
             child: Material(
               type: MaterialType.transparency,
@@ -268,19 +264,7 @@ class _SurahList extends ConsumerWidget {
                   ),
                   child: Row(
                     children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: current ? c.primary : c.primarySoft,
-                        ),
-                        child: Text(
-                          '${s.id}',
-                          style: context.text.labelLarge?.copyWith(color: current ? c.onPrimary : c.primary),
-                        ),
-                      ),
+                      StarMedallion(number: s.id, size: 40, active: current),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
@@ -301,7 +285,7 @@ class _SurahList extends ConsumerWidget {
                         children: [
                           Text(
                             s.nameAr,
-                            style: TextStyle(fontFamily: kQuranFont, fontSize: 21, color: c.ink, height: 1.4),
+                            style: TextStyle(fontFamily: kQuranFont, fontSize: 21, color: c.primary, height: 1.4),
                           ),
                           Text('p. ${s.pageStart}', style: context.text.bodySmall),
                         ],

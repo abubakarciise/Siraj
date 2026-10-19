@@ -84,9 +84,8 @@ class _PrayerScreenState extends ConsumerState<PrayerScreen> {
                   const SizedBox(height: Space.md),
                   Container(
                     padding: const EdgeInsets.all(Space.xl),
-                    decoration: BoxDecoration(color: c.brand, borderRadius: BorderRadius.circular(Radii.xl)),
+                    decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: c.brandGradient), borderRadius: BorderRadius.circular(Radii.xl)),
                     child: Stack(children: [
-                      Positioned.fill(child: GirihPattern(color: c.onBrand, cell: 44, opacity: 0.08)),
                       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text('${focus!.started ? 'NOW' : 'NEXT'} · ${next.$1.ar}', style: context.text.labelSmall?.copyWith(color: c.onBrand.withValues(alpha: 0.8))),
                         const SizedBox(height: 4),

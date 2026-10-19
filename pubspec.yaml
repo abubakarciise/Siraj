@@ -81,7 +81,6 @@ flutter:
     - assets/adhkar/adhkar.json
     - assets/adhkar/audio.json
     - assets/adhkar/audio/
-    - assets/art/
     - assets/sounds/
     - assets/db/hadith.db
     - assets/hadith/sunnah.json

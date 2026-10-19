@@ -1,4 +1,4 @@
-// Golden tests for Mushaf page rendering (docs/08_QUALITY_RELEASE.md §2).
+// Golden tests for Mushaf page rendering.
 // Regenerate after intentional layout changes:  flutter test --update-goldens test/mushaf_page_golden_test.dart
 import 'dart:convert';
 import 'dart:io';

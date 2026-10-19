@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'adhkar/adhkar.dart';
 import 'adhkar/adhkar_player.dart';
-import 'audio/artwork.dart';
 import 'audio/player_controller.dart';
 import 'audio/timing.dart';
 import 'catalog/catalog.dart';
@@ -144,7 +143,6 @@ final adhkarPlayerProvider = Provider<AdhkarPlayer>((ref) {
   final player = AdhkarPlayer(
     handler: quran.handler,
     beforeStart: quran.stop,
-    artUri: Artwork.adhkar,
     onCompleted: (cat) {
       final d = DateTime.now();
       final prefs = ref.read(prefsProvider);

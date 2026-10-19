@@ -57,7 +57,7 @@ class NowPlaying {
 /// App-level playback orchestration: queue building (local-first, offline aware),
 /// ayah tracking from timing data, ayah repeat (hifz), sleep timer, resume.
 class PlayerController {
-  PlayerController(this._handler, this._db, this._downloads, this._timing, this._user, {this.artUri}) {
+  PlayerController(this._handler, this._db, this._downloads, this._timing, this._user) {
     // Dismissed from the notification: forget what was playing.
     _handler.onStoppedOutside = () {
       _savePosition(force: true);
@@ -158,7 +158,6 @@ class PlayerController {
     // constant bitrate and land seconds off on every seek, so index them instead.
     _vbr ??= await _loadVbr();
     final options = recitation.hasTiming && _vbr!.contains(recitation.server) ? _accurateSeeking : null;
-    final art = await artUri?.call();
     final items = <MediaItem>[];
     final sources = <AudioSource>[];
     for (final s in surahs) {
@@ -168,7 +167,6 @@ class PlayerController {
         title: '${info.nameEn} · ${info.nameAr}',
         artist: reciter.name,
         album: recitation.shortName,
-        artUri: art,
         extras: {'key': recitation.key, 'surah': s},
       );
       final local = _downloads.localFile(recitation.key, s);
@@ -232,9 +230,6 @@ class PlayerController {
   }
 
   QuranAudioHandler get handler => _handler;
-
-  /// Artwork for the Quran notification.
-  final Future<Uri?> Function()? artUri;
 
   /// Jump to an ayah inside the current surah (needs timing data).
   Future<bool> seekToAyah(int ayah) async {

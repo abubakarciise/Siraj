@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Spacing, radius and motion tokens (docs/03_UX_UI_DESIGN.md §5–6).
+/// Spacing, radius and motion tokens.
 abstract final class Space {
   static const double xs = 4, sm = 8, md = 12, lg = 16, xl = 20, xxl = 24, xxxl = 32;
   static const double gutter = 20;

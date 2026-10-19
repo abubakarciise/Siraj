@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/branding/logo.png" width="112" alt="Siraj logo">
+  <img src=".github/media/logo.png" width="112" alt="Siraj logo">
 </p>
 
 <h1 align="center">Siraj · سراج</h1>
@@ -11,7 +11,7 @@
 
 <p align="center">
   <img alt="Flutter" src="https://img.shields.io/badge/Flutter-3.32-02569B?logo=flutter">
-  <img alt="Platforms" src="https://img.shields.io/badge/platform-Android%20%7C%20iOS-0E5A49">
+  <img alt="Platform" src="https://img.shields.io/badge/platform-Android-0E5A49">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-D5B26C">
 </p>
 
@@ -25,15 +25,15 @@ then tap Install. Later versions install over it and keep your bookmarks and pro
 
 | Home | Quran | Mushaf |
 |:---:|:---:|:---:|
-| <img src="docs/screenshots/01_home.png" width="260"> | <img src="docs/screenshots/14_quran.png" width="260"> | <img src="docs/screenshots/02_reader.png" width="260"> |
+| <img src=".github/media/screenshots/01_home.png" width="260"> | <img src=".github/media/screenshots/14_quran.png" width="260"> | <img src=".github/media/screenshots/02_reader.png" width="260"> |
 | **Follow the recitation** | **Listen to adhkar** | **Daily** |
-| <img src="docs/screenshots/03_player.png" width="260"> | <img src="docs/screenshots/10_adhkar_listen.png" width="260"> | <img src="docs/screenshots/15_daily.png" width="260"> |
+| <img src=".github/media/screenshots/03_player.png" width="260"> | <img src=".github/media/screenshots/10_adhkar_listen.png" width="260"> | <img src=".github/media/screenshots/15_daily.png" width="260"> |
 | **Hadith & Sunnah** | **Hadith** | **Reminders** |
-| <img src="docs/screenshots/04_hadith.png" width="260"> | <img src="docs/screenshots/05_hadith_detail.png" width="260"> | <img src="docs/screenshots/06_reminders.png" width="260"> |
+| <img src=".github/media/screenshots/04_hadith.png" width="260"> | <img src=".github/media/screenshots/05_hadith_detail.png" width="260"> | <img src=".github/media/screenshots/06_reminders.png" width="260"> |
 | **Memorization test** | **Tasbih** | **Settings** |
-| <img src="docs/screenshots/12_memorize.png" width="260"> | <img src="docs/screenshots/13_tasbih.png" width="260"> | <img src="docs/screenshots/08_appearance.png" width="260"> |
+| <img src=".github/media/screenshots/12_memorize.png" width="260"> | <img src=".github/media/screenshots/13_tasbih.png" width="260"> | <img src=".github/media/screenshots/08_appearance.png" width="260"> |
 | **Dark** | **Listen** | **Prayer times** |
-| <img src="docs/screenshots/09_home_dark.png" width="260"> | <img src="docs/screenshots/16_listen.png" width="260"> | <img src="docs/screenshots/17_prayer.png" width="260"> |
+| <img src=".github/media/screenshots/09_home_dark.png" width="260"> | <img src=".github/media/screenshots/16_listen.png" width="260"> | <img src=".github/media/screenshots/17_prayer.png" width="260"> |
 
 ## Features
 
@@ -89,7 +89,7 @@ python tool/build_catalog.py    # reciters -> assets/catalog/reciters.json
 python tool/scan_vbr.py         # variable-bitrate recitations (accurate seeking) -> assets/catalog/vbr.json
 python tool/build_adhkar.py     # Hisn al-Muslim adhkar -> assets/adhkar/adhkar.json
 python tool/build_adhkar_audio.py  # a verified recording cut for each dhikr -> assets/adhkar/audio.json (faster-whisper)
-python tool/make_icons.py       # app icon, splash and logo from the mosque lamp photograph
+python tool/make_icons.py       # app icon, splash and README logo: سراج in gold Amiri Bold
 ```
 
 ## Project structure
@@ -101,7 +101,6 @@ lib/
   features/   home, quran_index, reader (Mushaf renderer), player, reciters, hadith, daily, library, search, settings
   app/        app, router, tab shell, notification routing
 tool/         build-time content scripts
-docs/         product, design and architecture notes
 ```
 
 ## Contributing
@@ -122,8 +121,7 @@ shown comes from the source collections with its reference and grade.
   [everyayah.com](https://everyayah.com) and Quran.com; cut to each dhikr and included for offline listening
   (`tool/build_adhkar_audio.py`, needs ffmpeg and faster-whisper). Prayer times: the open-source Adhan library. Hijri dates: Umm al-Qura.
 - Fonts: IBM Plex Sans Arabic, Amiri and Lora (SIL Open Font License).
-- Logo: the name سراج in Amiri Bold (SIL Open Font License). Adhkar notification art: a Mamluk glass mosque lamp,
-  photographed by The Metropolitan Museum of Art (Open Access, CC0).
+- Logo: the name سراج in Amiri Bold (SIL Open Font License).
 - Reminder sound "Pixie Dust" from the Android Open Source Project (Apache 2.0).
 
 The app code is released under the [MIT License](LICENSE). Bundled content keeps its own terms.

@@ -18,7 +18,7 @@ import 'adhkar.dart';
 /// listener prefers; each recitation counts one down on the screen. A dhikr without a recording is the listener's turn:
 /// playback waits until they have counted it on screen, then continues.
 class AdhkarPlayer extends ChangeNotifier implements ExternalPlayback {
-  AdhkarPlayer({required this.handler, this.beforeStart, this.artUri, this.onCompleted, this.prefs, this.scopeOf});
+  AdhkarPlayer({required this.handler, this.beforeStart, this.onCompleted, this.prefs, this.scopeOf});
 
   /// A category was counted to the end today (saved as done).
   final void Function(AdhkarCategory category)? onCompleted;
@@ -102,13 +102,9 @@ class AdhkarPlayer extends ChangeNotifier implements ExternalPlayback {
   /// Stops the Quran player before adhkar start.
   final Future<void> Function()? beforeStart;
 
-  /// Artwork shown in the notification for adhkar.
-  final Future<Uri?> Function()? artUri;
-
   int _session = 0;
   Completer<void>? _turn;
   Completer<void>? _resumed;
-  Uri? _art;
 
   AdhkarCategory? category;
   int index = 0;
@@ -142,7 +138,6 @@ class AdhkarPlayer extends ChangeNotifier implements ExternalPlayback {
     }
     final session = ++_session;
     if (category == null) await beforeStart?.call();
-    _art ??= await artUri?.call();
     await _stopOutput();
     if (session != _session) return;
     handler.external = this;
@@ -255,7 +250,6 @@ class AdhkarPlayer extends ChangeNotifier implements ExternalPlayback {
       title: '${cat.titleEn} · ${cat.titleAr}',
       artist: waitingForReader ? 'Dhikr ${index + 1} of ${cat.items.length} · your turn' : 'Dhikr ${index + 1} of ${cat.items.length}$count',
       album: 'Adhkar',
-      artUri: _art,
     ));
   }
 

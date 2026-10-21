@@ -6,6 +6,7 @@ import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:hijri/hijri_calendar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../l10n/l10n.dart';
 import '../adhkar/adhkar.dart';
 import '../hadith/hadith.dart';
 import '../notifications/notifications.dart';
@@ -17,11 +18,11 @@ enum ReminderContent { ayah, surah, hadith, sunnah, dhikr }
 
 extension ReminderContentX on ReminderContent {
   String get label => switch (this) {
-        ReminderContent.ayah => 'Ayah to reflect on',
-        ReminderContent.surah => 'Surah to read',
-        ReminderContent.hadith => 'Hadith',
-        ReminderContent.sunnah => 'Sunnah to practise',
-        ReminderContent.dhikr => 'Dhikr & dua',
+        ReminderContent.ayah => l10n.reminderAyah,
+        ReminderContent.surah => l10n.reminderSurah,
+        ReminderContent.hadith => l10n.hadith,
+        ReminderContent.sunnah => l10n.sunnahToPractise,
+        ReminderContent.dhikr => l10n.reminderDhikr,
       };
 }
 
@@ -108,11 +109,6 @@ class Reminder {
   final String? label;
 }
 
-const _hijriMonths = [
-  'Muharram', 'Safar', 'Rabi al-Awwal', 'Rabi al-Thani', 'Jumada al-Ula', 'Jumada al-Akhirah', //
-  'Rajab', "Sha'ban", 'Ramadan', 'Shawwal', 'Dhul Qadah', 'Dhul Hijjah',
-];
-
 const _hijriMonthsAr = [
   'محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر', 'جمادى الأولى', 'جمادى الآخرة', //
   'رجب', 'شعبان', 'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة',
@@ -122,9 +118,10 @@ class HijriDate {
   const HijriDate(this.year, this.month, this.day);
   final int year, month, day;
 
-  String get monthName => _hijriMonths[month - 1];
+  /// The month's name in the app's language.
+  String get monthName => l10n.hijriMonth(month);
   String get monthNameAr => _hijriMonthsAr[month - 1];
-  String get label => '$day $monthName $year';
+  String get label => l10n.hijriDateLabel(day, monthName, year);
 
   /// The Islamic day begins at sunset; [evening] counts toward the next date.
   static HijriDate of(DateTime t, {int offset = 0, bool evening = false}) {
@@ -135,20 +132,20 @@ class HijriDate {
 }
 
 /// Surahs suggested for reading, with plain, factual prompts.
-const _surahSuggestions = [
-  (36, 'Read Surah Ya-Sin', null),
-  (55, 'Read Surah Ar-Rahman and reflect on the blessings of your Lord', null),
-  (56, "Read Surah Al-Waqi'ah", null),
-  (67, 'Read Surah Al-Mulk tonight', 'sleep'),
-  (32, 'Read Surah As-Sajdah tonight', 'sleep'),
-  (18, 'Friday: read Surah Al-Kahf', 'friday'),
-  (19, 'Read Surah Maryam', null),
-  (12, 'Read Surah Yusuf, "the best of stories"', null),
-  (78, "Read Surah An-Naba'", null),
-  (1, 'Reflect on Al-Fatihah, the Mother of the Book', null),
-  (112, 'Read Al-Ikhlas, Al-Falaq and An-Nas', 'evening'),
-  (2, 'Read the last two ayat of Al-Baqarah tonight', 'sleep'),
-];
+List<(int, String, String?)> get _surahSuggestions => [
+      (36, l10n.suggestYaSin, null),
+      (55, l10n.suggestArRahman, null),
+      (56, l10n.suggestAlWaqiah, null),
+      (67, l10n.suggestAlMulk, 'sleep'),
+      (32, l10n.suggestAsSajdah, 'sleep'),
+      (18, l10n.suggestAlKahf, 'friday'),
+      (19, l10n.suggestMaryam, null),
+      (12, l10n.suggestYusuf, null),
+      (78, l10n.suggestAnNaba, null),
+      (1, l10n.suggestAlFatihah, null),
+      (112, l10n.suggestQuls, 'evening'),
+      (2, l10n.suggestAlBaqarah, 'sleep'),
+    ];
 
 /// Picks reminder content that suits the moment: the day of the week, the
 /// Hijri date (White Days, Ramadan, Dhul Hijjah, Ashura…), and the time of day.
@@ -217,9 +214,9 @@ class ReminderComposer {
       };
       if (r != null) return r;
     }
-    return const Reminder(
-      title: 'Remember Allah',
-      body: 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ · Glory be to Allah and praise be to Him',
+    return Reminder(
+      title: l10n.rememberAllah,
+      body: l10n.rememberAllahBody,
       payload: 'tasbih',
     );
   }
@@ -233,9 +230,9 @@ class ReminderComposer {
     final surah = _quran.surah(s.$1);
     return Reminder(
       title: '${surah.nameAr} · ${surah.nameEn}',
-      body: '${s.$2} (${surah.ayahCount} ayat).',
+      body: l10n.surahSuggestionBody(s.$2, surah.ayahCount),
       payload: 'surah:${s.$1}',
-      label: 'Surah to read',
+      label: l10n.reminderSurah,
     );
   }
 
@@ -245,10 +242,10 @@ class ReminderComposer {
     final (ayah, translation) = a;
     final surah = _quran.surah(ayah.ref.surah);
     return Reminder(
-      title: 'Reflect · ${surah.nameEn} ${ayah.ref}',
+      title: l10n.reflectOn(surah.nameEn, '${ayah.ref}'),
       body: '${ayah.plainText}${translation == null ? '' : '\n$translation'}',
       payload: 'ayah:${ayah.ref}',
-      label: 'Ayah to reflect on',
+      label: l10n.reminderAyah,
     );
   }
 
@@ -257,10 +254,10 @@ class ReminderComposer {
     if (h == null) return null;
     final books = {for (final b in await _hadith.books()) b.id: b.nameEn};
     return Reminder(
-      title: 'Hadith · ${books[h.book] ?? h.book} ${h.numberLabel}',
+      title: l10n.hadithReminderTitle(books[h.book] ?? h.book, h.numberLabel),
       body: h.english,
       payload: 'hadith:${h.book}:${h.numberLabel}',
-      label: 'Hadith',
+      label: l10n.hadith,
     );
   }
 
@@ -274,10 +271,10 @@ class ReminderComposer {
   }
 
   Reminder _sunnahReminder(int index, SunnahItem item, Set<String> tags) => Reminder(
-        title: 'Sunnah · ${item.title}',
+        title: l10n.sunnahReminderTitle(item.title),
         body: item.english,
         payload: 'sunnah:$index',
-        label: tags.contains('friday') && item.tags.contains('friday') ? "Sunnah · Jumu'ah" : 'Sunnah to practise',
+        label: tags.contains('friday') && item.tags.contains('friday') ? l10n.sunnahFriday : l10n.sunnahToPractise,
       );
 
   Reminder? _dhikrReminder(List<AdhkarCategory> adhkar, Set<String> tags, Random rnd) {
@@ -296,7 +293,7 @@ class ReminderComposer {
       title: '${cat.titleAr} · ${cat.titleEn}',
       body: '${d.text}${d.count > 1 ? '  (×${d.count})' : ''}',
       payload: 'adhkar:$id',
-      label: 'Dhikr & dua',
+      label: l10n.reminderDhikr,
     );
   }
 }

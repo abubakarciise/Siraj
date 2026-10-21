@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 
+import '../../l10n/l10n.dart';
+
 /// Listening "Short", a dhikr said a hundred times plays this often; its card
 /// keeps the rest of the count for the listener to finish by tapping (complete
 /// recordings do the same: Alafasy recites the hundred-times adhkar once), and
@@ -62,9 +64,9 @@ class AdhkarCategory {
 
 /// "12 min", "1 h 5 min", "45 s".
 String formatListeningTime(Duration d) {
-  if (d.inSeconds < 60) return '${d.inSeconds} s';
+  if (d.inSeconds < 60) return l10n.durationSeconds(d.inSeconds);
   final m = (d.inSeconds / 60).round();
-  return m < 60 ? '$m min' : '${m ~/ 60} h ${m % 60} min';
+  return m < 60 ? l10n.durationMinutes(m) : l10n.durationHoursMinutes(m ~/ 60, m % 60);
 }
 
 /// Hisn al-Muslim adhkar bundled with the app (assets/adhkar/adhkar.json).

@@ -8,6 +8,7 @@ import '../../core/providers.dart';
 import '../../design/dialogs.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/l10n.dart';
 
 final _sizesProvider = FutureProvider.autoDispose<Map<String, int>>((ref) {
   ref.watch(downloadsProvider.select((s) => s.value?.downloaded));
@@ -28,19 +29,19 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const TabTitle('Library'),
-        actions: [IconButton(icon: const Icon(Icons.settings_outlined), onPressed: () => context.push('/settings'))],
+        title: TabTitle(context.l10n.library),
+        actions: [IconButton(icon: Icon(Icons.settings_outlined), onPressed: () => context.push('/settings'))],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
+          preferredSize: Size.fromHeight(56),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.sm),
+            padding: EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.sm),
             child: SizedBox(
               width: double.infinity,
               child: SegmentedButton<int>(
                 showSelectedIcon: false,
-                segments: const [
-                  ButtonSegment(value: 0, label: Text('Bookmarks'), icon: Icon(Icons.bookmark_rounded)),
-                  ButtonSegment(value: 1, label: Text('Downloads'), icon: Icon(Icons.download_done_rounded)),
+                segments: [
+                  ButtonSegment(value: 0, label: Text(context.l10n.bookmarks), icon: Icon(Icons.bookmark_rounded)),
+                  ButtonSegment(value: 1, label: Text(context.l10n.downloads), icon: Icon(Icons.download_done_rounded)),
                 ],
                 selected: {_tab},
                 onSelectionChanged: (s) => setState(() => _tab = s.first),
@@ -68,7 +69,7 @@ class _Bookmarks extends ConsumerWidget {
     if (bookmarks.isEmpty) {
       return _Empty(
         icon: Icons.bookmark_border_rounded,
-        text: 'No bookmarks yet.\nLong-press any ayah in the Mushaf to save it.',
+        text: context.l10n.noBookmarksYet,
       );
     }
     return ListView.separated(
@@ -95,7 +96,7 @@ class _Bookmarks extends ConsumerWidget {
             contentPadding: const EdgeInsets.symmetric(horizontal: Space.gutter, vertical: 4),
             leading: Icon(Icons.bookmark_rounded, color: c.gold),
             title: Text('${s.nameEn} ${b.ref}'),
-            subtitle: Text('Page ${b.page} · saved ${MaterialLocalizations.of(context).formatShortDate(b.createdAt)}'),
+            subtitle: Text(context.l10n.pageSavedOn(b.page, MaterialLocalizations.of(context).formatShortDate(b.createdAt))),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => context.openReader(b.page, ayah: b.ref.toString()),
           ),
@@ -118,8 +119,8 @@ class _Downloads extends ConsumerWidget {
     if (keys.isEmpty || catalog == null) {
       return _Empty(
         icon: Icons.cloud_download_outlined,
-        text: 'Listen offline anywhere.\nOpen any reciter and download one surah, a selection, or the whole Quran.',
-        action: FilledButton(onPressed: () => context.go('/listen'), child: const Text('Browse reciters')),
+        text: context.l10n.listenOfflineHint,
+        action: FilledButton(onPressed: () => context.go('/listen'), child: Text(context.l10n.browseReciters)),
       );
     }
     final total = sizes.values.fold<int>(0, (a, b) => a + b);
@@ -137,10 +138,11 @@ class _Downloads extends ConsumerWidget {
               const SizedBox(width: Space.md),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('${formatBytes(total)} on this device', style: context.text.titleMedium),
+                  Text(context.l10n.sizeOnDevice(formatBytes(total)), style: context.text.titleMedium),
                   Text(
-                    '${dl.downloaded.values.fold<int>(0, (a, b) => a + b.length)} surahs across ${dl.downloaded.length} recitations'
-                    '${active > 0 ? ' · $active downloading' : ''}',
+                    context.l10n.surahsAcrossRecitations(
+                            dl.downloaded.values.fold<int>(0, (a, b) => a + b.length), dl.downloaded.length) +
+                        (active > 0 ? context.l10n.countDownloading(active) : ''),
                     style: context.text.bodySmall,
                   ),
                 ]),
@@ -160,7 +162,8 @@ class _Downloads extends ConsumerWidget {
               leading: ReciterAvatar(id: reciter?.id ?? 0, nameAr: reciter?.nameAr ?? '', size: 48),
               title: Text(reciter?.name ?? key, maxLines: 1, overflow: TextOverflow.ellipsis),
               subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('${rec?.shortName ?? ''} · $count/${rec?.surahs.length ?? 114} surahs · ${formatBytes(sizes[key] ?? 0)}'),
+                Text(context.l10n.recitationDownloadSummary(
+                    rec?.shortName ?? '', count, rec?.surahs.length ?? 114, formatBytes(sizes[key] ?? 0))),
                 if (running.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   ClipRRect(
@@ -182,17 +185,18 @@ class _Downloads extends ConsumerWidget {
                     final ok = await showAppDialog(
                       context,
                       icon: Icons.delete_outline_rounded,
-                      title: 'Delete downloads?',
-                      message: 'Free ${formatBytes(sizes[key] ?? 0)} by removing ${reciter?.name ?? 'this reciter'} from your phone.',
-                      confirmLabel: 'Delete',
+                      title: context.l10n.deleteDownloadsQuestion,
+                      message: context.l10n.freeSpaceMessage(
+                          formatBytes(sizes[key] ?? 0), reciter?.name ?? context.l10n.thisReciter),
+                      confirmLabel: context.l10n.delete,
                       destructive: true,
                     );
                     if (ok) await dm.deleteRecitation(key);
                   }
                 },
                 itemBuilder: (_) => [
-                  if (running.isNotEmpty) const PopupMenuItem(value: 'cancel', child: Text('Stop downloading')),
-                  if (count > 0) const PopupMenuItem(value: 'delete', child: Text('Delete from device')),
+                  if (running.isNotEmpty) PopupMenuItem(value: 'cancel', child: Text(context.l10n.stopDownloading)),
+                  if (count > 0) PopupMenuItem(value: 'delete', child: Text(context.l10n.deleteFromDevice)),
                 ],
               ),
               onTap: reciter == null ? null : () => context.go('/listen/reciter/${reciter.id}'),

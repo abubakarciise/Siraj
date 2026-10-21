@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n.dart';
 import 'tokens.dart';
 
 /// App-styled dialog: soft icon badge, title, message, full-width actions.
@@ -9,8 +10,9 @@ Future<bool> showAppDialog(
   required String title,
   String? message,
   IconData icon = Icons.info_outline_rounded,
-  String confirmLabel = 'OK',
-  String? cancelLabel = 'Cancel',
+  String? confirmLabel,
+  String? cancelLabel,
+  bool showCancel = true,
   bool destructive = false,
   Widget? content,
 }) async {
@@ -24,8 +26,8 @@ Future<bool> showAppDialog(
       title: title,
       message: message,
       icon: icon,
-      confirmLabel: confirmLabel,
-      cancelLabel: cancelLabel,
+      confirmLabel: confirmLabel ?? context.l10n.ok,
+      cancelLabel: showCancel ? cancelLabel ?? context.l10n.cancel : null,
       destructive: destructive,
       content: content,
     ),

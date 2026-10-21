@@ -14,6 +14,7 @@ import '../../design/dialogs.dart';
 import '../../design/theme.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/l10n.dart';
 
 /// Daily reminders (frequency, hours, content), adhkar reminders and prayer alerts.
 class RemindersScreen extends ConsumerWidget {
@@ -25,9 +26,9 @@ class RemindersScreen extends ConsumerWidget {
       await showAppDialog(
         context,
         icon: Icons.notifications_off_outlined,
-        title: 'Notifications are off',
-        message: 'Allow notifications for Siraj in your phone settings to receive reminders.',
-        cancelLabel: null,
+        title: context.l10n.notificationsOff,
+        message: context.l10n.allowNotifications,
+        showCancel: false,
       );
     }
     return ok;
@@ -47,31 +48,31 @@ class RemindersScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Reminders')),
+      appBar: AppBar(title: Text(context.l10n.reminders)),
       body: ListView(padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, 40), children: [
         _Hero(enabled: s.enabled),
 
         // ---- Daily reminders ----
-        const GroupHeader('Daily reminders'),
+        GroupHeader(context.l10n.dailyReminders),
         SettingsGroup(children: [
           SettingsSwitch(
             icon: Icons.notifications_active_rounded,
             color: const Color(0xFF0F5C4A),
-            title: 'Daily reminders',
-            subtitle: 'An ayah, hadith, sunnah or dhikr through the day',
+            title: context.l10n.dailyReminders,
+            subtitle: context.l10n.dailyRemindersSubtitle,
             value: s.enabled,
             onChanged: (v) async {
               if (v && !await _ensurePermission(context, ref)) return;
               await n.update(s.copyWith(enabled: v));
-              if (v && context.mounted) showToast(context, 'Daily reminders are on');
+              if (v && context.mounted) showToast(context, context.l10n.dailyRemindersOn);
             },
           ),
           if (s.enabled)
             SettingsSwitch(
               icon: Icons.shuffle_rounded,
               color: const Color(0xFF8A6A2B),
-              title: 'Vary the time a little',
-              subtitle: 'Each reminder arrives a few minutes earlier or later',
+              title: context.l10n.varyTime,
+              subtitle: context.l10n.varyTimeSubtitle,
               value: s.vary,
               onChanged: (v) => n.update(s.copyWith(vary: v)),
             ),
@@ -82,32 +83,32 @@ class RemindersScreen extends ConsumerWidget {
           child: !s.enabled
               ? const SizedBox(width: double.infinity)
               : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  const GroupHeader('How often'),
+                  GroupHeader(context.l10n.howOften),
                   _Panel(
                     child: Wrap(spacing: 8, runSpacing: 8, children: [
                       for (final h in DailyReminderSettings.intervals)
                         ChoiceChip(
-                          label: Text(h == 1 ? 'Every hour' : 'Every $h hours'),
+                          label: Text(context.l10n.everyHours(h)),
                           selected: s.everyHours == h,
                           onSelected: (_) => n.update(s.copyWith(everyHours: h)),
                         ),
                     ]),
                   ),
-                  const GroupHeader('Active hours'),
+                  GroupHeader(context.l10n.activeHours),
                   Row(children: [
-                    Expanded(child: _TimeBox(label: 'From', time: s.from, onTap: () => pickTime(true))),
+                    Expanded(child: _TimeBox(label: context.l10n.from, time: s.from, onTap: () => pickTime(true))),
                     const SizedBox(width: Space.md),
-                    Expanded(child: _TimeBox(label: 'Until', time: s.until, onTap: () => pickTime(false))),
+                    Expanded(child: _TimeBox(label: context.l10n.until, time: s.until, onTap: () => pickTime(false))),
                   ]),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(Space.xs, Space.sm, Space.xs, 0),
                     child: Text(
-                      '${ReminderService.slots(s.copyWith(vary: false), DateTime(2000), 0, Random(0)).length} reminders a day. '
-                      'Nothing is sent outside these hours.',
+                      context.l10n.remindersPerDay(
+                          ReminderService.slots(s.copyWith(vary: false), DateTime(2000), 0, Random(0)).length),
                       style: context.text.bodySmall,
                     ),
                   ),
-                  const GroupHeader('What to send · chosen at random'),
+                  GroupHeader(context.l10n.whatToSend),
                   _Panel(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                       Wrap(spacing: 8, runSpacing: 8, children: [
@@ -124,16 +125,14 @@ class RemindersScreen extends ConsumerWidget {
                       ]),
                       const SizedBox(height: Space.md),
                       Text(
-                        'Reminders follow the day: Surah Al-Kahf and salawat on Friday, a reminder the evening '
-                        'before the Monday and Thursday fasts, the White Days, Ramadan and its last ten nights, '
-                        'Dhul Hijjah, Arafah and Ashura, and adhkar in the morning, evening and before sleep.',
+                        context.l10n.remindersFollowDay,
                         style: context.text.bodySmall?.copyWith(height: 1.5),
                       ),
                       const SizedBox(height: Space.md),
                       OutlinedButton.icon(
                         onPressed: () => _preview(context, ref),
                         icon: const Icon(Icons.visibility_outlined),
-                        label: const Text('Preview a reminder'),
+                        label: Text(context.l10n.previewReminder),
                       ),
                     ]),
                   ),
@@ -141,35 +140,35 @@ class RemindersScreen extends ConsumerWidget {
         ),
 
         // ---- Adhkar ----
-        const GroupHeader('Morning & evening adhkar'),
+        GroupHeader(context.l10n.morningEveningAdhkar),
         AdhkarReminderTiles(settings: ref.watch(prayerSettingsProvider)),
 
         // ---- Prayer and calendar ----
-        const GroupHeader('Prayer & calendar'),
+        GroupHeader(context.l10n.prayerAndCalendar),
         SettingsGroup(children: [
           SettingsRow(
             icon: Icons.access_time_rounded,
             color: const Color(0xFF0F5C4A),
-            title: 'Prayer time alerts',
-            value: 'Choose which prayers alert you',
+            title: context.l10n.prayerTimeAlerts,
+            value: context.l10n.choosePrayersAlert,
             onTap: () => context.push('/prayer'),
           ),
           SettingsRow(
             icon: Icons.calendar_month_rounded,
             color: const Color(0xFF8A6A2B),
-            title: '${hijri.label} AH',
+            title: context.l10n.hijriDateAh(hijri.label),
             value: s.hijriOffset == 0
-                ? 'Umm al-Qura calendar · adjust if your local moon sighting differs'
-                : 'Adjusted ${s.hijriOffset > 0 ? '+' : ''}${s.hijriOffset} day${s.hijriOffset.abs() == 1 ? '' : 's'}',
+                ? context.l10n.ummAlQuraNote
+                : context.l10n.hijriAdjusted('${s.hijriOffset > 0 ? '+' : ''}${s.hijriOffset}', s.hijriOffset.abs()),
             trailing: Row(mainAxisSize: MainAxisSize.min, children: [
               IconButton(
-                tooltip: 'One day earlier',
+                tooltip: context.l10n.oneDayEarlier,
                 color: c.primary,
                 onPressed: s.hijriOffset > -2 ? () => n.update(s.copyWith(hijriOffset: s.hijriOffset - 1)) : null,
                 icon: const Icon(Icons.remove_circle_outline_rounded),
               ),
               IconButton(
-                tooltip: 'One day later',
+                tooltip: context.l10n.oneDayLater,
                 color: c.primary,
                 onPressed: s.hijriOffset < 2 ? () => n.update(s.copyWith(hijriOffset: s.hijriOffset + 1)) : null,
                 icon: const Icon(Icons.add_circle_outline_rounded),
@@ -179,15 +178,15 @@ class RemindersScreen extends ConsumerWidget {
         ]),
 
         // ---- Sound ----
-        const GroupHeader('Sound'),
+        GroupHeader(context.l10n.sound),
         const _SoundChoice(),
         const SizedBox(height: Space.md),
         SettingsGroup(children: [
           SettingsRow(
             icon: Icons.notifications_active_outlined,
             color: const Color(0xFF0F5C4A),
-            title: 'Send a test notification',
-            value: 'See and hear a reminder now',
+            title: context.l10n.sendTestNotification,
+            value: context.l10n.seeAndHearReminder,
             onTap: () async {
               if (await _ensurePermission(context, ref)) await notifications.showTest(ReminderKind.daily);
             },
@@ -203,7 +202,7 @@ class RemindersScreen extends ConsumerWidget {
     if (!context.mounted) return;
     await showAppSheet(
       context,
-      title: r.label ?? 'Reminder',
+      title: r.label ?? context.l10n.reminder,
       builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
         Text(r.title, style: ctx.text.titleMedium),
         const SizedBox(height: Space.sm),
@@ -215,7 +214,7 @@ class RemindersScreen extends ConsumerWidget {
             if (ctx.mounted) Navigator.pop(ctx);
           },
           icon: const Icon(Icons.notifications_active_outlined),
-          label: const Text('Send a test notification'),
+          label: Text(context.l10n.sendTestNotification),
         ),
       ]),
     );
@@ -239,7 +238,7 @@ class _Hero extends StatelessWidget {
             Text('فَاذْكُرُونِي أَذْكُرْكُمْ',
                 textDirection: TextDirection.rtl,
                 style: TextStyle(fontFamily: kQuranFont, fontSize: 22, height: 1.6, color: c.onBrand)),
-            Text('"Remember Me; I will remember you." (2:152)',
+            Text(context.l10n.rememberMeTranslation,
                 style: context.text.bodyMedium?.copyWith(color: c.onBrand.withValues(alpha: 0.85), height: 1.4)),
           ]),
         ),
@@ -300,8 +299,8 @@ class AdhkarReminderTiles extends ConsumerWidget {
       SettingsSwitch(
         icon: Icons.alarm_rounded,
         color: const Color(0xFF0F5C4A),
-        title: 'Adhkar reminders',
-        subtitle: 'To read the morning and the evening adhkar, at the times you set',
+        title: context.l10n.adhkarReminders,
+        subtitle: context.l10n.adhkarRemindersSubtitle,
         value: s.adhkarReminders,
         onChanged: (v) async {
           if (v) {
@@ -310,9 +309,9 @@ class AdhkarReminderTiles extends ConsumerWidget {
               await showAppDialog(
                 context,
                 icon: Icons.notifications_off_outlined,
-                title: 'Notifications are off',
-                message: 'Allow notifications for Siraj in your phone settings to receive reminders.',
-                cancelLabel: null,
+                title: context.l10n.notificationsOff,
+                message: context.l10n.allowNotifications,
+                showCancel: false,
               );
             }
           }
@@ -323,16 +322,16 @@ class AdhkarReminderTiles extends ConsumerWidget {
         SettingsRow(
           icon: Icons.wb_twilight_rounded,
           color: const Color(0xFF8A6A2B),
-          title: 'Morning adhkar',
-          value: 'Time to read the morning adhkar',
+          title: context.l10n.morningAdhkar,
+          value: context.l10n.timeForMorningAdhkar,
           trailing: Padding(padding: const EdgeInsets.only(right: Space.sm), child: time(s.morning)),
           onTap: () => _pick(context, ref, true),
         ),
         SettingsRow(
           icon: Icons.nights_stay_outlined,
           color: const Color(0xFF0F5C4A),
-          title: 'Evening adhkar',
-          value: 'Time to read the evening adhkar',
+          title: context.l10n.eveningAdhkar,
+          value: context.l10n.timeForEveningAdhkar,
           trailing: Padding(padding: const EdgeInsets.only(right: Space.sm), child: time(s.evening)),
           onTap: () => _pick(context, ref, false),
         ),
@@ -389,8 +388,8 @@ class _SoundChoiceState extends ConsumerState<_SoundChoice> {
           onTap: () => _choose(value),
         );
     return SettingsGroup(children: [
-      tile('siraj', Icons.music_note_rounded, 'Pixie Dust', 'A soft, short chime · tap to hear it'),
-      tile('default', Icons.phone_android_rounded, 'Phone default', "Your phone's notification sound"),
+      tile('siraj', Icons.music_note_rounded, context.l10n.pixieDust, context.l10n.pixieDustSubtitle),
+      tile('default', Icons.phone_android_rounded, context.l10n.phoneDefault, context.l10n.phoneDefaultSubtitle),
     ]);
   }
 }

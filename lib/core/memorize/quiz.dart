@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import '../../l10n/l10n.dart';
 import '../quran/arabic.dart';
 import '../quran/models.dart';
 
@@ -11,31 +12,31 @@ enum QuizKind { nextAyah, previousAyah, completeAyah, missingWord, whichSurah, r
 
 extension QuizKindX on QuizKind {
   String get title => switch (this) {
-        QuizKind.nextAyah => 'Next ayah',
-        QuizKind.previousAyah => 'Previous ayah',
-        QuizKind.completeAyah => 'Complete the ayah',
-        QuizKind.missingWord => 'Missing word',
-        QuizKind.whichSurah => 'Which surah?',
-        QuizKind.recite => 'Recite from memory',
+        QuizKind.nextAyah => l10n.quizNextAyah,
+        QuizKind.previousAyah => l10n.quizPreviousAyah,
+        QuizKind.completeAyah => l10n.quizCompleteAyah,
+        QuizKind.missingWord => l10n.quizMissingWord,
+        QuizKind.whichSurah => l10n.quizWhichSurah,
+        QuizKind.recite => l10n.quizRecite,
       };
 
   String get description => switch (this) {
-        QuizKind.nextAyah => 'See an ayah and choose the one that follows it',
-        QuizKind.previousAyah => 'See an ayah and choose the one before it',
-        QuizKind.completeAyah => 'Read the beginning and choose how the ayah ends',
-        QuizKind.missingWord => 'One word is hidden; choose it from similar words',
-        QuizKind.whichSurah => 'Choose the surah an ayah belongs to',
-        QuizKind.recite => 'Recite the next ayah yourself, then reveal and check',
+        QuizKind.nextAyah => l10n.quizNextAyahDescription,
+        QuizKind.previousAyah => l10n.quizPreviousAyahDescription,
+        QuizKind.completeAyah => l10n.quizCompleteAyahDescription,
+        QuizKind.missingWord => l10n.quizMissingWordDescription,
+        QuizKind.whichSurah => l10n.quizWhichSurahDescription,
+        QuizKind.recite => l10n.quizReciteDescription,
       };
 
   /// What the question asks, shown above the prompt.
   String get ask => switch (this) {
-        QuizKind.nextAyah => 'Which ayah comes next?',
-        QuizKind.previousAyah => 'Which ayah comes before this one?',
-        QuizKind.completeAyah => 'How does this ayah end?',
-        QuizKind.missingWord => 'Which word is missing?',
-        QuizKind.whichSurah => 'Which surah is this ayah from?',
-        QuizKind.recite => 'Recite the next ayah from memory',
+        QuizKind.nextAyah => l10n.quizNextAyahAsk,
+        QuizKind.previousAyah => l10n.quizPreviousAyahAsk,
+        QuizKind.completeAyah => l10n.quizCompleteAyahAsk,
+        QuizKind.missingWord => l10n.quizMissingWordAsk,
+        QuizKind.whichSurah => l10n.quizWhichSurahAsk,
+        QuizKind.recite => l10n.quizReciteAsk,
       };
 }
 

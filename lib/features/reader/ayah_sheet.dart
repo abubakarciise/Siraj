@@ -7,6 +7,7 @@ import '../../core/quran/models.dart';
 import '../../design/theme.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/l10n.dart';
 import '../player/play_actions.dart';
 
 final _ayahDetailProvider = FutureProvider.autoDispose.family<(Ayah, String?, bool), AyahRef>((ref, a) async {
@@ -50,7 +51,7 @@ class _AyahSheet extends ConsumerWidget {
                 Expanded(
                   child: Text('${surah.nameEn} ${ayahRef.surah}:${ayahRef.ayah}', style: context.text.titleMedium),
                 ),
-                Pill(surah.isMakki ? 'Makki' : 'Madani'),
+                Pill(surah.isMakki ? context.l10n.makki : context.l10n.madani),
               ]),
             ),
             // Long ayahs scroll; the actions below stay visible.
@@ -78,7 +79,7 @@ class _AyahSheet extends ConsumerWidget {
                 child: Row(children: [
                   Expanded(
                     flex: 2,
-                    child: _Action(Icons.play_arrow_rounded, 'Play', primary: true, onTap: () {
+                    child: _Action(Icons.play_arrow_rounded, context.l10n.play, primary: true, onTap: () {
                       final nav = Navigator.of(context);
                       playFromMushaf(context, ref, ayahRef.surah, ayah: ayahRef.ayah).whenComplete(nav.pop);
                     }),
@@ -100,7 +101,7 @@ class _AyahSheet extends ConsumerWidget {
                           text: '${ayah.plainText}\n\n${translation ?? ''}\n— ${surah.nameEn} ${ayahRef.surah}:${ayahRef.ayah}'
                               .trim()));
                       Navigator.pop(context);
-                      showToast(context, 'Ayah copied');
+                      showToast(context, context.l10n.ayahCopied);
                     }),
                   ),
                 ]),

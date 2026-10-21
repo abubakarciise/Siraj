@@ -10,10 +10,11 @@ import '../../core/providers.dart';
 import '../../core/quran/arabic.dart';
 import '../../core/reminders/reminders.dart';
 import '../../design/dialogs.dart';
-import '../../design/theme.dart';
 import '../../design/hero.dart';
+import '../../design/theme.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/l10n.dart';
 
 /// Approximate download size (Arabic + English) per collection.
 const _sizeMb = {'bukhari': 15, 'muslim': 13, 'abudawud': 11, 'tirmidhi': 9, 'nasai': 10, 'ibnmajah': 8, 'malik': 4};
@@ -31,22 +32,28 @@ const _sigla = {
   'qudsi': '٤٠',
 };
 
-const _tagLabels = {
-  'friday': "Jumu'ah",
-  'mon_thu_eve': 'Mondays & Thursdays',
-  'white_days': 'White Days',
-  'ramadan': 'Ramadan',
-  'last_ten': 'Last ten nights',
-  'shawwal': 'Shawwal',
-  'dhul_hijjah': 'Dhul Hijjah',
-  'arafah': 'Arafah',
-  'ashura': 'Ashura',
-  'morning': 'Morning',
-  'evening': 'Evening',
-  'sleep': 'Before sleep',
-  'night': 'Night',
-  'fajr': 'Fajr',
+/// The occasions a sunnah is tied to, and their names in the app's language.
+const _tags = {
+  'friday', 'mon_thu_eve', 'white_days', 'ramadan', 'last_ten', 'shawwal', 'dhul_hijjah', //
+  'arafah', 'ashura', 'morning', 'evening', 'sleep', 'night', 'fajr',
 };
+
+String _tagLabel(AppLocalizations l10n, String tag) => switch (tag) {
+      'friday' => l10n.tagFriday,
+      'mon_thu_eve' => l10n.tagMonThu,
+      'white_days' => l10n.tagWhiteDays,
+      'ramadan' => l10n.ramadan,
+      'last_ten' => l10n.tagLastTen,
+      'shawwal' => l10n.shawwal,
+      'dhul_hijjah' => l10n.dhulHijjah,
+      'arafah' => l10n.tagArafah,
+      'ashura' => l10n.tagAshura,
+      'morning' => l10n.tagMorning,
+      'evening' => l10n.tagEvening,
+      'sleep' => l10n.beforeSleep,
+      'night' => l10n.tagNight,
+      _ => l10n.fajr,
+    };
 
 extension _BookName on WidgetRef {
   String bookName(String id) => watch(hadithBooksProvider).value?.where((b) => b.id == id).firstOrNull?.nameEn ?? id;
@@ -76,17 +83,17 @@ class HadithHomeScreen extends ConsumerWidget {
       body: CustomScrollView(
         slivers: [
           HeroSliverAppBar(
-            title: 'Hadith',
+            title: context.l10n.hadith,
             subtitle: 'الحديث والسنة',
             art: HeroArt.hadith,
             actions: [
               IconButton(
-                tooltip: 'Search hadith',
+                tooltip: context.l10n.searchHadith,
                 icon: const Icon(Icons.search_rounded),
                 onPressed: () => context.push('/hadith/search'),
               ),
               IconButton(
-                tooltip: 'Saved hadith',
+                tooltip: context.l10n.savedHadith,
                 icon: const Icon(Icons.bookmarks_outlined),
                 onPressed: () => context.push('/hadith/saved'),
               ),
@@ -94,8 +101,8 @@ class HadithHomeScreen extends ConsumerWidget {
           ),
           SliverToBoxAdapter(
             child: SectionTitle(
-              'Sunnah to practise',
-              trailing: TextButton(onPressed: () => context.push('/sunnah'), child: const Text('See all')),
+              context.l10n.sunnahToPractise,
+              trailing: TextButton(onPressed: () => context.push('/sunnah'), child: Text(context.l10n.seeAll)),
             ),
           ),
           SliverToBoxAdapter(
@@ -114,7 +121,7 @@ class HadithHomeScreen extends ConsumerWidget {
               ),
             ),
           ),
-          const SliverToBoxAdapter(child: SectionTitle('Collections')),
+          SliverToBoxAdapter(child: SectionTitle(context.l10n.collections)),
           SliverList.separated(
             itemCount: collections.length,
             separatorBuilder: (_, _) => const SizedBox(height: Space.sm),
@@ -127,8 +134,7 @@ class HadithHomeScreen extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, Space.xxxl),
               child: Text(
-                'Texts and grades from the open hadith-api project (public domain). Large collections download '
-                'once and then work offline.',
+                context.l10n.hadithSourcesNote,
                 style: context.text.bodySmall?.copyWith(color: c.inkFaint),
               ),
             ),
@@ -148,7 +154,7 @@ class _SunnahChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final tag = item.tags.where(_tagLabels.containsKey).firstOrNull;
+    final tag = item.tags.where(_tags.contains).firstOrNull;
     final accent = highlight ? c.primary : c.gold;
     return AppCard(
       width: 210,
@@ -163,7 +169,7 @@ class _SunnahChip extends StatelessWidget {
               const SizedBox(width: Space.sm),
               Expanded(
                 child: Text(
-                  highlight && tag != null ? 'TODAY · ${_tagLabels[tag]!.toUpperCase()}' : 'SUNNAH',
+                  highlight && tag != null ? context.l10n.todayTag(_tagLabel(context.l10n, tag).toUpperCase()) : context.l10n.sunnahLabel,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: context.text.labelSmall?.copyWith(color: accent),
@@ -203,7 +209,7 @@ class _BookTile extends ConsumerWidget {
       trailing = Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('${_sizeMb[book.id] ?? 5} MB', style: context.text.bodySmall),
+          Text(context.l10n.sizeMb(_sizeMb[book.id] ?? 5), style: context.text.bodySmall),
           const SizedBox(width: Space.xs),
           Icon(Icons.download_rounded, color: c.primary),
         ],
@@ -212,8 +218,8 @@ class _BookTile extends ConsumerWidget {
 
     Future<void> download() async {
       final sub = repo.downloads.where((d) => d.book == book.id).listen((d) {
-        if (d.stage == HadithDlStage.failed && context.mounted) showToast(context, d.error ?? 'Download failed');
-        if (d.stage == HadithDlStage.done && context.mounted) showToast(context, '${book.nameEn} is ready offline');
+        if (d.stage == HadithDlStage.failed && context.mounted) showToast(context, d.error ?? context.l10n.downloadFailed);
+        if (d.stage == HadithDlStage.done && context.mounted) showToast(context, context.l10n.readyOffline(book.nameEn));
       });
       await repo.download(book.id);
       await sub.cancel();
@@ -231,9 +237,9 @@ class _BookTile extends ConsumerWidget {
               final ok = await showAppDialog(
                 context,
                 icon: Icons.delete_outline_rounded,
-                title: 'Remove ${book.nameEn}?',
-                message: 'It will be deleted from this device. You can download it again any time.',
-                confirmLabel: 'Remove',
+                title: context.l10n.removeItem(book.nameEn),
+                message: context.l10n.removeBookMessage,
+                confirmLabel: context.l10n.remove,
                 destructive: true,
               );
               if (ok) {
@@ -274,12 +280,12 @@ class _BookTile extends ConsumerWidget {
                 const SizedBox(height: 2),
                 Text(
                   dl == null
-                      ? '${book.count} hadith · ${book.nameAr}'
+                      ? context.l10n.hadithCountWithName(book.count, book.nameAr)
                       : dl.stage == HadithDlStage.saving
-                      ? 'Saving…'
+                      ? context.l10n.saving
                       : dl.progress == 0
-                      ? 'Downloading…'
-                      : 'Downloading ${(dl.progress * 100).round()}%',
+                      ? context.l10n.downloadingEllipsis
+                      : context.l10n.downloadingPercent((dl.progress * 100).round()),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: context.text.bodySmall,
@@ -354,10 +360,10 @@ class _HadithBookScreenState extends ConsumerState<HadithBookScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(book.nameEn, style: context.headerTitle),
-            Text('${sections.length} books · ${book.nameAr}', style: context.headerSub),
+            Text(context.l10n.booksCountWithName(sections.length, book.nameAr), style: context.headerSub),
           ],
         ),
-        bottom: CollectionSearchBar(hint: 'Search ${book.nameEn}', onChanged: _search, busy: _searching),
+        bottom: CollectionSearchBar(hint: context.l10n.searchIn(book.nameEn), onChanged: _search, busy: _searching),
       ),
       body: AnimatedSwitcher(
         duration: Motion.quick,
@@ -373,7 +379,7 @@ class _HadithBookScreenState extends ConsumerState<HadithBookScreen> {
                   return ListTile(
                     leading: StarMedallion(number: s.number, size: 40),
                     title: Text(s.title, style: context.text.titleMedium),
-                    subtitle: Text('${s.count} hadith'),
+                    subtitle: Text(context.l10n.hadithCount(s.count)),
                     trailing: Icon(Icons.chevron_right_rounded, color: c.inkFaint),
                     onTap: () => context.push('/hadith/$bookId/s/${s.number}'),
                   );
@@ -388,12 +394,12 @@ class _HadithBookScreenState extends ConsumerState<HadithBookScreen> {
                       contentPadding: EdgeInsets.zero,
                       leading: StarMedallion(number: s.number, size: 36),
                       title: Text(s.title, style: context.text.titleMedium),
-                      subtitle: Text('Chapter · ${s.count} hadith'),
+                      subtitle: Text(context.l10n.chapterHadithCount(s.count)),
                       onTap: () => context.push('/hadith/$bookId/s/${s.number}'),
                     ),
                   for (final h in found) HadithCard(hadith: h),
                 ],
-                empty: 'Nothing in ${book.nameEn} matches "$_q"',
+                empty: context.l10n.nothingInMatches(book.nameEn, _q),
               ),
       ),
     );
@@ -446,7 +452,7 @@ class _HadithListScreenState extends ConsumerState<HadithListScreen> {
           ],
         ),
         bottom: CollectionSearchBar(
-          hint: all == null ? 'Search' : 'Search ${all.length} hadith · word or number',
+          hint: all == null ? context.l10n.search : context.l10n.searchHadithCountHint(all.length),
           onChanged: (v) => setState(() => _q = v),
         ),
       ),
@@ -457,7 +463,7 @@ class _HadithListScreenState extends ConsumerState<HadithListScreen> {
               child: _Results(
                 key: ValueKey(searching ? 'q' : 'all'),
                 list: [for (final h in list) HadithCard(hadith: h)],
-                empty: 'No hadith match "${_q.trim()}"',
+                empty: context.l10n.noHadithMatch(_q.trim()),
                 count: searching ? list.length : null,
               ),
             ),
@@ -520,7 +526,7 @@ class _CollectionSearchBarState extends State<CollectionSearchBar> {
             suffixIcon: _text.text.isEmpty
                 ? null
                 : IconButton(
-                    tooltip: 'Clear',
+                    tooltip: context.l10n.clear,
                     icon: const Icon(Icons.close_rounded),
                     onPressed: () {
                       _text.clear();
@@ -565,7 +571,7 @@ class _Results extends StatelessWidget {
       itemCount: list.length + head,
       separatorBuilder: (_, _) => const SizedBox(height: Space.md),
       itemBuilder: (_, i) {
-        if (head == 1 && i == 0) return Text(count == 1 ? '1 hadith' : '$count hadith', style: context.text.labelSmall);
+        if (head == 1 && i == 0) return Text(context.l10n.hadithResultCount(count!), style: context.text.labelSmall);
         return list[i - head];
       },
     );
@@ -592,7 +598,7 @@ class HadithCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Pill('${showBook ?? 'Hadith'} ${hadith.numberLabel}', color: c.primary),
+              Pill(context.l10n.bookAndNumber(showBook ?? context.l10n.hadith, hadith.numberLabel), color: c.primary),
               const Spacer(),
               if (grade != null) Pill(grade.grade, color: _gradeColor(c, grade.grade)),
             ],
@@ -662,7 +668,7 @@ class _HadithDetailScreenState extends ConsumerState<HadithDetailScreen> {
           child: Padding(
             padding: const EdgeInsets.all(Space.xxl),
             child: Text(
-              'Download $bookName in the Hadith tab to read this hadith offline.',
+              context.l10n.downloadToReadOffline(bookName),
               textAlign: TextAlign.center,
               style: context.text.bodyLarge,
             ),
@@ -686,7 +692,7 @@ class _HadithDetailScreenState extends ConsumerState<HadithDetailScreen> {
         ),
         actions: [
           IconButton(
-            tooltip: _saved == true ? 'Remove from saved' : 'Save',
+            tooltip: _saved == true ? context.l10n.removeFromSaved : context.l10n.save,
             icon: Icon(
               _saved == true ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
               color: _saved == true ? c.primary : null,
@@ -700,13 +706,13 @@ class _HadithDetailScreenState extends ConsumerState<HadithDetailScreen> {
             },
           ),
           IconButton(
-            tooltip: 'Copy',
+            tooltip: context.l10n.copy,
             icon: const Icon(Icons.copy_rounded),
             onPressed: () {
               Clipboard.setData(
                 ClipboardData(text: '${h.arabic}\n\n${h.english}\n— $bookName ${h.numberLabel}'.trim()),
               );
-              showToast(context, 'Hadith copied');
+              showToast(context, context.l10n.hadithCopied);
             },
           ),
         ],
@@ -762,7 +768,7 @@ class HadithBody extends StatelessWidget {
         Text('$bookName · ${hadith.numberLabel}', style: context.text.labelLarge?.copyWith(color: c.inkMuted)),
         if (hadith.grades.isNotEmpty) ...[
           const SizedBox(height: Space.lg),
-          Text('GRADING', style: context.text.labelSmall),
+          Text(context.l10n.grading, style: context.text.labelSmall),
           const SizedBox(height: Space.sm),
           for (final g in hadith.grades)
             Padding(
@@ -794,14 +800,14 @@ class SunnahListScreen extends ConsumerWidget {
     final c = context.colors;
     final items = ref.read(hadithRepoProvider).sunnah;
     return Scaffold(
-      appBar: AppBar(title: const Text('Sunnah to practise')),
+      appBar: AppBar(title: Text(context.l10n.sunnahToPractise)),
       body: ListView.separated(
         padding: const EdgeInsets.only(bottom: Space.xxxl),
         itemCount: items.length,
         separatorBuilder: (_, _) => Divider(indent: Space.gutter, color: c.divider),
         itemBuilder: (_, i) {
           final s = items[i];
-          final tags = s.tags.where(_tagLabels.containsKey).map((t) => _tagLabels[t]!).join(' · ');
+          final tags = s.tags.where(_tags.contains).map((t) => _tagLabel(context.l10n, t)).join(' · ');
           return ListTile(
             title: Text(s.title, style: context.text.titleMedium),
             subtitle: Text('${ref.bookName(s.book)} ${s.number}${tags.isEmpty ? '' : ' · $tags'}'),
@@ -830,21 +836,21 @@ class SunnahDetailScreen extends ConsumerWidget {
       section: 0,
       arabic: s.arabic,
       english: s.english,
-      grades: [if (s.grade != null) HadithGrade('Grade', s.grade!)],
+      grades: [if (s.grade != null) HadithGrade(context.l10n.grade, s.grade!)],
     );
-    final tags = s.tags.where(_tagLabels.containsKey).toList();
+    final tags = s.tags.where(_tags.contains).toList();
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sunnah'),
+        title: Text(context.l10n.sunnah),
         actions: [
           IconButton(
-            tooltip: 'Copy',
+            tooltip: context.l10n.copy,
             icon: const Icon(Icons.copy_rounded),
             onPressed: () {
               Clipboard.setData(
                 ClipboardData(text: '${s.title}\n\n${s.english}\n— ${ref.bookName(s.book)} ${s.number}'),
               );
-              showToast(context, 'Copied');
+              showToast(context, context.l10n.copied);
             },
           ),
         ],
@@ -863,7 +869,7 @@ class SunnahDetailScreen extends ConsumerWidget {
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
-                  children: [for (final t in tags) Pill(_tagLabels[t]!, color: c.primary, icon: Icons.event_rounded)],
+                  children: [for (final t in tags) Pill(_tagLabel(context.l10n, t), color: c.primary, icon: Icons.event_rounded)],
                 ),
               ],
             ],
@@ -923,8 +929,8 @@ class _HadithSearchScreenState extends ConsumerState<HadithSearchScreen> {
             autofocus: true,
             textInputAction: TextInputAction.search,
             onChanged: (_) => _run(),
-            decoration: const InputDecoration(
-              hintText: 'Search hadith (English or Arabic)',
+            decoration: InputDecoration(
+              hintText: context.l10n.searchHadithEnglishArabic,
               prefixIcon: Icon(Icons.search_rounded),
               contentPadding: EdgeInsets.symmetric(vertical: 10),
             ),
@@ -940,7 +946,7 @@ class _HadithSearchScreenState extends ConsumerState<HadithSearchScreen> {
               padding: const EdgeInsets.symmetric(horizontal: Space.gutter, vertical: 6),
               children: [
                 ChoiceChip(
-                  label: const Text('All'),
+                  label: Text(context.l10n.all),
                   selected: _book == null,
                   onSelected: (_) {
                     setState(() => _book = null);
@@ -969,8 +975,8 @@ class _HadithSearchScreenState extends ConsumerState<HadithSearchScreen> {
                       padding: const EdgeInsets.all(Space.xxl),
                       child: Text(
                         _query.text.trim().length < 2
-                            ? 'Searches every collection on this device. Download more collections in the Hadith tab.'
-                            : 'No hadith found',
+                            ? context.l10n.searchEveryCollectionNote
+                            : context.l10n.noHadithFound,
                         textAlign: TextAlign.center,
                         style: context.text.bodyMedium?.copyWith(color: c.inkMuted),
                       ),
@@ -996,13 +1002,13 @@ class SavedHadithScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final list = ref.watch(hadithBookmarksProvider).value;
     return Scaffold(
-      appBar: AppBar(title: const Text('Saved hadith')),
+      appBar: AppBar(title: Text(context.l10n.savedHadith)),
       body: list == null
           ? const Center(child: CircularProgressIndicator())
           : list.isEmpty
           ? Center(
               child: Text(
-                'Tap the bookmark on any hadith to save it here.',
+                context.l10n.saveHadithHint,
                 style: context.text.bodyMedium?.copyWith(color: context.colors.inkMuted),
               ),
             )

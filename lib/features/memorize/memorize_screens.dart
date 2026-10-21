@@ -11,6 +11,7 @@ import '../../core/quran/models.dart';
 import '../../design/theme.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/l10n.dart';
 
 /// A finished test, kept on the device to show progress.
 class QuizResult {
@@ -87,10 +88,10 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
     final db = ref.read(quranDbProvider);
     switch (_type) {
       case _ScopeType.quran:
-        return 'Whole Quran';
+        return context.l10n.wholeQuran;
       case _ScopeType.juz:
         final j = _juz.toList()..sort();
-        return j.length == 1 ? 'Juz ${j.first}' : (j.length <= 3 ? 'Juz ${j.join(', ')}' : '${j.length} juz');
+        return j.length <= 3 ? context.l10n.juzNumber(j.join(', ')) : context.l10n.juzCount(j.length);
       case _ScopeType.surahs:
         final s = _surahs.toList()..sort();
         if (s.length == 1) {
@@ -98,9 +99,9 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
           final r = _range;
           return r == null || (r.start.round() == 1 && r.end.round() == surah.ayahCount)
               ? surah.nameEn
-              : '${surah.nameEn} ${r.start.round()}–${r.end.round()}';
+              : context.l10n.surahRange(surah.nameEn, r.start.round(), r.end.round());
         }
-        return s.length <= 2 ? s.map((x) => db.surah(x).nameEn).join(', ') : '${s.length} surahs';
+        return s.length <= 2 ? s.map((x) => db.surah(x).nameEn).join(', ') : context.l10n.surahsCount(s.length);
     }
   }
 
@@ -124,7 +125,7 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
     if (!mounted) return;
     setState(() => _busy = false);
     if (questions.isEmpty) {
-      showToast(context, 'Choose more ayahs or another question type');
+      showToast(context, context.l10n.chooseMoreAyahs);
       return;
     }
     await Navigator.of(context)
@@ -147,7 +148,7 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
         SliverAppBar(
           pinned: true,
           title: Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-            const Flexible(child: Text('Memorization test', overflow: TextOverflow.ellipsis)),
+            Flexible(child: Text(context.l10n.memorizationTest, overflow: TextOverflow.ellipsis)),
             const SizedBox(width: Space.sm),
             Text('اختبار الحفظ', style: TextStyle(fontFamily: kNaskhFont, fontSize: 16, color: context.colors.goldText)),
           ]),
@@ -155,12 +156,12 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, 120),
           sliver: SliverList.list(children: [
-            const _Label('What to test'),
+            _Label(context.l10n.whatToTest),
             Row(children: [
-              for (final (t, icon, label) in const [
-                (_ScopeType.surahs, Icons.list_alt_rounded, 'Surahs'),
-                (_ScopeType.juz, Icons.grid_view_rounded, 'Juz'),
-                (_ScopeType.quran, Icons.menu_book_rounded, 'Whole Quran'),
+              for (final (t, icon, label) in [
+                (_ScopeType.surahs, Icons.list_alt_rounded, context.l10n.surahs),
+                (_ScopeType.juz, Icons.grid_view_rounded, context.l10n.juz),
+                (_ScopeType.quran, Icons.menu_book_rounded, context.l10n.wholeQuran),
               ]) ...[
                 if (t != _ScopeType.surahs) const SizedBox(width: Space.sm),
                 Expanded(
@@ -183,10 +184,10 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
                 child: Row(children: [
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(single?.nameEn ?? '${_surahs.length} surahs', style: context.text.titleMedium),
+                      Text(single?.nameEn ?? context.l10n.surahsCount(_surahs.length), style: context.text.titleMedium),
                       Text(
                         single != null
-                            ? '${single.ayahCount} ayahs · tap to choose more surahs'
+                            ? context.l10n.ayahsTapForMore(single.ayahCount)
                             : (_surahs.toList()..sort()).map((s) => db.surah(s).nameEn).join(', '),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -202,7 +203,7 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
               ),
               if (single != null && single.ayahCount > 3) ...[
                 const SizedBox(height: Space.md),
-                Text('Ayahs ${range!.start.round()} – ${range.end.round()}', style: context.text.titleSmall),
+                Text(context.l10n.ayahsRange(range!.start.round(), range.end.round()), style: context.text.titleSmall),
                 RangeSlider(
                   values: range,
                   min: 1,
@@ -235,9 +236,9 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
                   ),
               ]),
             if (_type == _ScopeType.quran)
-              Text('Questions from anywhere in the Quran: for those who have memorized all of it, or to see how much stays.',
+              Text(context.l10n.wholeQuranQuizNote,
                   style: context.text.bodyMedium?.copyWith(color: c.inkMuted)),
-            const _Label('Questions'),
+            _Label(context.l10n.questions),
             for (final k in QuizKind.values)
               if (k != QuizKind.whichSurah || multi)
                 _KindTile(
@@ -251,7 +252,7 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
                     }
                   }),
                 ),
-            const _Label('How many'),
+            _Label(context.l10n.howMany),
             SegmentedButton<int>(
               showSelectedIcon: false,
               segments: const [
@@ -263,7 +264,7 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
               onSelectionChanged: (v) => setState(() => _count = v.first),
             ),
             if (history.isNotEmpty) ...[
-              const _Label('Recent'),
+              _Label(context.l10n.recent),
               for (final r in history.take(5))
                 ListTile(
                   contentPadding: EdgeInsets.zero,
@@ -274,7 +275,7 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
                   ),
                   title: Text(r.scope),
                   subtitle: Text(_ago(r.at)),
-                  trailing: Text('${r.score} / ${r.total}', style: context.text.titleMedium),
+                  trailing: Text(context.l10n.scoreOfTotal(r.score, r.total), style: context.text.titleMedium),
                 ),
             ],
           ]),
@@ -289,7 +290,7 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
             icon: _busy
                 ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.play_arrow_rounded),
-            label: Text('Start · ${_scopeLabel()}', maxLines: 1, overflow: TextOverflow.ellipsis),
+            label: Text(context.l10n.startScope(_scopeLabel()), maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
         ),
       ),
@@ -298,11 +299,11 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
 
   static String _ago(DateTime t) {
     final d = DateTime.now().difference(t);
-    if (d.inMinutes < 2) return 'Just now';
-    if (d.inHours < 1) return '${d.inMinutes} minutes ago';
-    if (d.inDays < 1) return '${d.inHours} hours ago';
-    if (d.inDays == 1) return 'Yesterday';
-    return '${d.inDays} days ago';
+    if (d.inMinutes < 2) return l10n.justNow;
+    if (d.inHours < 1) return l10n.minutesAgo(d.inMinutes);
+    if (d.inDays < 1) return l10n.hoursAgo(d.inHours);
+    if (d.inDays == 1) return l10n.yesterday;
+    return l10n.daysAgo(d.inDays);
   }
 }
 
@@ -427,15 +428,15 @@ class _SurahPickerState extends ConsumerState<_SurahPicker> {
         Padding(
           padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.sm),
           child: Row(children: [
-            Expanded(child: Text('Choose surahs', style: context.text.titleLarge)),
-            TextButton(onPressed: () => setState(_picked.clear), child: const Text('Clear')),
+            Expanded(child: Text(context.l10n.chooseSurahs, style: context.text.titleLarge)),
+            TextButton(onPressed: () => setState(_picked.clear), child: Text(context.l10n.clear)),
           ]),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
           child: TextField(
             onChanged: (v) => setState(() => _q = v.trim()),
-            decoration: const InputDecoration(prefixIcon: Icon(Icons.search_rounded), hintText: 'Search'),
+            decoration: InputDecoration(prefixIcon: const Icon(Icons.search_rounded), hintText: context.l10n.search),
           ),
         ),
         Expanded(
@@ -448,7 +449,7 @@ class _SurahPickerState extends ConsumerState<_SurahPicker> {
                 onChanged: (on) => setState(() => on == true ? _picked.add(s.id) : _picked.remove(s.id)),
                 secondary: SizedBox(width: 30, child: Text('${s.id}', style: context.text.bodySmall)),
                 title: Text(s.nameEn),
-                subtitle: Text('${s.ayahCount} ayahs'),
+                subtitle: Text(context.l10n.ayahsCount(s.ayahCount)),
               );
             },
           ),
@@ -460,7 +461,7 @@ class _SurahPickerState extends ConsumerState<_SurahPicker> {
             child: FilledButton(
               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50), backgroundColor: c.primary),
               onPressed: _picked.isEmpty ? null : () => Navigator.pop(context, _picked),
-              child: Text(_picked.isEmpty ? 'Choose at least one' : 'Done · ${_picked.length} selected'),
+              child: Text(_picked.isEmpty ? context.l10n.chooseAtLeastOne : context.l10n.doneSelected(_picked.length)),
             ),
           ),
         ),
@@ -557,7 +558,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
               padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, Space.xl),
               children: [
                 Row(children: [
-                  Text('${_index + 1} of $total', style: context.text.labelSmall),
+                  Text(context.l10n.questionOf(_index + 1, total), style: context.text.labelSmall),
                   const Spacer(),
                   Pill(_q.kind.title, color: c.primary),
                 ]),
@@ -590,7 +591,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       return FilledButton(
         style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
         onPressed: _next,
-        child: Text(last ? 'See results' : 'Next'),
+        child: Text(last ? context.l10n.seeResults : context.l10n.next),
       );
     }
     if (_q.kind == QuizKind.recite) {
@@ -600,7 +601,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
               onPressed: () => setState(() => _revealed++),
-              child: const Text('Next word'),
+              child: Text(context.l10n.nextWord),
             ),
           ),
           const SizedBox(width: Space.md),
@@ -608,7 +609,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
             child: FilledButton(
               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
               onPressed: () => setState(() => _revealed = _q.words.length),
-              child: const Text('Show ayah'),
+              child: Text(context.l10n.showAyah),
             ),
           ),
         ]);
@@ -618,7 +619,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           child: OutlinedButton(
             style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
             onPressed: () => _answer(false),
-            child: const Text('I made mistakes'),
+            child: Text(context.l10n.iMadeMistakes),
           ),
         ),
         const SizedBox(width: Space.md),
@@ -626,7 +627,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           child: FilledButton(
             style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
             onPressed: () => _answer(true),
-            child: const Text('I had it right'),
+            child: Text(context.l10n.iHadItRight),
           ),
         ),
       ]);
@@ -661,7 +662,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         ),
       if (_answered)
         Text(
-          _correct[_index]! ? 'Correct' : 'The right answer is highlighted',
+          _correct[_index]! ? context.l10n.correct : context.l10n.rightAnswerHighlighted,
           textAlign: TextAlign.center,
           style: context.text.titleMedium?.copyWith(color: _correct[_index]! ? c.primary : c.danger),
         ),
@@ -672,7 +673,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     final c = context.colors;
     final q = _q;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text('Recite it, then reveal it word by word to check yourself.', style: context.text.bodySmall),
+      Text(context.l10n.reciteThenReveal, style: context.text.bodySmall),
       const SizedBox(height: Space.sm),
       Container(
         constraints: const BoxConstraints(minHeight: 96),
@@ -696,7 +697,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         Padding(
           padding: const EdgeInsets.only(top: Space.lg),
           child: Text(
-            _correct[_index]! ? 'Well done' : 'Keep revising this ayah',
+            _correct[_index]! ? context.l10n.wellDone : context.l10n.keepRevisingAyah,
             textAlign: TextAlign.center,
             style: context.text.titleMedium?.copyWith(color: _correct[_index]! ? c.primary : c.inkMuted),
           ),
@@ -816,12 +817,12 @@ class _Results extends ConsumerWidget {
     final wrong = [for (var i = 0; i < total; i++) if (correct[i] != true) questions[i]];
     final ratio = total == 0 ? 0.0 : score / total;
     final message = ratio == 1
-        ? 'ما شاء الله · Perfect'
+        ? context.l10n.resultPerfect
         : ratio >= 0.8
-            ? 'Very good, keep revising'
+            ? context.l10n.resultVeryGood
             : ratio >= 0.5
-                ? 'Good effort, revise the ayahs below'
-                : 'Revise these ayahs and try again';
+                ? context.l10n.resultGood
+                : context.l10n.resultRevise;
     return Scaffold(
       appBar: AppBar(title: Text(scope), automaticallyImplyLeading: false),
       body: ListView(
@@ -842,7 +843,7 @@ class _Results extends ConsumerWidget {
                 ),
                 Column(mainAxisSize: MainAxisSize.min, children: [
                   Text('$score', style: context.text.displaySmall),
-                  Text('of $total', style: context.text.bodySmall),
+                  Text(context.l10n.ofTotal(total), style: context.text.bodySmall),
                 ]),
               ]),
             ),
@@ -851,7 +852,7 @@ class _Results extends ConsumerWidget {
           Text(message, textAlign: TextAlign.center, style: context.text.titleMedium),
           if (wrong.isNotEmpty) ...[
             const SizedBox(height: Space.xxl),
-            Text('To revise', style: context.text.titleMedium),
+            Text(context.l10n.toRevise, style: context.text.titleMedium),
             const SizedBox(height: Space.sm),
             for (final q in wrong)
               Padding(
@@ -898,7 +899,7 @@ class _Results extends ConsumerWidget {
               child: OutlinedButton(
                 style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Done'),
+                child: Text(context.l10n.done),
               ),
             ),
             if (wrong.isNotEmpty) ...[
@@ -909,7 +910,7 @@ class _Results extends ConsumerWidget {
                   onPressed: () => Navigator.of(context).pushReplacement(MaterialPageRoute(
                     builder: (_) => QuizScreen(scope: scope, questions: [...wrong]..shuffle()),
                   )),
-                  child: const Text('Practise mistakes'),
+                  child: Text(context.l10n.practiseMistakes),
                 ),
               ),
             ],

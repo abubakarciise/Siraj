@@ -9,6 +9,7 @@ import '../../core/quran/models.dart';
 import '../../design/dialogs.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/l10n.dart';
 import '../player/play_actions.dart';
 import 'download_sheet.dart';
 
@@ -35,7 +36,7 @@ class _ReciterScreenState extends ConsumerState<ReciterScreen> {
         reciter: reciter,
         recitation: r,
         surahs: surahs,
-        title: title ?? 'Download ${surahs.length} surahs',
+        title: title ?? context.l10n.downloadSurahs(surahs.length),
       );
       if (choice == null || !mounted) return;
       wifiOnly = choice;
@@ -48,7 +49,7 @@ class _ReciterScreenState extends ConsumerState<ReciterScreen> {
     setState(_selected.clear);
     showToast(
       context,
-      n == 0 ? 'Already downloaded' : 'Downloading $n ${n == 1 ? 'surah' : 'surahs'} · ${reciter.name}',
+      n == 0 ? context.l10n.alreadyDownloaded : context.l10n.downloadingSurahs(n, reciter.name),
     );
   }
 
@@ -56,10 +57,9 @@ class _ReciterScreenState extends ConsumerState<ReciterScreen> {
     final ok = await showAppDialog(
       context,
       icon: Icons.delete_outline_rounded,
-      title: 'Delete downloads?',
-      message:
-          'All downloaded surahs of $name (${r.shortName}) will be removed from this phone. You can download them again anytime.',
-      confirmLabel: 'Delete',
+      title: context.l10n.deleteDownloadsQuestion,
+      message: context.l10n.deleteAllDownloadsMessage(name, r.shortName),
+      confirmLabel: context.l10n.delete,
       destructive: true,
     );
     if (ok) await ref.read(downloadManagerProvider).deleteRecitation(r.key);
@@ -101,7 +101,7 @@ class _ReciterScreenState extends ConsumerState<ReciterScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: _selecting ? Text('${_selected.length} selected') : null,
+          title: _selecting ? Text(context.l10n.selectedCount(_selected.length)) : null,
           leading: _selecting
               ? IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => setState(_selected.clear))
               : null,
@@ -109,7 +109,7 @@ class _ReciterScreenState extends ConsumerState<ReciterScreen> {
             if (_selecting) ...[
               TextButton(
                 onPressed: () => setState(() => _selected.addAll(r.surahs.where((s) => !dl.isDownloaded(r.key, s)))),
-                child: const Text('Select all'),
+                child: Text(context.l10n.selectAll),
               ),
             ] else ...[
               IconButton(
@@ -132,7 +132,7 @@ class _ReciterScreenState extends ConsumerState<ReciterScreen> {
                       _download(reciter, r, [
                         for (var s = 78; s <= 114; s++)
                           if (r.hasSurah(s)) s,
-                      ], title: "Download Juz 'Amma");
+                      ], title: context.l10n.downloadJuzAmmaTitle);
                     case 'cancel':
                       await ref.read(downloadManagerProvider).cancelAll(r.key);
                     case 'retry':
@@ -142,11 +142,11 @@ class _ReciterScreenState extends ConsumerState<ReciterScreen> {
                   }
                 },
                 itemBuilder: (_) => [
-                  const PopupMenuItem(value: 'select', child: Text('Select surahs to download')),
-                  const PopupMenuItem(value: 'juzamma', child: Text("Download Juz 'Amma (78–114)")),
-                  if (activeCount > 0) const PopupMenuItem(value: 'cancel', child: Text('Cancel downloads')),
-                  if (failedCount > 0) const PopupMenuItem(value: 'retry', child: Text('Retry failed downloads')),
-                  if (downloadedCount > 0) const PopupMenuItem(value: 'delete', child: Text('Delete downloads')),
+                  PopupMenuItem(value: 'select', child: Text(context.l10n.selectSurahsToDownload)),
+                  PopupMenuItem(value: 'juzamma', child: Text(context.l10n.downloadJuzAmma)),
+                  if (activeCount > 0) PopupMenuItem(value: 'cancel', child: Text(context.l10n.cancelDownloads)),
+                  if (failedCount > 0) PopupMenuItem(value: 'retry', child: Text(context.l10n.retryFailedDownloads)),
+                  if (downloadedCount > 0) PopupMenuItem(value: 'delete', child: Text(context.l10n.deleteDownloads)),
                 ],
               ),
             ],
@@ -163,7 +163,7 @@ class _ReciterScreenState extends ConsumerState<ReciterScreen> {
                     child: FilledButton.icon(
                       onPressed: () => _download(reciter, r, _selected.toList()..sort()),
                       icon: const Icon(Icons.download_rounded),
-                      label: Text('Download ${_selected.length} ${_selected.length == 1 ? 'surah' : 'surahs'}'),
+                      label: Text(context.l10n.downloadSurahs(_selected.length)),
                     ),
                   ),
                 ),
@@ -210,8 +210,8 @@ class _ReciterScreenState extends ConsumerState<ReciterScreen> {
                     spacing: 6,
                     alignment: WrapAlignment.center,
                     children: [
-                      Pill(r.isComplete ? 'Complete Quran' : '${r.surahs.length} surahs'),
-                      if (isDefault) Pill('Default', color: c.goldText, icon: Icons.star_rounded),
+                      Pill(r.isComplete ? context.l10n.completeQuran : context.l10n.surahsCount(r.surahs.length)),
+                      if (isDefault) Pill(context.l10n.defaultLabel, color: c.goldText, icon: Icons.star_rounded),
                     ],
                   ),
                   const SizedBox(height: Space.xl),
@@ -223,7 +223,7 @@ class _ReciterScreenState extends ConsumerState<ReciterScreen> {
                           child: FilledButton.icon(
                             onPressed: () => playRecitation(context, ref, reciter, r, r.surahs.first, resume: true),
                             icon: const Icon(Icons.play_arrow_rounded),
-                            label: const Text('Play'),
+                            label: Text(context.l10n.play),
                           ),
                         ),
                         const SizedBox(width: Space.md),
@@ -237,7 +237,7 @@ class _ReciterScreenState extends ConsumerState<ReciterScreen> {
                                     reciter,
                                     r,
                                     r.surahs,
-                                    title: r.isComplete ? 'Download the whole Quran' : 'Download all surahs',
+                                    title: r.isComplete ? context.l10n.downloadWholeQuran : context.l10n.downloadAllSurahs,
                                   ),
                             icon: Icon(
                               allDone
@@ -248,12 +248,12 @@ class _ReciterScreenState extends ConsumerState<ReciterScreen> {
                             ),
                             label: Text(
                               allDone
-                                  ? 'All offline'
+                                  ? context.l10n.allOffline
                                   : activeCount > 0
-                                  ? 'Stop ($activeCount)'
+                                  ? context.l10n.stopCount(activeCount)
                                   : r.isComplete
-                                  ? 'Whole Quran'
-                                  : 'Download all',
+                                  ? context.l10n.wholeQuran
+                                  : context.l10n.downloadAll,
                             ),
                           ),
                         ),
@@ -278,9 +278,9 @@ class _ReciterScreenState extends ConsumerState<ReciterScreen> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            '$downloadedCount of ${r.surahs.length} surahs on this device'
-                            '${activeCount > 0 ? ' · $activeCount downloading' : ''}'
-                            '${failedCount > 0 ? ' · $failedCount failed' : ''}',
+                            context.l10n.surahsOnDevice(downloadedCount, r.surahs.length) +
+                                (activeCount > 0 ? context.l10n.countDownloading(activeCount) : '') +
+                                (failedCount > 0 ? context.l10n.countFailed(failedCount) : ''),
                             style: context.text.bodySmall,
                           ),
                         ],
@@ -291,7 +291,7 @@ class _ReciterScreenState extends ConsumerState<ReciterScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
                     child: Text(
-                      'Long-press surahs to select several for download.',
+                      context.l10n.longPressToSelect,
                       style: context.text.bodySmall?.copyWith(color: c.inkFaint),
                     ),
                   ),
@@ -318,7 +318,7 @@ class _ReciterScreenState extends ConsumerState<ReciterScreen> {
                     selected: selected,
                     selecting: _selecting,
                     trailing: !available
-                        ? Text('Not recorded', style: context.text.bodySmall?.copyWith(color: c.inkFaint))
+                        ? Text(context.l10n.notRecorded, style: context.text.bodySmall?.copyWith(color: c.inkFaint))
                         : _selecting
                         ? Checkbox(
                             value: selected || downloaded,
@@ -335,10 +335,10 @@ class _ReciterScreenState extends ConsumerState<ReciterScreen> {
                               final ok = await showAppDialog(
                                 context,
                                 icon: Icons.delete_outline_rounded,
-                                title: 'Remove ${s.nameEn}?',
-                                message: "This surah's audio will be deleted from your phone.",
-                                confirmLabel: 'Remove',
-                                cancelLabel: 'Keep',
+                                title: context.l10n.removeItem(s.nameEn),
+                                message: context.l10n.removeSurahAudioMessage,
+                                confirmLabel: context.l10n.remove,
+                                cancelLabel: context.l10n.keep,
                                 destructive: true,
                               );
                               if (ok) ref.read(downloadManagerProvider).delete(r.key, s.id);
@@ -411,7 +411,7 @@ class _SurahRow extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(surah.nameEn, style: context.text.titleMedium?.copyWith(color: playing ? c.primary : null)),
-                      Text('${surah.meaning} · ${surah.ayahCount} ayahs', style: context.text.bodySmall),
+                      Text(context.l10n.meaningAndAyahs(surah.meaning, surah.ayahCount), style: context.text.bodySmall),
                     ],
                   ),
                 ),

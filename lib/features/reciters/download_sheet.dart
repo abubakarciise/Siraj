@@ -6,6 +6,7 @@ import '../../core/providers.dart';
 import '../../design/dialogs.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/l10n.dart';
 
 /// Confirms a multi-surah download (selection, Juz 'Amma, whole Quran) and
 /// shows its exact size first. Returns the chosen Wi-Fi-only flag, or null if
@@ -69,14 +70,14 @@ class _DownloadSheetBodyState extends ConsumerState<_DownloadSheetBody> {
         padding: const EdgeInsets.all(Space.lg),
         decoration: BoxDecoration(color: c.surfaceAlt, borderRadius: BorderRadius.circular(Radii.lg)),
         child: Column(children: [
-          _Row(icon: Icons.library_music_outlined, label: 'Surahs', value: '$pending to download'),
+          _Row(icon: Icons.library_music_outlined, label: context.l10n.surahs, value: context.l10n.toDownload(pending)),
           const SizedBox(height: Space.md),
           FutureBuilder<int?>(
             future: _size,
             builder: (_, snap) => snap.connectionState != ConnectionState.done
                 ? _Row(
                     icon: Icons.sd_storage_outlined,
-                    label: 'Size',
+                    label: context.l10n.size,
                     valueWidget: ValueListenableBuilder<(int, int)>(
                       valueListenable: _checked,
                       builder: (_, p, _) => CalculatingText(done: p.$1, total: p.$2),
@@ -84,24 +85,24 @@ class _DownloadSheetBodyState extends ConsumerState<_DownloadSheetBody> {
                   )
                 : _Row(
                     icon: Icons.sd_storage_outlined,
-                    label: 'Size',
-                    value: snap.data == null ? 'Unknown (offline)' : formatBytes(snap.data!),
+                    label: context.l10n.size,
+                    value: snap.data == null ? context.l10n.unknownOffline : formatBytes(snap.data!),
                   ),
           ),
           const SizedBox(height: Space.md),
-          const _Row(icon: Icons.phone_android_rounded, label: 'Saved', value: 'On this phone'),
+          _Row(icon: Icons.phone_android_rounded, label: context.l10n.savedLabel, value: context.l10n.onThisPhone),
         ]),
       ),
       const SizedBox(height: Space.md),
       Text(
-        'Downloads continue in the background, resume if interrupted, and play without internet once finished.',
+        context.l10n.downloadsBackgroundNote,
         style: context.text.bodySmall,
       ),
       const SizedBox(height: Space.sm),
       SwitchListTile(
         contentPadding: EdgeInsets.zero,
-        title: const Text('Wi-Fi only'),
-        subtitle: const Text('Wait for Wi-Fi to save mobile data'),
+        title: Text(context.l10n.wifiOnly),
+        subtitle: Text(context.l10n.wifiOnlySubtitle),
         value: _wifiOnly,
         onChanged: (v) => setState(() => _wifiOnly = v),
       ),
@@ -111,14 +112,14 @@ class _DownloadSheetBodyState extends ConsumerState<_DownloadSheetBody> {
         icon: const Icon(Icons.download_rounded),
         label: FutureBuilder<int?>(
           future: _size,
-          builder: (_, snap) => Text(snap.data == null ? 'Download' : 'Download · ${formatBytes(snap.data!)}'),
+          builder: (_, snap) => Text(snap.data == null ? context.l10n.download : context.l10n.downloadWithSize(formatBytes(snap.data!))),
         ),
       ),
       const SizedBox(height: Space.sm),
       TextButton(
         style: TextButton.styleFrom(minimumSize: const Size(0, 48), foregroundColor: c.inkMuted),
         onPressed: () => Navigator.pop(context),
-        child: const Text('Not now'),
+        child: Text(context.l10n.notNow),
       ),
     ]);
   }
@@ -169,7 +170,7 @@ class _CalculatingTextState extends State<CalculatingText> with SingleTickerProv
           final count = widget.total > 0 ? '  ${widget.done}/${widget.total}' : '';
           return Text.rich(
             TextSpan(children: [
-              const TextSpan(text: 'Calculating'),
+              TextSpan(text: context.l10n.calculating),
               // The dots keep their place, so the text never jumps.
               TextSpan(text: '.' * n),
               TextSpan(text: '.' * (3 - n), style: const TextStyle(color: Colors.transparent)),

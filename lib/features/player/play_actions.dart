@@ -5,6 +5,7 @@ import '../../core/audio/player_controller.dart';
 import '../../core/catalog/catalog.dart';
 import '../../core/providers.dart';
 import '../../design/widgets.dart';
+import '../../l10n/l10n.dart';
 
 /// The reciter used when playing from the reader: the user's choice, otherwise
 /// the first featured Hafs recitation that supports ayah highlighting.
@@ -32,7 +33,7 @@ Future<void> playFromMushaf(BuildContext context, WidgetRef ref, int surah, {int
     final local = await _downloadedRecitation(ref, surah);
     if (local != null) {
       (reciter, recitation) = local;
-      if (context.mounted) showToast(context, "You're offline · playing ${reciter.name} (downloaded)");
+      if (context.mounted) showToast(context, context.l10n.offlinePlayingDownloaded(reciter.name));
     }
   }
   if (!context.mounted) return;
@@ -69,9 +70,9 @@ Future<void> playRecitation(
   try {
     await ref.read(playerProvider).play(recitation, reciter, surah, ayah: ayah, resume: resume);
   } on OfflineException {
-    if (context.mounted) showToast(context, "You're offline. Download this surah to listen without internet.");
+    if (context.mounted) showToast(context, context.l10n.offlineDownloadSurah);
   } catch (e, st) {
     debugPrint('Playback failed: $e\n$st');
-    if (context.mounted) showToast(context, 'Could not start playback. Check your connection and try again.');
+    if (context.mounted) showToast(context, context.l10n.couldNotStartPlayback);
   }
 }

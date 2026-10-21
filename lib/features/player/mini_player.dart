@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/providers.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/l10n.dart';
 
 /// Persistent player bar. Tap or swipe up to expand, swipe down to stop.
 class MiniPlayer extends ConsumerWidget {
@@ -73,7 +74,7 @@ class MiniPlayer extends ConsumerWidget {
                             ),
                     ),
                     IconButton(
-                      tooltip: 'Close player',
+                      tooltip: context.l10n.closePlayer,
                       onPressed: ref.read(playerProvider).stop,
                       icon: Icon(Icons.close_rounded, color: c.inkMuted),
                     ),

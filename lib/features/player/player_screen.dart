@@ -12,6 +12,7 @@ import '../../design/dialogs.dart';
 import '../../design/theme.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/l10n.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
   const PlayerScreen({super.key});
@@ -64,7 +65,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: Space.sm),
                 child: Row(children: [
                   IconButton(
-                    tooltip: 'Close',
+                    tooltip: context.l10n.close,
                     icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 30),
                     onPressed: () => context.pop(),
                   ),
@@ -83,7 +84,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     ]),
                   ),
                   IconButton(
-                    tooltip: 'Open in Mushaf',
+                    tooltip: context.l10n.openInMushaf,
                     icon: const Icon(Icons.menu_book_rounded),
                     onPressed: () async {
                       final page = np.ayah != null ? await db.pageOf(np.ayah!) : surah.pageStart;
@@ -123,14 +124,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     _RepeatButton(np: np),
                     IconButton(
                       iconSize: 34,
-                      tooltip: np.hasTiming ? 'Previous ayah' : 'Previous surah',
+                      tooltip: np.hasTiming ? context.l10n.previousAyah : context.l10n.previousSurah,
                       onPressed: np.hasTiming ? pc.previousAyah : pc.previous,
                       icon: const Icon(Icons.skip_previous_rounded),
                     ),
                     _PlayButton(np: np, onTap: pc.toggle),
                     IconButton(
                       iconSize: 34,
-                      tooltip: np.hasTiming ? 'Next ayah' : 'Next surah',
+                      tooltip: np.hasTiming ? context.l10n.nextAyah : context.l10n.nextSurah,
                       onPressed: np.hasTiming ? pc.nextAyah : (np.hasNext ? pc.next : null),
                       icon: const Icon(Icons.skip_next_rounded),
                     ),
@@ -144,15 +145,15 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       TextButton.icon(
                         onPressed: np.hasPrevious ? pc.previous : null,
                         icon: const Icon(Icons.first_page_rounded, size: 20),
-                        label: const Text('Surah'),
+                        label: Text(context.l10n.surah),
                       ),
                       TextButton.icon(
                         onPressed: np.hasNext ? pc.next : null,
                         icon: const Icon(Icons.last_page_rounded, size: 20),
-                        label: const Text('Surah'),
+                        label: Text(context.l10n.surah),
                       ),
                       IconButton(
-                        tooltip: 'Stop',
+                        tooltip: context.l10n.stop,
                         onPressed: () async {
                           await pc.stop();
                           if (context.mounted && context.canPop()) context.pop();
@@ -257,8 +258,7 @@ class _SurahFollowAlongState extends ConsumerState<SurahFollowAlong> {
             const SizedBox(width: Space.sm),
             Expanded(
               child: Text(
-                'This recitation has no ayah timing, so the ayah being recited cannot be highlighted. '
-                'Reciters marked Ayah sync follow along exactly.',
+                context.l10n.noAyahTimingNote,
                 style: context.text.bodySmall,
               ),
             ),
@@ -340,7 +340,7 @@ class _SurahFollowAlongState extends ConsumerState<SurahFollowAlong> {
                 ? const SizedBox.shrink()
                 : ActionChip(
                     avatar: Icon(Icons.my_location_rounded, size: 18, color: c.primary),
-                    label: Text(ayah == 0 ? 'Back to current' : 'Back to ayah $ayah'),
+                    label: Text(ayah == 0 ? context.l10n.backToCurrent : context.l10n.backToAyah(ayah)),
                     backgroundColor: c.surface,
                     side: BorderSide(color: c.divider),
                     onPressed: () {
@@ -432,8 +432,8 @@ class _RepeatButton extends ConsumerWidget {
     final c = context.colors;
     final active = np.repeat != RepeatKind.off;
     return IconButton(
-      tooltip: 'Repeat',
-      onPressed: () => showAppSheet(context, title: 'Repeat', builder: (_) => _RepeatSheet(np: np)),
+      tooltip: context.l10n.repeat,
+      onPressed: () => showAppSheet(context, title: context.l10n.repeat, builder: (_) => _RepeatSheet(np: np)),
       icon: Badge(
         isLabelVisible: np.repeat == RepeatKind.ayah,
         backgroundColor: c.primary,
@@ -461,13 +461,13 @@ class _RepeatSheetState extends ConsumerState<_RepeatSheet> {
   Widget build(BuildContext context) {
     final pc = ref.read(playerProvider);
     return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text('Memorization helper: repeat each ayah before moving on.', style: context.text.bodySmall),
+      Text(context.l10n.repeatNote, style: context.text.bodySmall),
       const SizedBox(height: Space.lg),
       SegmentedButton<RepeatKind>(
         segments: [
-          const ButtonSegment(value: RepeatKind.off, label: Text('Off')),
-          ButtonSegment(value: RepeatKind.ayah, label: const Text('Each ayah'), enabled: widget.np.hasTiming),
-          const ButtonSegment(value: RepeatKind.surah, label: Text('Surah')),
+          ButtonSegment(value: RepeatKind.off, label: Text(context.l10n.off)),
+          ButtonSegment(value: RepeatKind.ayah, label: Text(context.l10n.eachAyah), enabled: widget.np.hasTiming),
+          ButtonSegment(value: RepeatKind.surah, label: Text(context.l10n.surah)),
         ],
         selected: {_kind},
         onSelectionChanged: (s) => setState(() => _kind = s.first),
@@ -475,7 +475,7 @@ class _RepeatSheetState extends ConsumerState<_RepeatSheet> {
       if (!widget.np.hasTiming)
         Padding(
           padding: const EdgeInsets.only(top: Space.sm),
-          child: Text('Ayah repeat needs a reciter with ayah timing.', style: context.text.bodySmall),
+          child: Text(context.l10n.ayahRepeatNeedsTiming, style: context.text.bodySmall),
         ),
       if (_kind == RepeatKind.ayah) ...[
         const SizedBox(height: Space.lg),
@@ -494,7 +494,7 @@ class _RepeatSheetState extends ConsumerState<_RepeatSheet> {
           pc.setRepeat(_kind, times: _times);
           Navigator.pop(context);
         },
-        child: const Text('Apply'),
+        child: Text(context.l10n.apply),
       ),
     ]);
   }
@@ -510,29 +510,29 @@ class _SleepButton extends ConsumerWidget {
     final pc = ref.read(playerProvider);
     final active = np.sleepAt != null || pc.sleepEndOfSurah;
     return IconButton(
-      tooltip: 'Sleep timer',
+      tooltip: context.l10n.sleepTimer,
       icon: Icon(Icons.bedtime_outlined, color: active ? c.primary : c.inkMuted),
       onPressed: () => showAppSheet(
         context,
-        title: 'Sleep timer',
+        title: context.l10n.sleepTimer,
         builder: (ctx) => Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           if (np.sleepAt != null)
             Padding(
               padding: const EdgeInsets.only(bottom: Space.md),
-              child: Text('Stops at ${TimeOfDay.fromDateTime(np.sleepAt!).format(context)}',
+              child: Text(context.l10n.stopsAt(TimeOfDay.fromDateTime(np.sleepAt!).format(context)),
                   style: context.text.bodySmall),
             ),
           Wrap(spacing: 8, runSpacing: 8, children: [
             for (final m in [5, 15, 30, 45, 60])
               ActionChip(
-                label: Text('$m min'),
+                label: Text(context.l10n.minutesShort(m)),
                 onPressed: () {
                   pc.setSleep(Duration(minutes: m));
                   Navigator.pop(ctx);
                 },
               ),
             ActionChip(
-              label: const Text('End of surah'),
+              label: Text(context.l10n.endOfSurah),
               onPressed: () {
                 pc.setSleep(null, endOfSurah: true);
                 Navigator.pop(ctx);
@@ -540,7 +540,7 @@ class _SleepButton extends ConsumerWidget {
             ),
             if (active)
               ActionChip(
-                label: const Text('Turn off'),
+                label: Text(context.l10n.turnOff),
                 onPressed: () {
                   pc.cancelSleep();
                   Navigator.pop(ctx);

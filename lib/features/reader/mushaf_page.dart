@@ -7,6 +7,7 @@ import '../../core/quran/models.dart';
 import '../../design/theme.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/l10n.dart';
 
 const _basmala = 'بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ';
 
@@ -202,7 +203,7 @@ class MushafPageView extends StatelessWidget {
       final size = box.biggest;
       final layout = _layoutFor(page, size, c, surahNames);
       return Semantics(
-        label: 'Page ${page.number}',
+        label: context.l10n.pageNumber(page.number),
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTapUp: onAyahTap == null

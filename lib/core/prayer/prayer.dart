@@ -6,18 +6,20 @@ import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../l10n/l10n.dart';
 import '../notifications/notifications.dart';
 
 enum Salah { fajr, sunrise, dhuhr, asr, maghrib, isha }
 
 extension SalahX on Salah {
-  String get en => switch (this) {
-        Salah.fajr => 'Fajr',
-        Salah.sunrise => 'Sunrise',
-        Salah.dhuhr => 'Dhuhr',
-        Salah.asr => 'Asr',
-        Salah.maghrib => 'Maghrib',
-        Salah.isha => 'Isha',
+  /// The name in the app's language.
+  String get label => switch (this) {
+        Salah.fajr => l10n.fajr,
+        Salah.sunrise => l10n.sunrise,
+        Salah.dhuhr => l10n.dhuhr,
+        Salah.asr => l10n.asr,
+        Salah.maghrib => l10n.maghrib,
+        Salah.isha => l10n.isha,
       };
   String get ar => switch (this) {
         Salah.fajr => 'الفجر',
@@ -274,17 +276,17 @@ class PrayerService {
   Future<City> locateQibla() async {
     final pos = await _position();
     final near = nearestCity(pos.latitude, pos.longitude);
-    final c = City(near.$2 < 60 ? near.$1.name : 'Current location', pos.latitude, pos.longitude);
+    final c = City(near.$2 < 60 ? near.$1.name : l10n.currentLocation, pos.latitude, pos.longitude);
     await setQiblaPlace(c);
     return c;
   }
 
   Future<Position> _position() async {
-    if (!await Geolocator.isLocationServiceEnabled()) throw const LocationException('Turn on location services');
+    if (!await Geolocator.isLocationServiceEnabled()) throw LocationException(l10n.turnOnLocationServices);
     var perm = await Geolocator.checkPermission();
     if (perm == LocationPermission.denied) perm = await Geolocator.requestPermission();
     if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) {
-      throw const LocationException('Location permission was denied');
+      throw LocationException(l10n.locationPermissionDenied);
     }
     Position? pos;
     try {
@@ -294,7 +296,7 @@ class PrayerService {
     } catch (_) {
       pos = await Geolocator.getLastKnownPosition();
     }
-    if (pos == null) throw const LocationException('Could not get your location');
+    if (pos == null) throw LocationException(l10n.couldNotGetLocation);
     return pos;
   }
 
@@ -305,7 +307,7 @@ class PrayerService {
     final s = settings.copyWith(
       lat: pos.latitude,
       lng: pos.longitude,
-      place: near.$2 < 60 ? near.$1.name : 'Current location',
+      place: near.$2 < 60 ? near.$1.name : l10n.currentLocation,
       method: settings.hasLocation ? settings.method : near.$1.method,
     );
     await save(s);
@@ -350,16 +352,16 @@ class PrayerService {
         kind: ReminderKind.adhkar,
         id: NotificationService.adhkarIds.$1,
         time: s.morning,
-        title: 'أذكار الصباح · Morning adhkar',
-        body: 'Time to read the morning adhkar. Begin your day with the remembrance of Allah',
+        title: l10n.morningAdhkarNotificationTitle,
+        body: l10n.morningAdhkarNotificationBody,
         payload: 'adhkar:morning',
       );
       await _notifications.scheduleDaily(
         kind: ReminderKind.adhkar,
         id: NotificationService.adhkarIds.$1 + 1,
         time: s.evening,
-        title: 'أذكار المساء · Evening adhkar',
-        body: 'Time to read the evening adhkar',
+        title: l10n.eveningAdhkarNotificationTitle,
+        body: l10n.timeForEveningAdhkar,
         payload: 'adhkar:evening',
       );
     }
@@ -375,8 +377,10 @@ class PrayerService {
           kind: ReminderKind.prayer,
           id: id++,
           when: pd.times[salah]!,
-          title: '${salah.en} · ${salah.ar}',
-          body: 'It is time for ${salah.en} prayer${s.place == null ? '' : ' in ${s.place}'}',
+          title: '${salah.label} · ${salah.ar}',
+          body: s.place == null
+              ? l10n.prayerNotificationBody(salah.label)
+              : l10n.prayerNotificationBodyIn(salah.label, s.place!),
           payload: 'prayer',
         );
       }

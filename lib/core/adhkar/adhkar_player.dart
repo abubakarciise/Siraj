@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../l10n/l10n.dart';
 import '../audio/audio_handler.dart';
 import 'adhkar.dart';
 
@@ -249,8 +250,10 @@ class AdhkarPlayer extends ChangeNotifier implements ExternalPlayback {
     handler.mediaItem.add(MediaItem(
       id: 'adhkar:${cat.id}:$index',
       title: '${cat.titleEn} · ${cat.titleAr}',
-      artist: waitingForReader ? 'Dhikr ${index + 1} of ${cat.items.length} · your turn' : 'Dhikr ${index + 1} of ${cat.items.length}$count',
-      album: 'Adhkar',
+      artist: waitingForReader
+          ? l10n.dhikrYourTurnShort(index + 1, cat.items.length)
+          : '${l10n.dhikrOf(index + 1, cat.items.length)}$count',
+      album: l10n.adhkar,
     ));
   }
 

@@ -7,6 +7,7 @@ import '../../core/providers.dart';
 import '../../design/dialogs.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/l10n.dart';
 import 'prayer_widgets.dart';
 
 class PrayerScreen extends ConsumerStatefulWidget {
@@ -44,10 +45,10 @@ class _PrayerScreenState extends ConsumerState<PrayerScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Prayer times'),
+        title: Text(context.l10n.prayerTimes),
         actions: [
           IconButton(
-            tooltip: 'Calculation settings',
+            tooltip: context.l10n.calculationSettings,
             icon: const Icon(Icons.tune_rounded),
             onPressed: () => _settingsSheet(context),
           ),
@@ -60,12 +61,12 @@ class _PrayerScreenState extends ConsumerState<PrayerScreen> {
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
                   Icon(Icons.mosque_outlined, size: 56, color: c.primary),
                   const SizedBox(height: Space.lg),
-                  Text('Set your location', style: context.text.titleLarge),
+                  Text(context.l10n.setYourLocation, style: context.text.titleLarge),
                   const SizedBox(height: Space.sm),
-                  Text('Prayer times are calculated on your phone. No internet needed.',
+                  Text(context.l10n.prayerTimesOffline,
                       textAlign: TextAlign.center, style: context.text.bodyMedium?.copyWith(color: c.inkMuted)),
                   const SizedBox(height: Space.xl),
-                  FilledButton(onPressed: () => showLocationSheet(context), child: const Text('Choose location')),
+                  FilledButton(onPressed: () => showLocationSheet(context), child: Text(context.l10n.chooseLocation)),
                 ]),
               ),
             )
@@ -87,13 +88,13 @@ class _PrayerScreenState extends ConsumerState<PrayerScreen> {
                     decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: c.brandGradient), borderRadius: BorderRadius.circular(Radii.xl)),
                     child: Stack(children: [
                       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text('${focus!.started ? 'NOW' : 'NEXT'} · ${next.$1.ar}', style: context.text.labelSmall?.copyWith(color: c.onBrand.withValues(alpha: 0.8))),
+                        Text(context.l10n.labelWithArabic(focus!.started ? context.l10n.nowLabel : context.l10n.nextLabel, next.$1.ar), style: context.text.labelSmall?.copyWith(color: c.onBrand.withValues(alpha: 0.8))),
                         const SizedBox(height: 4),
-                        Text(next.$1.en, style: context.text.displaySmall?.copyWith(color: c.onBrand)),
+                        Text(next.$1.label, style: context.text.displaySmall?.copyWith(color: c.onBrand)),
                         Text(
                             focus.started
-                                ? '${formatTime(context, next.$2)} · began ${formatCountdown(now.difference(next.$2))} ago'
-                                : '${formatTime(context, next.$2)} · in ${formatCountdown(next.$2.difference(now))}',
+                                ? context.l10n.timeBeganAgo(formatTime(context, next.$2), formatCountdown(now.difference(next.$2)))
+                                : context.l10n.timeIn(formatTime(context, next.$2), formatCountdown(next.$2.difference(now))),
                             style: context.text.titleMedium?.copyWith(color: c.onBrand)),
                       ]),
                     ]),
@@ -105,9 +106,9 @@ class _PrayerScreenState extends ConsumerState<PrayerScreen> {
                   Expanded(
                     child: Text(
                       _offset == 0
-                          ? 'Today'
+                          ? context.l10n.today
                           : _offset == 1
-                              ? 'Tomorrow'
+                              ? context.l10n.tomorrow
                               : MaterialLocalizations.of(context).formatMediumDate(date),
                       textAlign: TextAlign.center,
                       style: context.text.titleMedium,
@@ -115,7 +116,7 @@ class _PrayerScreenState extends ConsumerState<PrayerScreen> {
                   ),
                   IconButton(onPressed: () => setState(() => _offset++), icon: const Icon(Icons.chevron_right_rounded)),
                 ]),
-                const SizedBox(height: Space.sm),
+                SizedBox(height: Space.sm),
                 for (final salah in Salah.values)
                   _PrayerRow(
                     salah: salah,
@@ -125,9 +126,10 @@ class _PrayerScreenState extends ConsumerState<PrayerScreen> {
                     notify: s.notify.contains(salah),
                     onBell: salah.isPrayer ? () => _toggleNotify(s, salah) : null,
                   ),
-                const SizedBox(height: Space.lg),
+                SizedBox(height: Space.lg),
                 Text(
-                  '${kMethodNames[s.method] ?? s.method.name} · Asr: ${s.hanafi ? 'Hanafi' : 'Standard (Shafi, Maliki, Hanbali)'}',
+                  context.l10n.methodAndAsr(kMethodNames[s.method] ?? s.method.name,
+                      s.hanafi ? context.l10n.asrHanafi : context.l10n.asrStandardLong),
                   textAlign: TextAlign.center,
                   style: context.text.bodySmall,
                 ),
@@ -139,17 +141,17 @@ class _PrayerScreenState extends ConsumerState<PrayerScreen> {
   void _settingsSheet(BuildContext context) {
     showAppSheet(
       context,
-      title: 'Calculation',
+      title: context.l10n.calculation,
       builder: (ctx) => Consumer(builder: (context, ref, _) {
         final s = ref.watch(prayerSettingsProvider);
         final n = ref.read(prayerSettingsProvider.notifier);
         return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Text('Asr time', style: context.text.titleMedium),
-          const SizedBox(height: Space.sm),
+          Text(context.l10n.asrTime, style: context.text.titleMedium),
+          SizedBox(height: Space.sm),
           SegmentedButton<bool>(
-            segments: const [
-              ButtonSegment(value: false, label: Text('Standard')),
-              ButtonSegment(value: true, label: Text('Hanafi')),
+            segments: [
+              ButtonSegment(value: false, label: Text(context.l10n.asrStandard)),
+              ButtonSegment(value: true, label: Text(context.l10n.asrHanafi)),
             ],
             selected: {s.hanafi},
             onSelectionChanged: (v) => n.update(s.copyWith(hanafi: v.first)),
@@ -193,7 +195,7 @@ class _PrayerRow extends StatelessWidget {
       child: Row(children: [
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(salah.en,
+            Text(salah.label,
                 style: context.text.titleMedium?.copyWith(color: passed ? c.inkMuted : (isNext ? c.primary : null))),
             Text(salah.ar, style: context.text.bodySmall),
           ]),
@@ -204,7 +206,7 @@ class _PrayerRow extends StatelessWidget {
         onBell == null
             ? const SizedBox(width: 48)
             : IconButton(
-                tooltip: notify ? 'Reminder on' : 'Reminder off',
+                tooltip: notify ? context.l10n.reminderOn : context.l10n.reminderOff,
                 onPressed: onBell,
                 icon: Icon(notify ? Icons.notifications_active_rounded : Icons.notifications_off_outlined,
                     color: notify ? c.primary : c.inkFaint),

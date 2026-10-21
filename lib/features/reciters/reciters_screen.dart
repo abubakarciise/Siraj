@@ -9,17 +9,18 @@ import '../../core/quran/arabic.dart';
 import '../../design/hero.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/l10n.dart';
 import '../player/play_actions.dart';
 
 enum _Filter { all, favorites, downloaded, warsh, mujawwad }
 
-const _filterLabels = {
-  _Filter.all: 'All',
-  _Filter.favorites: 'Favorites',
-  _Filter.downloaded: 'Downloaded',
-  _Filter.warsh: 'Other riwayat',
-  _Filter.mujawwad: 'Mujawwad',
-};
+String _filterLabel(AppLocalizations l10n, _Filter f) => switch (f) {
+      _Filter.all => l10n.all,
+      _Filter.favorites => l10n.favorites,
+      _Filter.downloaded => l10n.downloaded,
+      _Filter.warsh => l10n.otherRiwayat,
+      _Filter.mujawwad => l10n.mujawwad,
+    };
 
 class RecitersScreen extends ConsumerStatefulWidget {
   const RecitersScreen({super.key});
@@ -64,13 +65,13 @@ class _RecitersScreenState extends ConsumerState<RecitersScreen> {
       backgroundColor: Colors.transparent, // the tab's art shows through (TabBackdrop)
       body: catalog.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Could not load reciters\n$e', textAlign: TextAlign.center)),
+        error: (e, _) => Center(child: Text(context.l10n.couldNotLoadReciters('$e'), textAlign: TextAlign.center)),
         data: (cat) {
           final list = _apply(cat, favs, downloaded);
           final showFeatured = _query.isEmpty && _filter == _Filter.all;
           return CustomScrollView(
             slivers: [
-              HeroSliverAppBar(title: 'Listen', subtitle: 'التلاوات', art: HeroArt.listen),
+              HeroSliverAppBar(title: context.l10n.listen, subtitle: 'التلاوات', art: HeroArt.listen),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, Space.md),
@@ -79,7 +80,7 @@ class _RecitersScreenState extends ConsumerState<RecitersScreen> {
                     textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
                       prefixIcon: const Icon(Icons.search_rounded),
-                      hintText: 'Search ${cat.reciters.length} reciters · ابحث عن قارئ',
+                      hintText: context.l10n.searchRecitersHint(cat.reciters.length),
                     ),
                   ),
                 ),
@@ -95,7 +96,7 @@ class _RecitersScreenState extends ConsumerState<RecitersScreen> {
                         Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: ChoiceChip(
-                            label: Text(_filterLabels[f]!),
+                            label: Text(_filterLabel(context.l10n, f)),
                             selected: _filter == f,
                             onSelected: (_) => setState(() => _filter = f),
                           ),
@@ -106,7 +107,7 @@ class _RecitersScreenState extends ConsumerState<RecitersScreen> {
               ),
               if (showFeatured) const SliverToBoxAdapter(child: _ContinueListening()),
               if (showFeatured) ...[
-                const SliverToBoxAdapter(child: SectionTitle('Featured')),
+                SliverToBoxAdapter(child: SectionTitle(context.l10n.featured)),
                 SliverToBoxAdapter(
                   child: SizedBox(
                     height: 80 + context.ts(58),
@@ -141,17 +142,17 @@ class _RecitersScreenState extends ConsumerState<RecitersScreen> {
                   ),
                 ),
               ],
-              SliverToBoxAdapter(child: SectionTitle(showFeatured ? 'All reciters' : '${list.length} reciters')),
+              SliverToBoxAdapter(child: SectionTitle(showFeatured ? context.l10n.allReciters : context.l10n.recitersCount(list.length))),
               if (list.isEmpty)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(Space.xxxl),
                     child: Text(
                       _filter == _Filter.downloaded
-                          ? 'Nothing downloaded yet. Open a reciter and tap download on any surah, or download the whole Quran.'
+                          ? context.l10n.nothingDownloadedYet
                           : _filter == _Filter.favorites
-                          ? 'Tap the heart on a reciter to keep them here.'
-                          : 'No reciters match your search.',
+                          ? context.l10n.favoritesHint
+                          : context.l10n.noRecitersMatch,
                       textAlign: TextAlign.center,
                       style: context.text.bodyMedium?.copyWith(color: context.colors.inkMuted),
                     ),
@@ -205,10 +206,10 @@ class _ReciterTile extends ConsumerWidget {
                     runSpacing: 4,
                     children: [
                       for (final r in reciter.riwayat.take(3)) Pill(r),
-                      if (mushaf) Pill('Mushaf', color: c.primary, icon: Icons.menu_book_rounded),
+                      if (mushaf) Pill(context.l10n.mushaf, color: c.primary, icon: Icons.menu_book_rounded),
                       if (downloadedSurahs > 0)
                         Pill(
-                          downloadedSurahs >= 114 ? 'Offline' : '$downloadedSurahs offline',
+                          downloadedSurahs >= 114 ? context.l10n.offline : context.l10n.countOffline(downloadedSurahs),
                           color: c.gold,
                           icon: Icons.download_done_rounded,
                         ),
@@ -219,7 +220,7 @@ class _ReciterTile extends ConsumerWidget {
             ),
             // Recites when play is pressed in the Mushaf.
             IconButton(
-              tooltip: mushaf ? 'Plays in the Mushaf' : 'Use for Mushaf playback',
+              tooltip: mushaf ? context.l10n.playsInMushaf : context.l10n.useForMushafPlayback,
               onPressed: mushaf
                   ? null
                   : () {
@@ -229,7 +230,7 @@ class _ReciterTile extends ConsumerWidget {
                       );
                       ref.read(settingsProvider.notifier).update((s) => s.copyWith(defaultRecitation: r.key));
                       HapticFeedback.selectionClick();
-                      showToast(context, '${reciter.name} will recite when you press play in the Mushaf');
+                      showToast(context, context.l10n.willReciteInMushaf(reciter.name));
                     },
               icon: AnimatedSwitcher(
                 duration: Motion.quick,
@@ -286,7 +287,7 @@ class _ContinueListening extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('CONTINUE LISTENING', style: context.text.labelSmall?.copyWith(color: c.goldOnBrand)),
+                  Text(context.l10n.continueListeningCaps, style: context.text.labelSmall?.copyWith(color: c.goldOnBrand)),
                   Text(
                     '${surah.nameEn} · ${surah.nameAr}',
                     maxLines: 1,

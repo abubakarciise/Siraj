@@ -9,6 +9,7 @@ import '../../core/providers.dart';
 import '../../design/theme.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/l10n.dart';
 import '../daily/adhkar_screen.dart' show adhkarDoneToday;
 import '../memorize/memorize_screens.dart' show quizHistoryProvider;
 
@@ -47,18 +48,18 @@ class HomeScreen extends ConsumerWidget {
                         icon: Icons.menu_book_rounded,
                         color: _gold,
                         tinted: true,
-                        title: "Surah Al-Kahf · Jumu'ah",
-                        subtitle: 'The Sunnah of Friday',
+                        title: context.l10n.kahfFriday,
+                        subtitle: context.l10n.kahfFridaySubtitle,
                         onTap: () => context.openReader(db.surah(18).pageStart, surah: 18),
                       ),
                     ),
                   ),
-                const SliverToBoxAdapter(child: SectionTitle('Explore')),
+                SliverToBoxAdapter(child: SectionTitle(context.l10n.explore)),
                 const SliverPadding(
                   padding: EdgeInsets.symmetric(horizontal: Space.gutter),
                   sliver: SliverToBoxAdapter(child: _Explore()),
                 ),
-                const SliverToBoxAdapter(child: SectionTitle('Practise')),
+                SliverToBoxAdapter(child: SectionTitle(context.l10n.practise)),
                 const SliverPadding(
                   padding: EdgeInsets.symmetric(horizontal: Space.gutter),
                   sliver: SliverToBoxAdapter(child: _MemorizeCard()),
@@ -85,14 +86,12 @@ class HomeScreen extends ConsumerWidget {
 class _Header extends ConsumerWidget {
   const _Header();
 
-  static const _weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
-  String _greeting() {
+  String _greeting(AppLocalizations l10n) {
     final h = DateTime.now().hour;
-    if (h < 5) return 'Peaceful night';
-    if (h < 12) return 'Good morning';
-    if (h < 17) return 'Good afternoon';
-    return 'Good evening';
+    if (h < 5) return l10n.greetingNight;
+    if (h < 12) return l10n.greetingMorning;
+    if (h < 17) return l10n.greetingAfternoon;
+    return l10n.greetingEvening;
   }
 
   @override
@@ -112,7 +111,9 @@ class _Header extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${_weekdays[now.weekday - 1]} · ${hijri.day} ${hijri.monthName} ${hijri.year}'.toUpperCase(),
+                    context.l10n
+                        .homeDateLine(context.l10n.weekday(now.weekday), hijri.day, hijri.monthName, hijri.year)
+                        .toUpperCase(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: context.text.labelSmall?.copyWith(color: c.goldText, fontSize: 12),
@@ -121,16 +122,16 @@ class _Header extends ConsumerWidget {
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: AlignmentDirectional.centerStart,
-                    child: Text(_greeting(), maxLines: 1, style: context.text.headlineMedium),
+                    child: Text(_greeting(context.l10n), maxLines: 1, style: context.text.headlineMedium),
                   ),
                   Text('السلام عليكم ورحمة الله',
                       style: TextStyle(fontFamily: kNaskhFont, fontSize: 18, height: 1.5, color: c.inkMuted)),
                 ],
               ),
             ),
-            _RoundButton(icon: Icons.search_rounded, tooltip: 'Search', onTap: () => context.push('/search')),
+            _RoundButton(icon: Icons.search_rounded, tooltip: context.l10n.search, onTap: () => context.push('/search')),
             const SizedBox(width: Space.sm),
-            _RoundButton(icon: Icons.settings_outlined, tooltip: 'Settings', onTap: () => context.push('/settings')),
+            _RoundButton(icon: Icons.settings_outlined, tooltip: context.l10n.settings, onTap: () => context.push('/settings')),
           ],
         ),
       ),
@@ -214,7 +215,7 @@ class _AdhkarNow extends ConsumerWidget {
                     const SizedBox(height: Space.xs),
                     Text(title, style: context.text.headlineSmall?.copyWith(color: c.onBrand)),
                     Text(
-                      done ? 'Done today · تقبّل الله' : arabic,
+                      done ? context.l10n.doneTodayAccepted : arabic,
                       style: TextStyle(
                           fontFamily: kNaskhFont, fontSize: 18, height: 1.5, color: c.onBrand.withValues(alpha: 0.85)),
                     ),
@@ -237,7 +238,7 @@ class _AdhkarNow extends ConsumerWidget {
             ),
             if (started) ...[
               const SizedBox(height: Space.xs),
-              Text('$counted of $total read',
+              Text(context.l10n.countedOfTotalRead(counted, total),
                   style: context.text.bodySmall?.copyWith(color: c.onBrand.withValues(alpha: 0.75))),
             ],
           ],
@@ -248,7 +249,7 @@ class _AdhkarNow extends ConsumerWidget {
                   backgroundColor: gold, foregroundColor: c.brand, minimumSize: const Size.fromHeight(46)),
               onPressed: () => context.push('/tasbih'),
               icon: const Icon(Icons.blur_circular_rounded),
-              label: const Text('Open Tasbih'),
+              label: Text(context.l10n.openTasbih),
             )
           else
             Row(
@@ -260,8 +261,9 @@ class _AdhkarNow extends ConsumerWidget {
                     onPressed: () => context.push('/adhkar/$id?listen=1'),
                     icon: const Icon(Icons.play_arrow_rounded),
                     label: Text(listen
-                        ? '${started ? 'Continue' : 'Listen'} · ${formatListeningTime(cat.listeningTime(full: audio.full))}'
-                        : (started ? 'Continue' : 'Listen')),
+                        ? context.l10n.actionWithTime(started ? context.l10n.continueAction : context.l10n.listen,
+                            formatListeningTime(cat.listeningTime(full: audio.full)))
+                        : (started ? context.l10n.continueAction : context.l10n.listen)),
                   ),
                 ),
                 const SizedBox(width: Space.md),
@@ -274,7 +276,7 @@ class _AdhkarNow extends ConsumerWidget {
                       minimumSize: const Size.fromHeight(46),
                     ),
                     onPressed: () => context.push('/adhkar/$id'),
-                    child: const Text('Read'),
+                    child: Text(context.l10n.read),
                   ),
                 ),
               ],
@@ -296,8 +298,10 @@ class _MemorizeCard extends ConsumerWidget {
       icon: Icons.psychology_alt_rounded,
       color: _gold,
       tinted: true,
-      title: 'Test your hifz',
-      subtitle: last == null ? 'Surahs, juz or the whole Quran' : 'Last: ${last.scope} · ${last.score}/${last.total}',
+      title: context.l10n.testYourHifz,
+      subtitle: last == null
+          ? context.l10n.testYourHifzSubtitle
+          : context.l10n.lastQuizResult(last.scope, last.score, last.total),
       onTap: () => context.push('/memorize'),
     );
   }
@@ -311,14 +315,14 @@ class _Explore extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = <(String, String, VoidCallback)>[
-      ('قرآن', 'Quran', () => context.go('/quran')),
-      ('تلاوة', 'Listen', () => context.go('/listen')),
-      ('حديث', 'Hadith', () => context.go('/hadith')),
-      ('أذكار', 'Adhkar', () => context.push('/adhkar')),
-      ('صلاة', 'Prayer', () => context.push('/prayer')),
-      ('قبلة', 'Qibla', () => context.push('/qibla')),
-      ('تسبيح', 'Tasbih', () => context.push('/tasbih')),
-      ('محفوظ', 'Saved', () => context.push('/library')),
+      ('قرآن', context.l10n.quran, () => context.go('/quran')),
+      ('تلاوة', context.l10n.listen, () => context.go('/listen')),
+      ('حديث', context.l10n.hadith, () => context.go('/hadith')),
+      ('أذكار', context.l10n.adhkar, () => context.push('/adhkar')),
+      ('صلاة', context.l10n.prayer, () => context.push('/prayer')),
+      ('قبلة', context.l10n.qibla, () => context.push('/qibla')),
+      ('تسبيح', context.l10n.tasbih, () => context.push('/tasbih')),
+      ('محفوظ', context.l10n.saved, () => context.push('/library')),
     ];
     return LayoutBuilder(
       builder: (context, box) {

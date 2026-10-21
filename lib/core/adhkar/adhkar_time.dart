@@ -1,3 +1,4 @@
+import '../../l10n/l10n.dart';
 import '../prayer/prayer.dart';
 
 /// Which adhkar suit this moment of the day.
@@ -45,24 +46,24 @@ AdhkarMoment adhkarFor(DateTime now, PrayerDay? day, {bool Function(String id)? 
     final from = t.add(prayedAfter[s]!);
     final doneHere = afterSalahDoneAt != null && afterSalahDoneAt.isAfter(t);
     if (!before(from) && before(from.add(const Duration(minutes: 30))) && !doneHere) {
-      return AdhkarMoment('after_salah', 'After ${s.en}', afterPrayer: s);
+      return AdhkarMoment('after_salah', l10n.afterSalah(s.label), afterPrayer: s);
     }
   }
-  if (now.hour >= 3 && before(fajr)) return const AdhkarMoment('waking', 'Before Fajr');
-  if (!before(fajr) && before(sunrise)) return const AdhkarMoment('morning', 'Best before sunrise');
+  if (now.hour >= 3 && before(fajr)) return AdhkarMoment('waking', l10n.beforeFajr);
+  if (!before(fajr) && before(sunrise)) return AdhkarMoment('morning', l10n.bestBeforeSunrise);
   if (!before(sunrise) && before(dhuhr)) {
     return isDone('morning')
-        ? const AdhkarMoment('tasbih', 'Dhikr through the day')
-        : const AdhkarMoment('morning', 'Still time · until Dhuhr');
+        ? AdhkarMoment('tasbih', l10n.dhikrThroughDay)
+        : AdhkarMoment('morning', l10n.stillTimeUntilDhuhr);
   }
-  if (!before(dhuhr) && before(asr)) return const AdhkarMoment('tasbih', 'Dhikr through the day');
-  if (!before(asr) && before(maghrib)) return const AdhkarMoment('evening', 'Best before Maghrib');
+  if (!before(dhuhr) && before(asr)) return AdhkarMoment('tasbih', l10n.dhikrThroughDay);
+  if (!before(asr) && before(maghrib)) return AdhkarMoment('evening', l10n.bestBeforeMaghrib);
   if (!before(maghrib) && before(isha.add(const Duration(minutes: 40)))) {
     return isDone('evening')
-        ? const AdhkarMoment('quran_duas', 'Duas of the Quran')
-        : const AdhkarMoment('evening', 'Still time · tonight');
+        ? AdhkarMoment('quran_duas', l10n.duasOfQuran)
+        : AdhkarMoment('evening', l10n.stillTimeTonight);
   }
-  return const AdhkarMoment('sleep', 'Before you sleep');
+  return AdhkarMoment('sleep', l10n.beforeYouSleep);
 }
 
 /// From the adhan until the prayer is usually over: the wait for the iqama
@@ -75,13 +76,13 @@ const prayedAfter = {
   Salah.isha: Duration(minutes: 25),
 };
 
-/// English and Arabic names of the adhkar [adhkarFor] can suggest.
-const adhkarNames = {
-  'waking': ('Waking up', 'أذكار الاستيقاظ'),
-  'morning': ('Morning adhkar', 'أذكار الصباح'),
-  'after_salah': ('After prayer', 'أذكار بعد الصلاة'),
-  'tasbih': ('Tasbih & dhikr', 'التسبيح'),
-  'evening': ('Evening adhkar', 'أذكار المساء'),
-  'quran_duas': ('Duas of the Quran', 'أدعية قرآنية'),
-  'sleep': ('Before sleep', 'أذكار النوم'),
-};
+/// Names (in the app's language) and Arabic names of the adhkar [adhkarFor] can suggest.
+Map<String, (String, String)> get adhkarNames => {
+      'waking': (l10n.wakingUp, 'أذكار الاستيقاظ'),
+      'morning': (l10n.morningAdhkar, 'أذكار الصباح'),
+      'after_salah': (l10n.afterPrayer, 'أذكار بعد الصلاة'),
+      'tasbih': (l10n.tasbihAndDhikr, 'التسبيح'),
+      'evening': (l10n.eveningAdhkar, 'أذكار المساء'),
+      'quran_duas': (l10n.duasOfQuran, 'أدعية قرآنية'),
+      'sleep': (l10n.beforeSleep, 'أذكار النوم'),
+    };

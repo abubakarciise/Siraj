@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../core/downloads/download_manager.dart';
+import '../l10n/l10n.dart';
 import 'theme.dart';
 import 'tokens.dart';
 
@@ -192,17 +193,17 @@ class DownloadIndicator extends StatelessWidget {
     final String tooltip;
     VoidCallback? onTap;
     if (downloaded) {
-      tooltip = 'Downloaded';
+      tooltip = context.l10n.downloaded;
       onTap = onDelete;
       child = Icon(Icons.check_circle_rounded, key: const ValueKey('done'), color: c.primary, size: size * 0.66);
     } else if (active != null) {
       final a = active!;
       onTap = a.status == DlStatus.failed ? onDownload : onCancel;
       tooltip = switch (a.status) {
-        DlStatus.failed => 'Retry',
-        DlStatus.paused => 'Paused',
-        DlStatus.queued => 'Queued',
-        DlStatus.running => 'Downloading',
+        DlStatus.failed => context.l10n.retry,
+        DlStatus.paused => context.l10n.paused,
+        DlStatus.queued => context.l10n.queued,
+        DlStatus.running => context.l10n.downloading,
       };
       child = a.status == DlStatus.failed
           ? Icon(Icons.error_outline_rounded, key: const ValueKey('err'), color: c.danger, size: size * 0.62)
@@ -220,7 +221,7 @@ class DownloadIndicator extends StatelessWidget {
               ]),
             );
     } else {
-      tooltip = 'Download';
+      tooltip = context.l10n.download;
       onTap = onDownload;
       child = Icon(Icons.download_rounded, key: const ValueKey('idle'), color: c.inkMuted, size: size * 0.62);
     }

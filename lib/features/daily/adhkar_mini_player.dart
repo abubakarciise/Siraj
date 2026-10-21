@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/providers.dart';
 import '../../design/tokens.dart';
+import '../../l10n/l10n.dart';
 import 'adhkar_screen.dart' show adhkarIcons;
 
 /// Adhkar playing in the background: shown above the tabs, like the Quran
@@ -58,8 +59,8 @@ class AdhkarMiniPlayer extends ConsumerWidget {
                                 style: context.text.titleMedium?.copyWith(color: Colors.white)),
                             Text(
                               audio.waitingForReader
-                                  ? 'Dhikr ${audio.index + 1} · your turn to read'
-                                  : 'Dhikr ${audio.index + 1} of ${cat.items.length}',
+                                  ? context.l10n.dhikrYourTurn(audio.index + 1)
+                                  : context.l10n.dhikrOf(audio.index + 1, cat.items.length),
                               maxLines: 1,
                               style: context.text.bodySmall?.copyWith(color: Colors.white70),
                             ),
@@ -67,13 +68,13 @@ class AdhkarMiniPlayer extends ConsumerWidget {
                         ),
                       ),
                       IconButton(
-                        tooltip: audio.playing ? 'Pause' : 'Play',
+                        tooltip: audio.playing ? context.l10n.pause : context.l10n.play,
                         onPressed: audio.playing ? audio.pause : audio.resume,
                         icon: Icon(audio.playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
                             size: 30, color: Colors.white),
                       ),
                       IconButton(
-                        tooltip: 'Stop',
+                        tooltip: context.l10n.stop,
                         onPressed: audio.stop,
                         icon: const Icon(Icons.close_rounded, color: Colors.white70),
                       ),

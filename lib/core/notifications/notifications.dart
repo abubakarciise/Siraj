@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../../l10n/l10n.dart';
 
 /// The three kinds of reminder; each has its own Android channel, all with the
 /// phone's own notification sound.
@@ -16,15 +17,15 @@ enum ReminderKind { prayer, adhkar, daily }
 
 extension ReminderKindX on ReminderKind {
   String get title => switch (this) {
-        ReminderKind.prayer => 'Prayer times',
-        ReminderKind.adhkar => 'Morning & evening adhkar',
-        ReminderKind.daily => 'Daily reminders',
+        ReminderKind.prayer => l10n.prayerTimes,
+        ReminderKind.adhkar => l10n.morningEveningAdhkar,
+        ReminderKind.daily => l10n.dailyReminders,
       };
 
   String get description => switch (this) {
-        ReminderKind.prayer => 'A reminder when each prayer time begins',
-        ReminderKind.adhkar => 'A reminder to read the morning and evening adhkar',
-        ReminderKind.daily => 'An ayah, hadith, sunnah or dua through the day',
+        ReminderKind.prayer => l10n.channelPrayerDescription,
+        ReminderKind.adhkar => l10n.channelAdhkarDescription,
+        ReminderKind.daily => l10n.channelDailyDescription,
       };
 }
 
@@ -208,14 +209,14 @@ class NotificationService {
   Future<void> showTest(ReminderKind kind) => _plugin.show(
         id: testId,
         title: switch (kind) {
-          ReminderKind.prayer => 'Asr · العصر',
-          ReminderKind.adhkar => 'أذكار المساء · Evening adhkar',
-          ReminderKind.daily => 'Daily reminder',
+          ReminderKind.prayer => l10n.testPrayerTitle,
+          ReminderKind.adhkar => l10n.eveningAdhkarNotificationTitle,
+          ReminderKind.daily => l10n.testDailyTitle,
         },
         body: switch (kind) {
-          ReminderKind.prayer => 'It is time for Asr prayer',
-          ReminderKind.adhkar => 'Time for your evening remembrance',
-          ReminderKind.daily => '"Verily, in the remembrance of Allah do hearts find rest." (13:28)',
+          ReminderKind.prayer => l10n.prayerNotificationBody(l10n.asr),
+          ReminderKind.adhkar => l10n.testAdhkarBody,
+          ReminderKind.daily => l10n.testDailyBody,
         },
         notificationDetails: _details(kind),
         payload: '',

@@ -12,6 +12,7 @@ import '../../core/quran/models.dart';
 import '../../design/dialogs.dart';
 import '../../design/theme.dart';
 import '../../design/tokens.dart';
+import '../../l10n/l10n.dart';
 import '../player/play_actions.dart';
 import 'ayah_sheet.dart';
 import 'mushaf_page.dart';
@@ -199,7 +200,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 page: _page,
                 onPaper: () {
                   _scheduleHide();
-                  showAppSheet(context, title: 'Page colour', builder: (_) => const PaperPicker());
+                  showAppSheet(context, title: context.l10n.pageColour, builder: (_) => const PaperPicker());
                 },
               ),
             ),
@@ -341,20 +342,20 @@ class _ReaderTopBar extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(4, 4, 4, 6),
           child: Row(
             children: [
-              IconButton(tooltip: 'Back', icon: const Icon(Icons.arrow_back_rounded), onPressed: () => context.pop()),
+              IconButton(tooltip: context.l10n.back, icon: const Icon(Icons.arrow_back_rounded), onPressed: () => context.pop()),
               Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(surah.nameEn, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleMedium),
-                    Text(juz == null ? 'Page $page' : 'Juz $juz · Page $page', maxLines: 1, style: context.text.bodySmall),
+                    Text(juz == null ? context.l10n.pageNumber(page) : context.l10n.juzAndPage(juz!, page), maxLines: 1, style: context.text.bodySmall),
                   ],
                 ),
               ),
-              IconButton(tooltip: 'Page colour', icon: const Icon(Icons.palette_outlined), onPressed: onPaper),
+              IconButton(tooltip: context.l10n.pageColour, icon: const Icon(Icons.palette_outlined), onPressed: onPaper),
               IconButton(
-                tooltip: 'Search',
+                tooltip: context.l10n.search,
                 icon: const Icon(Icons.search_rounded),
                 onPressed: () => context.push('/search'),
               ),
@@ -405,7 +406,7 @@ class _ReaderDock extends StatelessWidget {
             Row(
               children: [
                 IconButton(
-                  tooltip: 'Previous surah',
+                  tooltip: context.l10n.previousSurah,
                   onPressed: onPrevSurah,
                   icon: const Icon(Icons.chevron_left_rounded),
                 ),
@@ -414,11 +415,11 @@ class _ReaderDock extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(surah.nameEn, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleMedium),
-                      Text(total == 1 ? 'One page' : 'Page $index of $total', maxLines: 1, style: context.text.bodySmall),
+                      Text(total == 1 ? context.l10n.onePage : context.l10n.pageOf(index, total), maxLines: 1, style: context.text.bodySmall),
                     ],
                   ),
                 ),
-                IconButton(tooltip: 'Next surah', onPressed: onNextSurah, icon: const Icon(Icons.chevron_right_rounded)),
+                IconButton(tooltip: context.l10n.nextSurah, onPressed: onNextSurah, icon: const Icon(Icons.chevron_right_rounded)),
                 const SizedBox(width: Space.xs),
                 _PlayButton(onPlayPage: onPlayPage),
               ],
@@ -468,7 +469,7 @@ class _PlayButton extends ConsumerWidget {
     final buffering = (state?.$2 ?? false) && !playing;
     return Semantics(
       button: true,
-      label: state == null ? 'Play this page' : (playing ? 'Pause' : 'Resume'),
+      label: state == null ? context.l10n.playThisPage : (playing ? context.l10n.pause : context.l10n.resume),
       child: Material(
         color: c.primary,
         shape: const CircleBorder(),
@@ -533,7 +534,7 @@ class _NowPlayingLine extends ConsumerWidget {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Stop',
+                  tooltip: context.l10n.stop,
                   visualDensity: VisualDensity.compact,
                   onPressed: ref.read(playerProvider).stop,
                   icon: Icon(Icons.close_rounded, size: 20, color: c.inkMuted),
@@ -617,11 +618,11 @@ class _Swatch extends StatelessWidget {
 
 extension MushafPaperX on MushafPaper {
   String get label => switch (this) {
-    MushafPaper.auto => 'Theme',
-    MushafPaper.ivory => 'Ivory',
-    MushafPaper.white => 'White',
-    MushafPaper.sepia => 'Sepia',
-    MushafPaper.dark => 'Dark',
-    MushafPaper.black => 'Black',
+    MushafPaper.auto => l10n.paperTheme,
+    MushafPaper.ivory => l10n.paperIvory,
+    MushafPaper.white => l10n.paperWhite,
+    MushafPaper.sepia => l10n.paperSepia,
+    MushafPaper.dark => l10n.paperDark,
+    MushafPaper.black => l10n.paperBlack,
   };
 }

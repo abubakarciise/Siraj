@@ -5,10 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../../app/shell.dart';
 import '../../core/providers.dart';
 import '../../design/dialogs.dart';
-import '../../design/theme.dart';
 import '../../design/hero.dart';
+import '../../design/theme.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/l10n.dart';
 
 /// The Quran tab: where you left off, quick picks, then every surah and juz.
 class QuranIndexScreen extends ConsumerStatefulWidget {
@@ -32,31 +33,34 @@ class _QuranIndexScreenState extends ConsumerState<QuranIndexScreen> {
       body: CustomScrollView(
         slivers: [
           HeroSliverAppBar(
-            title: 'Quran',
+            title: context.l10n.quran,
             subtitle: 'القرآن الكريم',
             art: HeroArt.quran,
             // Two everyday actions; the rest in a menu.
             actions: [
               IconButton(
-                tooltip: 'Search',
+                tooltip: context.l10n.search,
                 icon: const Icon(Icons.search_rounded),
                 onPressed: () => context.push('/search'),
               ),
               IconButton(
-                tooltip: 'Bookmarks & downloads',
+                tooltip: context.l10n.bookmarksAndDownloads,
                 icon: const Icon(Icons.bookmarks_outlined),
                 onPressed: () => context.push('/library'),
               ),
               PopupMenuButton<int>(
-                tooltip: 'More',
+                tooltip: context.l10n.more,
                 icon: const Icon(Icons.more_vert_rounded),
                 color: c.surface,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.md)),
                 onSelected: (v) => v == 0 ? _goToPage(context) : context.push('/memorize'),
-                itemBuilder: (_) => const [
-                  PopupMenuItem(value: 0, child: ListTile(leading: Icon(Icons.tag_rounded), title: Text('Go to page'))),
+                itemBuilder: (_) => [
                   PopupMenuItem(
-                      value: 1, child: ListTile(leading: Icon(Icons.fact_check_outlined), title: Text('Memorization test'))),
+                      value: 0, child: ListTile(leading: const Icon(Icons.tag_rounded), title: Text(context.l10n.goToPage))),
+                  PopupMenuItem(
+                      value: 1,
+                      child: ListTile(
+                          leading: const Icon(Icons.fact_check_outlined), title: Text(context.l10n.memorizationTest))),
                 ],
               ),
             ],
@@ -78,9 +82,9 @@ class _QuranIndexScreenState extends ConsumerState<QuranIndexScreen> {
                 child: SegmentedButton<int>(
                   expandedInsets: EdgeInsets.zero,
                   showSelectedIcon: false,
-                  segments: const [
-                    ButtonSegment(value: 0, label: Text('Surah')),
-                    ButtonSegment(value: 1, label: Text('Juz')),
+                  segments: [
+                    ButtonSegment(value: 0, label: Text(context.l10n.surah)),
+                    ButtonSegment(value: 1, label: Text(context.l10n.juz)),
                   ],
                   selected: {_tab},
                   onSelectionChanged: (s) => setState(() => _tab = s.first),
@@ -100,9 +104,9 @@ class _QuranIndexScreenState extends ConsumerState<QuranIndexScreen> {
     final ok = await showAppDialog(
       context,
       icon: Icons.menu_book_rounded,
-      title: 'Go to page',
-      message: 'Enter a page number from 1 to 604',
-      confirmLabel: 'Open',
+      title: context.l10n.goToPage,
+      message: context.l10n.enterPageNumber,
+      confirmLabel: context.l10n.open,
       content: TextField(
         controller: controller,
         autofocus: true,
@@ -163,7 +167,7 @@ class _ContinueCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      last == null ? 'START READING' : 'CONTINUE READING',
+                      last == null ? context.l10n.startReading : context.l10n.continueReading,
                       style: context.text.labelSmall?.copyWith(color: c.goldOnBrand),
                     ),
                     const SizedBox(height: Space.xs),
@@ -174,7 +178,7 @@ class _ContinueCard extends ConsumerWidget {
                       style: context.text.headlineSmall?.copyWith(color: c.onBrand),
                     ),
                     Text(
-                      last == null ? 'The Opening' : 'Page ${last.page} · Ayah ${last.ref.ayah}',
+                      last == null ? context.l10n.theOpening : context.l10n.pageAndAyah(last.page, last.ref.ayah),
                       style: context.text.bodyMedium?.copyWith(color: c.onBrand.withValues(alpha: 0.8)),
                     ),
                   ],
@@ -209,7 +213,7 @@ class _ContinueCard extends ConsumerWidget {
                 ),
                 onPressed: () => context.openReader(last?.page ?? 1),
                 icon: const Icon(Icons.menu_book_rounded, size: 18),
-                label: Text(last == null ? 'Open' : 'Continue'),
+                label: Text(last == null ? context.l10n.open : context.l10n.continueAction),
               ),
             ],
           ),
@@ -272,7 +276,7 @@ class _SurahList extends ConsumerWidget {
                           children: [
                             Text(s.nameEn, style: context.text.titleMedium),
                             Text(
-                              '${s.isMakki ? 'Makki' : 'Madani'} · ${s.ayahCount} ayahs · ${s.meaning}',
+                              context.l10n.surahInfo(s.isMakki ? context.l10n.makki : context.l10n.madani, s.ayahCount, s.meaning),
                               style: context.text.bodySmall,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -287,7 +291,7 @@ class _SurahList extends ConsumerWidget {
                             s.nameAr,
                             style: TextStyle(fontFamily: kQuranFont, fontSize: 21, color: c.primary, height: 1.4),
                           ),
-                          Text('p. ${s.pageStart}', style: context.text.bodySmall),
+                          Text(context.l10n.pageShort(s.pageStart), style: context.text.bodySmall),
                         ],
                       ),
                     ],
@@ -351,7 +355,7 @@ class _JuzGrid extends ConsumerWidget {
                   children: [
                     Row(
                       children: [
-                        Text('Juz ${j.number}', style: context.text.titleMedium),
+                        Text(context.l10n.juzNumberInt(j.number), style: context.text.titleMedium),
                         const Spacer(),
                         StarMedallion(number: j.number, size: 30, active: current),
                       ],
@@ -363,7 +367,7 @@ class _JuzGrid extends ConsumerWidget {
                       overflow: TextOverflow.ellipsis,
                       style: context.text.bodySmall,
                     ),
-                    Text('Page ${j.page}', style: context.text.bodySmall),
+                    Text(context.l10n.pageNumber(j.page), style: context.text.bodySmall),
                   ],
                 ),
               ),

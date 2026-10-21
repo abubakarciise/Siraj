@@ -8,9 +8,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app/app.dart';
 import 'app/payload.dart';
 import 'app/router.dart';
+import 'core/adhkar/adhkar.dart';
 import 'core/audio/audio_handler.dart';
 import 'core/audio/player_controller.dart';
-import 'core/adhkar/adhkar.dart';
 import 'core/audio/timing.dart';
 import 'core/downloads/download_manager.dart';
 import 'core/hadith/hadith.dart';
@@ -21,9 +21,13 @@ import 'core/quran/quran_db.dart';
 import 'core/reminders/reminders.dart';
 import 'core/settings.dart';
 import 'core/user/user_store.dart';
+import 'l10n/l10n.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Texts shown before the first screen (notifications, the player) use the phone's language too.
+  setL10nLocale(basicLocaleListResolution(
+      WidgetsBinding.instance.platformDispatcher.locales, AppLocalizations.supportedLocales));
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   // Phones stay in portrait (landscape leaves too little height for the
   // reader and player); tablets rotate freely.
@@ -38,9 +42,9 @@ Future<void> main() async {
 
   final handler = await AudioService.init(
     builder: QuranAudioHandler.new,
-    config: const AudioServiceConfig(
+    config: AudioServiceConfig(
       androidNotificationChannelId: 'com.quranapp.playback',
-      androidNotificationChannelName: 'Siraj playback',
+      androidNotificationChannelName: l10n.sirajPlayback,
       androidNotificationIcon: 'drawable/ic_stat_quran',
       // Paused audio can be swiped away from the notification shade.
       androidStopForegroundOnPause: true,

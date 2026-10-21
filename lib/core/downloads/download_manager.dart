@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../../l10n/l10n.dart';
 import '../audio/timing.dart';
 import '../catalog/catalog.dart';
 
@@ -69,10 +70,11 @@ class DownloadManager {
     ]);
     fd.configureNotificationForGroup(
       _group,
-      running: const TaskNotification('Downloading {displayName}', '{progress} · {networkSpeed}'),
-      complete: const TaskNotification('Ready offline', '{displayName}'),
-      error: const TaskNotification('Download failed', '{displayName}'),
-      paused: const TaskNotification('Download paused', '{displayName}'),
+      // {displayName}, {progress} and {networkSpeed} are filled in by the downloader.
+      running: TaskNotification(l10n.downloadingName('{displayName}'), '{progress} · {networkSpeed}'),
+      complete: TaskNotification(l10n.readyOfflineTitle, '{displayName}'),
+      error: TaskNotification(l10n.downloadFailed, '{displayName}'),
+      paused: TaskNotification(l10n.downloadPaused, '{displayName}'),
       progressBar: true,
       groupNotificationId: 'quran-audio',
     );
@@ -128,7 +130,7 @@ class DownloadManager {
           retries: 5,
           allowPause: true,
           priority: 0, // user initiated -> UIDT on Android 14+
-          displayName: 'Surah $s · $reciterName',
+          displayName: l10n.surahAndReciter(s, reciterName),
           metaData: '${r.timingReadId ?? ''}',
         ),
     ];

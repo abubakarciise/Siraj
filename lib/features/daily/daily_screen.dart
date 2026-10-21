@@ -8,6 +8,7 @@ import '../../design/hero.dart';
 import '../../design/theme.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/l10n.dart';
 import 'adhkar_screen.dart';
 import 'prayer_widgets.dart';
 
@@ -38,7 +39,7 @@ class DailyScreen extends ConsumerWidget {
       backgroundColor: Colors.transparent, // the tab's art shows through (TabBackdrop)
       body: CustomScrollView(
         slivers: [
-          HeroSliverAppBar(title: 'Daily', subtitle: 'اليوم', art: HeroArt.daily),
+          HeroSliverAppBar(title: context.l10n.daily, subtitle: 'اليوم', art: HeroArt.daily),
           const SliverPadding(
             padding: EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, 0),
             sliver: SliverToBoxAdapter(child: PrayerCard()),
@@ -65,7 +66,7 @@ class DailyScreen extends ConsumerWidget {
                           Text(moment.reason.toUpperCase(), style: context.text.labelSmall?.copyWith(color: c.goldOnBrand)),
                           Text(title, style: context.text.titleLarge?.copyWith(color: c.onBrand)),
                           Text(
-                            suggestedDone ? 'Completed today · تقبّل الله' : arabic,
+                            suggestedDone ? context.l10n.completedTodayAccepted : arabic,
                             style: context.text.bodyMedium?.copyWith(color: c.onBrand.withValues(alpha: 0.8)),
                           ),
                         ],
@@ -80,7 +81,7 @@ class DailyScreen extends ConsumerWidget {
               ),
             ),
           ),
-          const SliverToBoxAdapter(child: SectionTitle('Essentials')),
+          SliverToBoxAdapter(child: SectionTitle(context.l10n.essentials)),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
             sliver: SliverGrid(
@@ -92,16 +93,16 @@ class DailyScreen extends ConsumerWidget {
                 mainAxisExtent: 86 + context.ts(46),
               ),
               delegate: SliverChildListDelegate([
-                _Tile(Icons.auto_stories_rounded, 'Adhkar', 'الأذكار', const Color(0xFF0F5C4A), () => context.push('/adhkar')),
-                _Tile(Icons.blur_circular_rounded, 'Tasbih', 'التسبيح', const Color(0xFF8A6A2B), () => context.push('/tasbih')),
-                _Tile(Icons.access_time_filled_rounded, 'Prayer times', 'مواقيت الصلاة', const Color(0xFF8A6A2B), () => context.push('/prayer')),
-                _Tile(Icons.explore_rounded, 'Qibla', 'القبلة', const Color(0xFF0F5C4A), () => context.push('/qibla')),
-                _Tile(Icons.bedtime_rounded, 'Before sleep', 'أذكار النوم', const Color(0xFF0F5C4A), () => context.push('/adhkar/sleep')),
-                _Tile(Icons.mosque_rounded, 'After prayer', 'بعد الصلاة', const Color(0xFF8A6A2B), () => context.push('/adhkar/after_salah')),
+                _Tile(Icons.auto_stories_rounded, context.l10n.adhkar, 'الأذكار', const Color(0xFF0F5C4A), () => context.push('/adhkar')),
+                _Tile(Icons.blur_circular_rounded, context.l10n.tasbih, 'التسبيح', const Color(0xFF8A6A2B), () => context.push('/tasbih')),
+                _Tile(Icons.access_time_filled_rounded, context.l10n.prayerTimes, 'مواقيت الصلاة', const Color(0xFF8A6A2B), () => context.push('/prayer')),
+                _Tile(Icons.explore_rounded, context.l10n.qibla, 'القبلة', const Color(0xFF0F5C4A), () => context.push('/qibla')),
+                _Tile(Icons.bedtime_rounded, context.l10n.beforeSleep, 'أذكار النوم', const Color(0xFF0F5C4A), () => context.push('/adhkar/sleep')),
+                _Tile(Icons.mosque_rounded, context.l10n.afterPrayer, 'بعد الصلاة', const Color(0xFF8A6A2B), () => context.push('/adhkar/after_salah')),
               ]),
             ),
           ),
-          const SliverToBoxAdapter(child: SectionTitle('Reminders')),
+          SliverToBoxAdapter(child: SectionTitle(context.l10n.reminders)),
           const SliverToBoxAdapter(child: _Reminders()),
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
         ],
@@ -156,8 +157,8 @@ class _Reminders extends StatelessWidget {
           const SizedBox(width: Space.lg),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Reminders', style: context.text.titleMedium),
-              Text('Adhkar, prayer times and daily reminders', style: context.text.bodySmall),
+              Text(context.l10n.reminders, style: context.text.titleMedium),
+              Text(context.l10n.remindersCardSubtitle, style: context.text.bodySmall),
             ]),
           ),
           Icon(Icons.chevron_right_rounded, color: c.inkMuted),

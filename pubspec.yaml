@@ -54,6 +54,9 @@ dependencies:
   flutter_compass: ^0.8.1
   hijri: ^3.0.1
   scrollable_positioned_list: ^0.3.8
+  flutter_localizations:
+    sdk: flutter
+  intl: any
 
 dev_dependencies:
   flutter_test:
@@ -73,6 +76,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  # The app's texts come from lib/l10n/app_*.arb (one file per language).
+  generate: true
 
   assets:
     - assets/db/quran.db

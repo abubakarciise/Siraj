@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 
+import '../../l10n/l10n.dart';
+
 /// Another kind of audio (adhkar) that borrows the media session: the lock
 /// screen and notification controls are routed to it while it plays.
 abstract class ExternalPlayback {
@@ -58,7 +60,7 @@ class QuranAudioHandler extends BaseAudioHandler with SeekHandler {
   Timer? _idle;
 
   /// "Close" on the notification: Android 13+ media controls do not show Stop.
-  static final _close = MediaControl.custom(androidIcon: 'drawable/ic_media_close', label: 'Close', name: 'close');
+  static final _close = MediaControl.custom(androidIcon: 'drawable/ic_media_close', label: l10n.close, name: 'close');
 
   @override
   Future<dynamic> customAction(String name, [Map<String, dynamic>? extras]) async {

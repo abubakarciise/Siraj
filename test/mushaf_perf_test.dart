@@ -10,6 +10,7 @@ import 'package:quran_app/core/quran/models.dart';
 import 'package:quran_app/design/theme.dart';
 import 'package:quran_app/design/tokens.dart';
 import 'package:quran_app/features/reader/mushaf_page.dart';
+import 'package:quran_app/l10n/app_localizations.dart';
 
 void main() {
   final fixture = jsonDecode(File('test/fixtures/pages.json').readAsStringSync()) as Map<String, dynamic>;
@@ -40,6 +41,8 @@ void main() {
     addTearDown(tester.view.reset);
 
     Future<void> pump(AyahRef playing) => tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
           theme: buildTheme(AppThemeKind.light),
           home: Scaffold(body: MushafPageView(page: page, surahNames: (s) => names[s]!, playing: playing)),
         ));

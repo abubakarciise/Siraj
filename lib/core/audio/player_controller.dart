@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 
+import '../../l10n/l10n.dart';
 import '../catalog/catalog.dart';
 import '../downloads/download_manager.dart';
 import '../quran/models.dart';
@@ -425,5 +426,5 @@ class PlayerController {
 class OfflineException implements Exception {
   const OfflineException();
   @override
-  String toString() => 'No internet connection and nothing downloaded for this reciter.';
+  String toString() => l10n.noInternetNothingDownloaded;
 }

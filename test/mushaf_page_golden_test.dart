@@ -10,6 +10,7 @@ import 'package:quran_app/core/quran/models.dart';
 import 'package:quran_app/design/theme.dart';
 import 'package:quran_app/design/tokens.dart';
 import 'package:quran_app/features/reader/mushaf_page.dart';
+import 'package:quran_app/l10n/app_localizations.dart';
 
 Future<void> _loadFont(String family, String path) async {
   final bytes = File(path).readAsBytesSync();
@@ -60,6 +61,8 @@ void main() {
       tester.view.devicePixelRatio = 2.6;
       addTearDown(tester.view.reset);
       await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         debugShowCheckedModeBanner: false,
         theme: buildTheme(theme),
         home: Builder(

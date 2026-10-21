@@ -10,6 +10,7 @@ import '../../core/quran/models.dart';
 import '../../design/theme.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/l10n.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -86,8 +87,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             autofocus: true,
             onChanged: _onChanged,
             textInputAction: TextInputAction.search,
-            decoration: const InputDecoration(
-              hintText: 'Surah, 2:255, الرحمن, mercy…',
+            decoration: InputDecoration(
+              hintText: context.l10n.searchHint,
               prefixIcon: Icon(Icons.search_rounded),
             ),
           ),
@@ -99,33 +100,33 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           if (jump != null)
             ListTile(
               leading: Icon(Icons.subdirectory_arrow_right_rounded, color: c.primary),
-              title: Text('Go to ${db.surah(jump.surah).nameEn} $jump'),
+              title: Text(context.l10n.goTo(db.surah(jump.surah).nameEn, '$jump')),
               onTap: () async {
                 final page = await db.pageOf(jump!);
                 if (context.mounted) context.openReader(page, ayah: jump.toString());
               },
             ),
           if (surahHits.isNotEmpty) ...[
-            const SectionTitle('Surahs'),
+            SectionTitle(context.l10n.surahs),
             for (final s in surahHits)
               ListTile(
                 leading: StarMedallion(number: s.id, size: 38),
                 title: Text(s.nameEn),
-                subtitle: Text('${s.meaning} · ${s.ayahCount} ayahs'),
+                subtitle: Text(context.l10n.meaningAndAyahs(s.meaning, s.ayahCount)),
                 trailing: Text(s.nameAr, style: TextStyle(fontFamily: kQuranFont, fontSize: 20, color: c.ink)),
                 onTap: () => context.openReader(s.pageStart, surah: s.id),
               ),
           ],
           if (_loading) const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
           if (_hits.isNotEmpty) ...[
-            SectionTitle('${_hits.length >= 100 ? '100+' : _hits.length} ayahs'),
+            SectionTitle(context.l10n.ayahsFound(_hits.length >= 100 ? '100+' : '${_hits.length}')),
             for (final h in _hits)
               InkWell(
                 onTap: () => context.openReader(h.ayah.page, ayah: h.ayah.ref.toString()),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: Space.gutter, vertical: Space.md),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                    Text('${db.surah(h.ayah.ref.surah).nameEn} ${h.ayah.ref} · page ${h.ayah.page}',
+                    Text(context.l10n.searchHitReference(db.surah(h.ayah.ref.surah).nameEn, '${h.ayah.ref}', h.ayah.page),
                         style: context.text.labelSmall?.copyWith(color: c.gold)),
                     const SizedBox(height: 6),
                     h.isTranslation
@@ -142,7 +143,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           if (!_loading && _q.trim().length >= 2 && _hits.isEmpty && surahHits.isEmpty && jump == null)
             Padding(
               padding: const EdgeInsets.all(Space.xxxl),
-              child: Text('No results', textAlign: TextAlign.center, style: context.text.bodyMedium),
+              child: Text(context.l10n.noResults, textAlign: TextAlign.center, style: context.text.bodyMedium),
             ),
         ],
       ),

@@ -7,6 +7,7 @@ import '../../core/settings.dart';
 import '../../design/dialogs.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/l10n.dart';
 import '../reader/reader_screen.dart' show PaperPicker, MushafPaperX;
 
 const kAppName = 'Siraj';
@@ -24,16 +25,16 @@ class SettingsScreen extends ConsumerWidget {
     final translation = switch (s.translation) {
       'en_sahih' => 'English · Saheeh International',
       'so_abduh' => 'Soomaali · Mahmud Muhammad Abduh',
-      _ => 'Off',
+      _ => context.l10n.off,
     };
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text(context.l10n.settings)),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, 40),
         children: [
           // ---- Appearance: what the app looks like, at a glance ----
-          const GroupHeader('Appearance'),
+          GroupHeader(context.l10n.appearance),
           Row(children: [
             for (final t in ThemePref.values) ...[
               if (t != ThemePref.values.first) const SizedBox(width: Space.sm),
@@ -47,28 +48,28 @@ class SettingsScreen extends ConsumerWidget {
             SettingsRow(
               icon: Icons.palette_rounded,
               color: const Color(0xFF8A6A2B),
-              title: 'Mushaf page colour',
-              value: s.paper == MushafPaper.auto ? 'Same as the app' : s.paper.label,
-              onTap: () => showAppSheet(context, title: 'Mushaf page colour', builder: (_) => const PaperPicker()),
+              title: context.l10n.mushafPageColour,
+              value: s.paper == MushafPaper.auto ? context.l10n.sameAsApp : s.paper.label,
+              onTap: () => showAppSheet(context, title: context.l10n.mushafPageColour, builder: (_) => const PaperPicker()),
             ),
           ]),
 
           // ---- Reading ----
-          const GroupHeader('Reading'),
+          GroupHeader(context.l10n.readingGroup),
           SettingsGroup(children: [
             SettingsRow(
               icon: Icons.translate_rounded,
               color: const Color(0xFF0F5C4A),
-              title: 'Translation',
+              title: context.l10n.translation,
               value: translation,
               onTap: () => showAppSheet(
                 context,
-                title: 'Translation',
+                title: context.l10n.translation,
                 builder: (ctx) => Column(mainAxisSize: MainAxisSize.min, children: [
-                  for (final (slug, label) in const [
+                  for (final (slug, label) in [
                     ('en_sahih', 'English · Saheeh International'),
                     ('so_abduh', 'Soomaali · Mahmud Muhammad Abduh'),
-                    ('', 'Off'),
+                    ('', context.l10n.off),
                   ])
                     ListTile(
                       contentPadding: EdgeInsets.zero,
@@ -85,65 +86,65 @@ class SettingsScreen extends ConsumerWidget {
             SettingsSwitch(
               icon: Icons.auto_stories_rounded,
               color: const Color(0xFF8A6A2B),
-              title: 'Turn pages with the recitation',
+              title: context.l10n.turnPagesWithRecitation,
               value: s.followAudio,
               onChanged: (v) => n.update((x) => x.copyWith(followAudio: v)),
             ),
             SettingsSwitch(
               icon: Icons.light_mode_rounded,
               color: const Color(0xFF0F5C4A),
-              title: 'Keep the screen on while reading',
+              title: context.l10n.keepScreenOn,
               value: s.keepScreenOn,
               onChanged: (v) => n.update((x) => x.copyWith(keepScreenOn: v)),
             ),
           ]),
 
           // ---- Listening ----
-          const GroupHeader('Listening & downloads'),
+          GroupHeader(context.l10n.listeningAndDownloads),
           SettingsGroup(children: [
             SettingsSwitch(
               icon: Icons.wifi_rounded,
               color: const Color(0xFF8A6A2B),
-              title: 'Download on Wi-Fi only',
+              title: context.l10n.downloadOnWifiOnly,
               value: s.wifiOnly,
               onChanged: (v) => n.update((x) => x.copyWith(wifiOnly: v)),
             ),
             SettingsRow(
               icon: Icons.download_done_rounded,
               color: const Color(0xFF0F5C4A),
-              title: 'Downloads & bookmarks',
+              title: context.l10n.downloadsAndBookmarks,
               onTap: () => context.push('/library'),
             ),
           ]),
 
           // ---- Reminders ----
-          const GroupHeader('Reminders'),
+          GroupHeader(context.l10n.reminders),
           SettingsGroup(children: [
             SettingsRow(
               icon: Icons.notifications_active_rounded,
               color: const Color(0xFF8A6A2B),
-              title: 'Reminders & sound',
+              title: context.l10n.remindersAndSound,
               value: daily.enabled
-                  ? 'Daily reminders every ${daily.everyHours == 1 ? 'hour' : '${daily.everyHours} hours'}'
-                  : 'Adhkar, prayer and daily reminders',
+                  ? context.l10n.dailyRemindersEvery(daily.everyHours)
+                  : context.l10n.remindersCardSubtitleShort,
               onTap: () => context.push('/reminders'),
             ),
             SettingsRow(
               icon: Icons.mosque_rounded,
               color: const Color(0xFF0F5C4A),
-              title: 'Prayer times',
+              title: context.l10n.prayerTimes,
               onTap: () => context.push('/prayer'),
             ),
           ]),
 
           // ---- About ----
-          const GroupHeader('About'),
+          GroupHeader(context.l10n.about),
           SettingsGroup(children: [
             SettingsRow(
               icon: Icons.info_rounded,
               color: const Color(0xFF56635D),
-              title: 'About $kAppName',
-              value: 'Version $kAppVersion · free and open source',
+              title: context.l10n.aboutApp(kAppName),
+              value: context.l10n.versionFreeOpenSource(kAppVersion),
               onTap: () => showAppSheet(context, title: kAppName, builder: (_) => const _About()),
             ),
           ]),
@@ -170,15 +171,15 @@ class _ThemeCard extends StatelessWidget {
     final platformDark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
     final preview = AppColors.of(const AppSettings().copyWith(theme: pref).resolve(platformDark));
     final label = switch (pref) {
-      ThemePref.system => 'Auto',
-      ThemePref.light => 'Light',
-      ThemePref.dark => 'Dark',
-      ThemePref.midnight => 'Midnight',
+      ThemePref.system => context.l10n.themeAuto,
+      ThemePref.light => context.l10n.themeLight,
+      ThemePref.dark => context.l10n.themeDark,
+      ThemePref.midnight => context.l10n.themeMidnight,
     };
     return Semantics(
       button: true,
       selected: selected,
-      label: '$label theme',
+      label: context.l10n.themeSemantics(label),
       child: GestureDetector(
         onTap: onTap,
         child: Column(children: [
@@ -241,19 +242,20 @@ class _Sources extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const items = [
-      ('Quran text & font', 'King Fahd Glorious Quran Printing Complex (KFGQPC), Uthmanic Hafs v18.'),
-      ('Mushaf page layout', 'KFGQPC Hafs 15-line layout, via Quran.com (Quran Foundation).'),
-      ('Translations', 'Saheeh International; Mahmud Muhammad Abduh (Somali), via Quran.com.'),
-      ('Recitations', 'MP3Quran.net: reciters, audio files and ayah timings. Audio streams and downloads directly from their servers.'),
-      ('Adhkar', "Hisn al-Muslim by Sa'id bin Ali bin Wahf Al-Qahtani; Quran passages from the KFGQPC text."),
-      ('Hadith', 'Arabic texts, English translations and grades from the hadith-api project by Fawaz Ahmed (public domain).'),
-      ('Hijri calendar', 'Umm al-Qura calculation, adjustable for local moon sighting.'),
-      ('Adhkar recordings', 'hisnmuslim.com (Hisn al-Muslim) and, for Quranic adhkar, Mishary Alafasy via everyayah.com. Included in the app, so they play offline.'),
-      ('App icon', 'The name سراج in Amiri Bold (SIL Open Font License).'),
-      ('Reminder sound', 'Pixie Dust, from the Android Open Source Project (Apache 2.0).'),
-      ('Prayer times & Qibla', 'Calculated on your phone with the open-source Adhan library.'),
-      ('UI font', 'IBM Plex Sans Arabic (SIL Open Font License).'),
+    final l10n = context.l10n;
+    final items = [
+      (l10n.sourceQuranText, l10n.sourceQuranTextDetail),
+      (l10n.sourceLayout, l10n.sourceLayoutDetail),
+      (l10n.sourceTranslations, l10n.sourceTranslationsDetail),
+      (l10n.sourceRecitations, l10n.sourceRecitationsDetail),
+      (l10n.adhkar, l10n.sourceAdhkarDetail),
+      (l10n.hadith, l10n.sourceHadithDetail),
+      (l10n.sourceHijri, l10n.sourceHijriDetail),
+      (l10n.sourceAdhkarAudio, l10n.sourceAdhkarAudioDetail),
+      (l10n.sourceAppIcon, l10n.sourceAppIconDetail),
+      (l10n.sourceReminderSound, l10n.sourceReminderSoundDetail),
+      (l10n.sourcePrayer, l10n.sourcePrayerDetail),
+      (l10n.sourceUiFont, l10n.sourceUiFontDetail),
     ];
     return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
       for (final (t, d) in items) ...[
@@ -272,16 +274,16 @@ class _About extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text('Quran, Hadith and a daily guide. Version $kAppVersion.', style: context.text.bodyLarge),
+      Text(context.l10n.aboutIntro(kAppVersion), style: context.text.bodyLarge),
       const SizedBox(height: Space.md),
-      Text('No account, no ads, no tracking. Your bookmarks, history and downloads stay on this phone.',
+      Text(context.l10n.aboutPrivacy,
           style: context.text.bodyMedium?.copyWith(color: c.inkMuted)),
       const SizedBox(height: Space.md),
-      Text('Free and open source: $kRepoUrl', style: context.text.bodyMedium?.copyWith(color: c.inkMuted)),
+      Text(context.l10n.aboutOpenSource(kRepoUrl), style: context.text.bodyMedium?.copyWith(color: c.inkMuted)),
       const SizedBox(height: Space.lg),
       OutlinedButton(
-        onPressed: () => showAppSheet(context, title: 'Sources', builder: (_) => const _Sources()),
-        child: const Text('Sources of the texts and audio'),
+        onPressed: () => showAppSheet(context, title: context.l10n.sources, builder: (_) => const _Sources()),
+        child: Text(context.l10n.sourcesButton),
       ),
       const SizedBox(height: Space.sm),
       OutlinedButton(
@@ -289,9 +291,9 @@ class _About extends StatelessWidget {
           context: context,
           applicationName: kAppName,
           applicationVersion: kAppVersion,
-          applicationLegalese: 'Quran · Hadith · Daily guide. Free and open source.',
+          applicationLegalese: context.l10n.licenseLegalese,
         ),
-        child: const Text('Open-source licenses'),
+        child: Text(context.l10n.openSourceLicenses),
       ),
     ]);
   }

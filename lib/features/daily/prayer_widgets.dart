@@ -7,15 +7,16 @@ import '../../core/providers.dart';
 import '../../design/dialogs.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/l10n.dart';
 
 String formatTime(BuildContext context, DateTime t) =>
     MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(t));
 
 String formatCountdown(Duration d) {
   final h = d.inHours, m = d.inMinutes % 60, s = d.inSeconds % 60;
-  if (h > 0) return '${h}h ${m.toString().padLeft(2, '0')}m';
-  if (m > 0) return '${m}m ${s.toString().padLeft(2, '0')}s';
-  return '${s}s';
+  if (h > 0) return l10n.countdownHoursMinutes(h, m.toString().padLeft(2, '0'));
+  if (m > 0) return l10n.countdownMinutesSeconds(m, s.toString().padLeft(2, '0'));
+  return l10n.countdownSeconds(s);
 }
 
 /// Next-prayer card with live countdown and a five-prayer timeline.
@@ -41,8 +42,8 @@ class PrayerCard extends ConsumerWidget {
           const SizedBox(width: Space.lg),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Prayer times', style: context.text.titleMedium),
-              Text('Set your location to see prayer times and Qibla', style: context.text.bodySmall),
+              Text(context.l10n.prayerTimes, style: context.text.titleMedium),
+              Text(context.l10n.setLocationForPrayerTimes, style: context.text.bodySmall),
             ]),
           ),
           Icon(Icons.chevron_right_rounded, color: c.inkMuted),
@@ -60,8 +61,8 @@ class PrayerCard extends ConsumerWidget {
         Row(children: [
           Icon(Icons.place_outlined, size: 16, color: c.inkMuted),
           const SizedBox(width: 4),
-          Expanded(child: Text(settings.place ?? 'My location', style: context.text.bodySmall)),
-          Text(focus?.started ?? false ? 'PRAYER TIME · NOW' : 'NEXT PRAYER',
+          Expanded(child: Text(settings.place ?? context.l10n.myLocation, style: context.text.bodySmall)),
+          Text(focus?.started ?? false ? context.l10n.prayerTimeNow : context.l10n.nextPrayer,
               style: context.text.labelSmall?.copyWith(color: focus?.started ?? false ? c.primary : null)),
         ]),
         const SizedBox(height: Space.sm),
@@ -69,7 +70,7 @@ class PrayerCard extends ConsumerWidget {
           Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(next.$1.en, style: context.text.headlineSmall),
+                Text(next.$1.label, style: context.text.headlineSmall),
                 Text(next.$1.ar, style: context.text.bodyMedium?.copyWith(color: c.inkMuted)),
               ]),
             ),
@@ -77,8 +78,8 @@ class PrayerCard extends ConsumerWidget {
               Text(formatTime(context, next.$2), style: context.text.headlineSmall?.copyWith(color: c.primary)),
               Text(
                   focus!.started
-                      ? 'began ${formatCountdown(now.difference(next.$2))} ago'
-                      : 'in ${formatCountdown(next.$2.difference(now))}',
+                      ? context.l10n.beganAgo(formatCountdown(now.difference(next.$2)))
+                      : context.l10n.inTime(formatCountdown(next.$2.difference(now))),
                   style: context.text.bodySmall),
             ]),
           ]),
@@ -105,7 +106,7 @@ class PrayerCard extends ConsumerWidget {
                   // Never wrap mid-word on narrow screens or with large system fonts.
                   FittedBox(
                     fit: BoxFit.scaleDown,
-                    child: Text(s.en,
+                    child: Text(s.label,
                         maxLines: 1,
                         style: context.text.labelSmall?.copyWith(
                             color: s == current || s == next?.$1 ? c.ink : c.inkMuted,
@@ -143,7 +144,7 @@ Future<void> showLocationSheet(
 }) =>
     showAppSheet(
       context,
-      title: 'Your location',
+      title: context.l10n.yourLocation,
       builder: (_) => _LocationSheet(onGps: onGps, onCity: onCity),
     );
 
@@ -171,7 +172,7 @@ class _LocationSheetState extends ConsumerState<_LocationSheet> {
       }
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      if (mounted) showToast(context, '$e. You can pick your city instead.');
+      if (mounted) showToast(context, context.l10n.locationErrorPickCity('$e'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -182,7 +183,7 @@ class _LocationSheetState extends ConsumerState<_LocationSheet> {
     final c = context.colors;
     final cities = kCities.where((x) => x.name.toLowerCase().contains(_query.toLowerCase())).toList();
     return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text('Used only on your phone to calculate prayer times and the Qibla direction.',
+      Text(context.l10n.locationUseNote,
           style: context.text.bodySmall),
       const SizedBox(height: Space.lg),
       FilledButton.icon(
@@ -190,12 +191,12 @@ class _LocationSheetState extends ConsumerState<_LocationSheet> {
         icon: _busy
             ? SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2, color: c.onPrimary))
             : const Icon(Icons.my_location_rounded),
-        label: Text(_busy ? 'Finding you…' : 'Use my current location'),
+        label: Text(_busy ? context.l10n.findingYou : context.l10n.useMyCurrentLocation),
       ),
       const SizedBox(height: Space.lg),
       TextField(
         onChanged: (v) => setState(() => _query = v),
-        decoration: const InputDecoration(prefixIcon: Icon(Icons.search_rounded), hintText: 'Or search a city'),
+        decoration: InputDecoration(prefixIcon: Icon(Icons.search_rounded), hintText: context.l10n.orSearchCity),
       ),
       const SizedBox(height: Space.sm),
       for (final city in cities)

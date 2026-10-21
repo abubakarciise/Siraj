@@ -6,6 +6,7 @@ import '../core/providers.dart';
 import '../design/tokens.dart';
 import '../features/daily/adhkar_mini_player.dart';
 import '../features/player/mini_player.dart';
+import '../l10n/l10n.dart';
 
 class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.shell, required this.location});
@@ -31,15 +32,15 @@ class AppShell extends ConsumerWidget {
               selectedIndex: shell.currentIndex,
               onDestinationSelected: (i) => shell.goBranch(i, initialLocation: i == shell.currentIndex),
               destinations: [
-                const NavigationDestination(
+                NavigationDestination(
                   icon: Icon(Icons.home_outlined),
                   selectedIcon: Icon(Icons.home_rounded),
-                  label: 'Home',
+                  label: context.l10n.home,
                 ),
-                const NavigationDestination(
+                NavigationDestination(
                   icon: Icon(Icons.menu_book_outlined),
                   selectedIcon: Icon(Icons.menu_book_rounded),
-                  label: 'Quran',
+                  label: context.l10n.quran,
                 ),
                 NavigationDestination(
                   icon: Badge(
@@ -54,17 +55,17 @@ class AppShell extends ConsumerWidget {
                     backgroundColor: c.gold,
                     child: const Icon(Icons.headphones_rounded),
                   ),
-                  label: 'Listen',
+                  label: context.l10n.listen,
                 ),
-                const NavigationDestination(
+                NavigationDestination(
                   icon: Icon(Icons.auto_stories_outlined),
                   selectedIcon: Icon(Icons.auto_stories_rounded),
-                  label: 'Hadith',
+                  label: context.l10n.hadith,
                 ),
-                const NavigationDestination(
+                NavigationDestination(
                   icon: Icon(Icons.wb_twilight_outlined),
                   selectedIcon: Icon(Icons.wb_twilight_rounded),
-                  label: 'Daily',
+                  label: context.l10n.daily,
                 ),
               ],
             ),

@@ -10,6 +10,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../../l10n/l10n.dart';
 import '../quran/arabic.dart';
 
 class HadithBook {
@@ -340,7 +341,7 @@ class HadithRepository {
       emit(HadithDownload(book, HadithDlStage.done, 1));
     } catch (e) {
       debugPrint('Hadith download $book failed: $e');
-      emit(HadithDownload(book, HadithDlStage.failed, 0, 'Download failed. Check your connection and try again.'));
+      emit(HadithDownload(book, HadithDlStage.failed, 0, l10n.hadithDownloadFailed));
     }
   }
 

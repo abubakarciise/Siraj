@@ -10,17 +10,30 @@ import '../../core/providers.dart';
 import '../../design/theme.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/l10n.dart';
 
 const _phrases = [
-  ('سُبْحَانَ اللَّهِ', 'SubhanAllah'),
-  ('الْحَمْدُ لِلَّهِ', 'Alhamdulillah'),
-  ('اللَّهُ أَكْبَرُ', 'Allahu Akbar'),
-  ('لَا إِلَهَ إِلَّا اللَّهُ', 'La ilaha illa Allah'),
-  ('أَسْتَغْفِرُ اللَّهَ', 'Astaghfirullah'),
-  ('سُبْحَانَ اللَّهِ وَبِحَمْدِهِ', 'SubhanAllahi wa bihamdih'),
-  ('لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ', 'La hawla wa la quwwata'),
-  ('اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ', 'Salawat'),
+  'سُبْحَانَ اللَّهِ',
+  'الْحَمْدُ لِلَّهِ',
+  'اللَّهُ أَكْبَرُ',
+  'لَا إِلَهَ إِلَّا اللَّهُ',
+  'أَسْتَغْفِرُ اللَّهَ',
+  'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ',
+  'لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ',
+  'اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ',
 ];
+
+/// The name of dhikr [i] of [_phrases], in the app's language.
+String _phraseName(AppLocalizations l10n, int i) => [
+      l10n.tasbihSubhanallah,
+      l10n.tasbihAlhamdulillah,
+      l10n.tasbihAllahuAkbar,
+      l10n.tasbihLaIlaha,
+      l10n.tasbihAstaghfirullah,
+      l10n.tasbihSubhanallahiWaBihamdih,
+      l10n.tasbihLaHawla,
+      l10n.tasbihSalawat,
+    ][i];
 
 const _gold = Color(0xFFE2BC6E);
 
@@ -113,21 +126,21 @@ class _TasbihScreenState extends ConsumerState<TasbihScreen> with SingleTickerPr
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final (ar, en) = _phrases[_phrase];
+    final ar = _phrases[_phrase], en = _phraseName(context.l10n, _phrase);
     final lit = _count % _round == 0 && _count > 0 && !_endless ? _round : _count % _round;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tasbih · التسبيح'),
+        title: Text(context.l10n.tasbihTitle),
         actions: [
           IconButton(
-            tooltip: 'Your tasbih',
+            tooltip: context.l10n.yourTasbih,
             icon: const Icon(Icons.insights_rounded),
             onPressed: () async {
               await Navigator.of(context).push(MaterialPageRoute(builder: (_) => TasbihStatsScreen(log: _log)));
               if (mounted) setState(() => _today = _log.onDay(DateTime.now()));
             },
           ),
-          IconButton(tooltip: 'Start again', icon: const Icon(Icons.restart_alt_rounded), onPressed: _reset),
+          IconButton(tooltip: context.l10n.startAgain, icon: const Icon(Icons.restart_alt_rounded), onPressed: _reset),
         ],
       ),
       body: SafeArea(
@@ -190,7 +203,7 @@ class _TasbihScreenState extends ConsumerState<TasbihScreen> with SingleTickerPr
                                         height: 1.1,
                                       ),
                                     ),
-                                    Text(_endless ? 'Tap anywhere' : 'of $_round', style: context.text.bodySmall),
+                                    Text(_endless ? context.l10n.tapAnywhere : context.l10n.ofRound(_round), style: context.text.bodySmall),
                                   ],
                                 ),
                               ),
@@ -209,7 +222,7 @@ class _TasbihScreenState extends ConsumerState<TasbihScreen> with SingleTickerPr
                   children: [
                     _Arrow(
                       icon: Icons.chevron_left_rounded,
-                      tooltip: 'Previous dhikr',
+                      tooltip: context.l10n.previousDhikr,
                       onTap: () => _select(_phrase - 1),
                     ),
                     Expanded(
@@ -239,7 +252,7 @@ class _TasbihScreenState extends ConsumerState<TasbihScreen> with SingleTickerPr
                         ],
                       ),
                     ),
-                    _Arrow(icon: Icons.chevron_right_rounded, tooltip: 'Next dhikr', onTap: () => _select(_phrase + 1)),
+                    _Arrow(icon: Icons.chevron_right_rounded, tooltip: context.l10n.nextDhikr, onTap: () => _select(_phrase + 1)),
                   ],
                 ),
               ),
@@ -268,10 +281,10 @@ class _TasbihScreenState extends ConsumerState<TasbihScreen> with SingleTickerPr
                   children: [
                     // Without a limit there are no rounds, only the count.
                     if (!_endless) ...[
-                      _Stat(label: 'Rounds of 33', value: '$_rounds'),
+                      _Stat(label: context.l10n.roundsOf33, value: '$_rounds'),
                       const SizedBox(width: Space.md),
                     ],
-                    _Stat(label: 'Today', value: '$_today'),
+                    _Stat(label: context.l10n.today, value: '$_today'),
                   ],
                 ),
               ),
@@ -354,10 +367,9 @@ class TasbihStatsScreen extends StatelessWidget {
       }
     }
     final best = byPhrase.fold(0, math.max);
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Your tasbih')),
+      appBar: AppBar(title: Text(context.l10n.yourTasbih)),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xxl),
         children: [
@@ -377,9 +389,9 @@ class TasbihStatsScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(streak == 1 ? '1 day in a row' : '$streak days in a row', style: context.text.titleLarge),
+                      Text(context.l10n.daysInARow(streak), style: context.text.titleLarge),
                       Text(
-                        streak == 0 ? 'Start today: a few taps are enough' : 'Keep it going, a little every day',
+                        streak == 0 ? context.l10n.streakStart : context.l10n.streakKeepGoing,
                         style: context.text.bodySmall,
                       ),
                     ],
@@ -391,20 +403,20 @@ class TasbihStatsScreen extends StatelessWidget {
           const SizedBox(height: Space.md),
           Row(
             children: [
-              _Stat(label: 'Today', value: '${log.onDay(today, data)}'),
+              _Stat(label: context.l10n.today, value: '${log.onDay(today, data)}'),
               const SizedBox(width: Space.sm),
-              _Stat(label: '7 days', value: '${sumDays(7)}'),
+              _Stat(label: context.l10n.sevenDays, value: '${sumDays(7)}'),
             ],
           ),
           const SizedBox(height: Space.sm),
           Row(
             children: [
-              _Stat(label: '30 days', value: '${sumDays(30)}'),
+              _Stat(label: context.l10n.thirtyDays, value: '${sumDays(30)}'),
               const SizedBox(width: Space.sm),
-              _Stat(label: 'All time', value: '$all'),
+              _Stat(label: context.l10n.allTime, value: '$all'),
             ],
           ),
-          const _StatsTitle('This week'),
+          _StatsTitle(context.l10n.thisWeek),
           Container(
             height: 180,
             padding: const EdgeInsets.fromLTRB(Space.md, Space.lg, Space.md, Space.sm),
@@ -441,7 +453,7 @@ class TasbihStatsScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          days[week[i].weekday - 1],
+                          context.l10n.weekdayShort(week[i].weekday),
                           style: context.text.labelSmall?.copyWith(color: i == 6 ? c.primary : c.inkMuted),
                         ),
                       ],
@@ -450,7 +462,7 @@ class TasbihStatsScreen extends StatelessWidget {
               ],
             ),
           ),
-          const _StatsTitle('Last 30 days'),
+          _StatsTitle(context.l10n.last30Days),
           Wrap(
             spacing: 5,
             runSpacing: 5,
@@ -475,9 +487,9 @@ class TasbihStatsScreen extends StatelessWidget {
                 ),
             ],
           ),
-          const _StatsTitle('Dhikr this month'),
+          _StatsTitle(context.l10n.dhikrThisMonth),
           if (best == 0)
-            Text('Nothing yet this month.', style: context.text.bodyMedium?.copyWith(color: c.inkMuted))
+            Text(context.l10n.nothingYetThisMonth, style: context.text.bodyMedium?.copyWith(color: c.inkMuted))
           else
             for (var i = 0; i < _phrases.length; i++)
               if (byPhrase[i] > 0)
@@ -488,7 +500,7 @@ class TasbihStatsScreen extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Expanded(child: Text(_phrases[i].$2, style: context.text.bodyLarge)),
+                          Expanded(child: Text(_phraseName(context.l10n, i), style: context.text.bodyLarge)),
                           Text('${byPhrase[i]}', style: context.text.titleSmall?.copyWith(color: c.primary)),
                         ],
                       ),

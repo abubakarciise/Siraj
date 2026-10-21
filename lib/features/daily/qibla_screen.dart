@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/l10n.dart';
 import 'prayer_widgets.dart';
 
 class QiblaScreen extends ConsumerStatefulWidget {
@@ -68,22 +69,22 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen> {
 
     if (qibla == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Qibla · القبلة')),
+        appBar: AppBar(title: Text(context.l10n.qiblaTitle)),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(Space.gutter),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               Icon(Icons.explore_outlined, size: 56, color: c.primary),
               const SizedBox(height: Space.lg),
-              Text('Where are you?', style: context.text.titleMedium),
+              Text(context.l10n.whereAreYou, style: context.text.titleMedium),
               const SizedBox(height: Space.sm),
-              Text('The Qibla direction depends on where you are. Your location stays on your phone.',
+              Text(context.l10n.qiblaLocationNote,
                   textAlign: TextAlign.center, style: context.text.bodySmall),
               const SizedBox(height: Space.lg),
               FilledButton.icon(
                 onPressed: _chooseLocation,
                 icon: const Icon(Icons.my_location_rounded),
-                label: const Text('Set my location'),
+                label: Text(context.l10n.setMyLocation),
               ),
             ]),
           ),
@@ -98,8 +99,8 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen> {
     _aligned = aligned;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Qibla · القبلة'), actions: [
-        IconButton(tooltip: 'Change location', icon: const Icon(Icons.edit_location_alt_outlined), onPressed: _chooseLocation),
+      appBar: AppBar(title: Text(context.l10n.qiblaTitle), actions: [
+        IconButton(tooltip: context.l10n.changeLocation, icon: const Icon(Icons.edit_location_alt_outlined), onPressed: _chooseLocation),
       ]),
       body: SafeArea(
         child: Padding(
@@ -108,17 +109,17 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen> {
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               Icon(Icons.place_outlined, size: 16, color: c.inkMuted),
               const SizedBox(width: 4),
-              Flexible(child: Text(place ?? 'My location', style: context.text.bodySmall, overflow: TextOverflow.ellipsis)),
+              Flexible(child: Text(place ?? context.l10n.myLocation, style: context.text.bodySmall, overflow: TextOverflow.ellipsis)),
             ]),
             const SizedBox(height: Space.sm),
             AnimatedSwitcher(
               duration: Motion.quick,
               child: Text(
                 _noSensor
-                    ? 'Qibla is ${qibla.toStringAsFixed(0)}° from North'
+                    ? context.l10n.qiblaFromNorth(qibla.toStringAsFixed(0))
                     : aligned
-                        ? 'You are facing the Qibla'
-                        : 'Turn ${diff > 0 ? 'right' : 'left'} ${diff.abs().toStringAsFixed(0)}°',
+                        ? context.l10n.facingQibla
+                        : (diff > 0 ? context.l10n.turnRight : context.l10n.turnLeft)(diff.abs().toStringAsFixed(0)),
                 key: ValueKey('$aligned${diff.round()}'),
                 style: context.text.headlineSmall?.copyWith(color: aligned ? c.primary : c.ink),
               ),
@@ -157,8 +158,8 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen> {
             ),
             Text(
               _noSensor
-                  ? 'This phone has no compass sensor. Use the angle above with a physical compass.'
-                  : 'Hold your phone flat. If it seems off, move it in a figure-8 to calibrate.',
+                  ? context.l10n.noCompassSensor
+                  : context.l10n.calibrateCompass,
               textAlign: TextAlign.center,
               style: context.text.bodySmall,
             ),
